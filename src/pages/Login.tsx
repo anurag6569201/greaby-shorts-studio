@@ -1,31 +1,29 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { loginUser, loading } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: ""
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Login attempt:", formData);
-    // Simulate successful login and redirect to dashboard
-    navigate('/dashboard');
+    loginUser(formData.email, formData.password);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-emerald-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="flex items-center justify-center mb-8">
+        <div className="flex items-center justify-center mb-8 cursor-pointer" onClick={() => navigate('/')}>
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-emerald-500 rounded-lg flex items-center justify-center">
               <Sparkles className="h-5 w-5 text-white" />
@@ -52,6 +50,7 @@ const Login = () => {
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   required
+                  disabled={loading}
                 />
               </div>
               <div>
@@ -63,18 +62,20 @@ const Login = () => {
                   value={formData.password}
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
                   required
+                  disabled={loading}
                 />
               </div>
               <div className="text-right">
-                <button className="text-sm text-purple-600 hover:text-purple-800">
+                <button type="button" className="text-sm text-purple-600 hover:text-purple-800">
                   Forgot password?
                 </button>
               </div>
               <Button 
                 type="submit" 
                 className="w-full bg-gradient-to-r from-purple-600 to-emerald-600 hover:from-purple-700 hover:to-emerald-700"
+                disabled={loading}
               >
-                Sign In
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sign In"}
               </Button>
             </form>
             

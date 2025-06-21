@@ -10,3 +10,4 @@ requests
 azure-identity
 django-storages
 boto3
+dj-database-url
