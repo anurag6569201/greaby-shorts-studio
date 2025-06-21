@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Play, Sparkles, Zap, Users, Star, Check, Film, Bot, ShieldCheck, Type, Mic, Download, Plus, Minus, ArrowRight } from "lucide-react";
+import { Play, Sparkles, Zap, Users, Star, Check, Film, Bot, ShieldCheck, Type, Mic, Download, Plus, Minus, ArrowRight,Twitter, Youtube, Github } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, useInView, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -120,11 +120,11 @@ const Hero = () => {
   const gridRef = useRef(null);
   const mouseX = useMotionValue(Infinity);
 
-  const videoCards = [
-    { src: "/placeholder.svg", rotate: -5, y: -15, x: -20 },
-    { src: "/placeholder.svg", rotate: 3, y: 10, x: 20 },
-    { src: "/placeholder.svg", rotate: 6, y: -5, x: 50 },
-    { src: "/placeholder.svg", rotate: -2, y: 20, x: -30 },
+const videoCards = [
+    { src: "/placeholder.svg", rotate: -15, y: 25, x: -90 },
+    { src: "/placeholder.svg", rotate: -5,  y: 0,  x: -30 },
+    { src: "/placeholder.svg", rotate: 5,   y: 0,  x: 30 },
+    { src: "/placeholder.svg", rotate: 15,  y: 25, x: 90 },
   ];
 
   return (
@@ -158,16 +158,18 @@ const Hero = () => {
           className="relative h-96 w-full"
         >
           {videoCards.map((card, i) => {
-            const motionX = useMotionValue(0);
-            const motionY = useMotionValue(0);
+            const springConfig = { stiffness: 100, damping: 15, mass: 0.1 };
+            const motionX = useSpring(0, springConfig);
+            const motionY = useSpring(0, springConfig);
 
             useEffect(() => {
                 const update = mouseX.onChange((v) => {
                     if (v !== Infinity && gridRef.current) {
                         const bounds = gridRef.current.getBoundingClientRect();
-                        const newX = (v - bounds.left - bounds.width / 2) / 6;
-                        motionX.set(newX * (i % 2 === 0 ? 1 : -1));
-                        motionY.set(newX * (i < 2 ? 1 : -1) * 0.9);
+                        // Make the parallax effect a bit more subtle to complement the fan
+                        const newX = (v - bounds.left - bounds.width / 2) / 10;
+                        motionX.set(newX * (i < 2 ? -1 : 1)); // Adjust direction based on side
+                        motionY.set(Math.abs(newX) * -0.5); // All cards lift up slightly
                     } else {
                         motionX.set(0);
                         motionY.set(0);
@@ -179,14 +181,16 @@ const Hero = () => {
             return (
               <motion.div
                 key={i}
-                className="absolute w-48 h-80 top-1/2 left-1/2"
+                // 2. Added `origin-bottom` so the rotation pivots from the bottom center,
+                // which is crucial for the fanned-out playing card aesthetic.
+                className="absolute w-48 h-80 top-1/2 left-1/2 origin-bottom"
                 style={{
                     x: `calc(-50% + ${card.x}px)`,
                     y: `calc(-50% + ${card.y}px)`,
                     translateX: motionX,
                     translateY: motionY,
                 }}
-                initial={{ opacity: 0, rotate: card.rotate + 10, scale: 0.9 }}
+                initial={{ opacity: 0, rotate: card.rotate > 0 ? card.rotate + 10 : card.rotate - 10, scale: 0.9 }}
                 animate={{ opacity: 1, rotate: card.rotate, scale: 1 }}
                 transition={{ delay: 0.3 + i * 0.1, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
               >
@@ -217,7 +221,7 @@ const BentoGridFeatures = () => {
       <AnimatedInView variants={containerStagger} className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {features.map((feature, i) => (
           <motion.div key={feature.title} variants={fadeIn} className={cn(feature.className)}>
-            <Card className="h-full bg-white/70 backdrop-blur-sm border hover:border-primary/50 hover:-translate-y-1.5 transition-all duration-300 shadow-sm hover:shadow-xl z-10 relative">
+            <Card className="h-full bg-white/70 backdrop-blur-sm border hover:border-primary/50 hover:-translate-y-1.5 transition-all duration-300 shadow-sm hover:shadow-xl z-10 relative glass_card">
               <CardHeader>{feature.icon}<CardTitle className="mt-4 text-slate-900">{feature.title}</CardTitle></CardHeader>
               <CardContent><p className="text-slate-600">{feature.description}</p></CardContent>
             </Card>
@@ -325,8 +329,8 @@ const Faq = () => {
   ];
   const [expanded, setExpanded] = useState(0);
   return (
-    <section className="py-20 sm:py-28 bg-slate-50">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-20 sm:py-28">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <AnimatedInView variants={fadeIn} className="text-center mb-12">
           <h2 className="text-4xl font-bold tracking-tighter mb-4 text-slate-900">Your Questions, Answered.</h2>
         </AnimatedInView>
@@ -379,15 +383,72 @@ const Cta = () => {
 
 const Footer = () => (
   <footer className="bg-slate-900 text-slate-400">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-           <div className="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-lg flex items-center justify-center">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Top section with columns */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-8 py-16">
+        
+        {/* Column 1: Brand and tagline */}
+        <div className="md:col-span-1">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-lg flex items-center justify-center">
               <Sparkles className="h-5 w-5 text-primary-foreground" />
             </div>
-          <span className="font-bold text-white">Greaby</span>
+            <span className="text-xl font-bold text-white">Greaby</span>
+          </div>
+          <p className="mt-4 text-sm">
+            The AI co-pilot for viral content. Turn your ideas into masterpieces, instantly.
+          </p>
         </div>
-        <p className="text-sm">© 2024. The future is now.</p>
+
+        {/* Column 2: Product Links */}
+        <div>
+          <h3 className="text-sm font-semibold text-slate-200 tracking-wider uppercase">Product</h3>
+          <ul className="mt-4 space-y-3">
+            <li><a href="#" className="hover:text-primary transition-colors">Features</a></li>
+            <li><a href="#" className="hover:text-primary transition-colors">How It Works</a></li>
+            <li><a href="#" className="hover:text-primary transition-colors">Pricing</a></li>
+            <li><a href="/login" className="hover:text-primary transition-colors">Login</a></li>
+          </ul>
+        </div>
+
+        {/* Column 3: Company Links */}
+        <div>
+          <h3 className="text-sm font-semibold text-slate-200 tracking-wider uppercase">Company</h3>
+          <ul className="mt-4 space-y-3">
+            <li><a href="#" className="hover:text-primary transition-colors">About Us</a></li>
+            <li><a href="#" className="hover:text-primary transition-colors">Blog</a></li>
+            <li><a href="#" className="hover:text-primary transition-colors">Careers</a></li>
+            <li><a href="#" className="hover:text-primary transition-colors">Contact</a></li>
+          </ul>
+        </div>
+
+        {/* Column 4: Legal Links */}
+        <div>
+          <h3 className="text-sm font-semibold text-slate-200 tracking-wider uppercase">Legal</h3>
+          <ul className="mt-4 space-y-3">
+            <li><a href="#" className="hover:text-primary transition-colors">Terms of Service</a></li>
+            <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
+            <li><a href="#" className="hover:text-primary transition-colors">Cookie Policy</a></li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Bottom section with copyright and socials */}
+      <div className="mt-8 py-8 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center">
+        <p className="text-sm text-slate-500">
+          © 2024 Greaby. The future is now. All rights reserved.
+        </p>
+        <div className="flex items-center space-x-4 mt-4 sm:mt-0">
+          <a href="#" className="text-slate-500 hover:text-primary transition-colors">
+            <Twitter className="h-5 w-5" />
+          </a>
+          <a href="#" className="text-slate-500 hover:text-primary transition-colors">
+            <Youtube className="h-5 w-5" />
+          </a>
+          <a href="#" className="text-slate-500 hover:text-primary transition-colors">
+            <Github className="h-5 w-5" />
+          </a>
+        </div>
       </div>
     </div>
   </footer>
