@@ -16,7 +16,7 @@ class Creation(models.Model):
     prompt = models.TextField()
     settings = models.JSONField(default=dict, help_text="Stores aspectRatio, resolution, duration etc.")
     
-    result_file = models.FileField(upload_to='creations/videos/', blank=True, null=True)
+    result_url = models.URLField(max_length=1024, blank=True, null=True, help_text="Direct URL to the generated video file")
     error_message = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

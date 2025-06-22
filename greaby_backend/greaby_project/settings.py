@@ -116,3 +116,15 @@ else:
     MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# --- Azure AI Settings ---
+AZURE_SORA_ENDPOINT_URL = config('AZURE_SORA_ENDPOINT_URL')
+AZURE_SORA_DEPLOYMENT_NAME = config('AZURE_SORA_DEPLOYMENT_NAME')
+AZURE_OPENAI_API_KEY = config('AZURE_OPENAI_API_KEY')
+
+
+# --- Stripe Settings ---
+STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY')
+STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET')
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')

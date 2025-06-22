@@ -1,64 +1,47 @@
+# users/admin.py
+
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import User
 
 @admin.register(User)
-class UserAdmin(admin.ModelAdmin):
+class UserAdmin(BaseUserAdmin):
     """
     Admin interface for the custom User model.
     """
-    list_display = ('email', 'first_name', 'last_name', 'is_staff', 'is_active')
+    # Fields to display in the list view
+    list_display = ('id', 'email', 'first_name', 'last_name', 'is_staff', 'is_active')
+    # Fields that can be searched
     search_fields = ('email', 'first_name', 'last_name')
+    # Default ordering
     ordering = ('email',)
-    list_filter = ('is_staff', 'is_active')
+    # Filters available on the side
+    list_filter = ('is_staff', 'is_active', 'is_superuser')
 
+    # Define fieldsets for the detail/edit view
+    # Note: We remove 'username' as it's not used
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Personal info', {'fields': ('first_name', 'last_name')}),
-        ('Permissions', {'fields': ('is_staff', 'is_active')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
-    
+
+    # Define fieldsets for the add user view
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'password1', 'password2')}
-        ),
+            'fields': ('email', 'first_name', 'last_name', 'password'),
+        }),
     )
-    readonly_fields = ('id',)
-    def get_readonly_fields(self, request, obj=None):
-        if obj:
-            return self.readonly_fields + ('email',)
-        return self.readonly_fields
+
+    # Make certain fields read-only in the detail view
+    readonly_fields = ('id', 'last_login', 'date_joined')
+
     def save_model(self, request, obj, form, change):
         """
-        Override save_model to ensure password is hashed correctly.
+        Override save_model to ensure password is hashed correctly when changed in admin.
         """
-        if form.cleaned_data.get('password'):
+        if 'password' in form.changed_data:
             obj.set_password(form.cleaned_data['password'])
         super().save_model(request, obj, form, change)
-    def has_delete_permission(self, request, obj=None):
-        """
-        Disable delete permission for users in the admin interface.
-        """
-        return False
-    def has_add_permission(self, request):
-        """
-        Disable add permission for users in the admin interface.
-        """
-        return False
-    def has_change_permission(self, request, obj=None):
-        """
-        Disable change permission for users in the admin interface.
-        """
-        return False
-    def has_view_permission(self, request, obj=None):
-        """
-        Disable view permission for users in the admin interface.
-        """
-        return True
-    def get_queryset(self, request):
-        """
-        Override get_queryset to ensure only active users are displayed.
-        """
-        qs = super().get_queryset(request)
-        return qs.filter(is_active=True)
-   

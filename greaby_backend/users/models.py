@@ -8,6 +8,8 @@ class User(AbstractUser):
     email = models.EmailField('email address', unique=True)
     username = None
 
+    stripe_customer_id = models.CharField(max_length=100, blank=True, null=True, help_text="The user's Stripe Customer ID.")
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 

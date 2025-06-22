@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, Video, Music, Home, Settings, LogOut, User } from "lucide-react";
@@ -6,6 +8,8 @@ import VideoGenerator from "@/components/VideoGenerator";
 import AudioGenerator from "@/components/AudioGenerator";
 import DashboardHome from "@/components/DashboardHome";
 import { useAuth } from "@/context/AuthContext";
+import SettingsPage from "@/components/SettingsPage";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +23,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("home");
   const { user, logoutUser } = useAuth();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const sessionId = searchParams.get("session_id");
+    if (sessionId) {
+      toast.success("Subscription successful!", {
+        description: "Your new plan is now active. Welcome aboard!",
+      });
+    }
+  }, [searchParams]);
 
   const sidebarItems = [
     { id: "home", label: "Home", icon: Home },
@@ -114,7 +128,8 @@ const Dashboard = () => {
           {activeTab === "home" && <DashboardHome />}
           {activeTab === "video" && <VideoGenerator />}
           {activeTab === "audio" && <AudioGenerator />}
-          {activeTab === "settings" && (
+          {activeTab === "settings" && <SettingsPage />}
+          {/* {activeTab === "settings" && (
             <Card>
               <CardHeader>
                 <CardTitle>Settings</CardTitle>
@@ -124,7 +139,7 @@ const Dashboard = () => {
                 <p className="text-gray-600">Settings panel coming soon...</p>
               </CardContent>
             </Card>
-          )}
+          )} */}
         </div>
       </main>
     </div>

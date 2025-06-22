@@ -17,6 +17,8 @@ export const AuthProvider = ({ children }) => {
   );
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [subscription, setSubscription] = useState(null); 
+  const [creations, setCreations] = useState([]);
 
   const loginUser = async (email, password) => {
     setLoading(true);
@@ -72,6 +74,33 @@ export const AuthProvider = ({ children }) => {
       logoutUser(); // If we can't get profile, tokens might be invalid
     }
   };
+
+  const fetchData = async () => {
+    if (!tokens) return;
+    try {
+      // Fetch all data in parallel for efficiency
+      const [profileRes, subRes, creationsRes] = await Promise.all([
+        api.get("/auth/profile/"),
+        api.get("/subscriptions/my-subscription/").catch(() => null), // Gracefully handle no subscription
+        api.get("/creations/history/").catch(() => null),
+      ]);
+      
+      setUser(profileRes.data);
+      if (subRes) setSubscription(subRes.data);
+      if (creationsRes) setCreations(creationsRes.data);
+
+    } catch (error) {
+      console.error("Failed to fetch user data:", error);
+      // If profile fails, it's a critical error, so log out
+      if (error.response?.config?.url.includes('/auth/profile/')) {
+        logoutUser(); 
+      }
+    }
+  };
+  
+  useEffect(() => {
+    fetchData();
+  }, [tokens]);
   
   useEffect(() => {
     if (tokens) {
@@ -83,9 +112,12 @@ export const AuthProvider = ({ children }) => {
     user,
     tokens,
     loading,
+    subscription, 
+    creations,  
     loginUser,
     signupUser,
     logoutUser,
+    refreshData: fetchData,
   };
 
   return (
