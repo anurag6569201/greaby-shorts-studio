@@ -7,20 +7,44 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/services/api";
 import { toast } from "sonner";
 
+/**
+ * A placeholder component to show while fetching user subscription data.
+ * This prevents layout shift and provides a better user experience.
+ */
+const SettingsSkeleton = () => (
+  <Card>
+    <CardHeader>
+      <Skeleton className="h-8 w-1/4" />
+      <Skeleton className="h-4 w-1/2" />
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div className="flex items-center justify-between p-4 border rounded-lg bg-slate-50">
+        <div>
+          <Skeleton className="h-5 w-24 mb-2" />
+          <Skeleton className="h-7 w-20" />
+        </div>
+        <div>
+          <Skeleton className="h-5 w-24 mb-2" />
+          <Skeleton className="h-7 w-24" />
+        </div>
+      </div>
+      <Skeleton className="h-10 w-48" />
+    </CardContent>
+  </Card>
+);
+
+
 const SettingsPage = () => {
-  const { user, subscription, creations } = useAuth();
+  // --- DESTRUCTURE THE NEW LOADING STATE ---
+  const { user, subscription, creations, isInitialLoading } = useAuth();
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
   const navigate = useNavigate();
-
-  const handleUpdateProfile = (e) => {
-    e.preventDefault();
-    toast.info("Profile update functionality coming soon!");
-  };
 
   const handleManageSubscription = async () => {
     setIsLoadingPortal(true);
@@ -29,20 +53,35 @@ const SettingsPage = () => {
       window.location.href = response.data.url;
     } catch (error) {
       toast.error("Failed to open management portal.", {
-        description: error.response?.data?.error || "Please try again or contact support."
+        description: error.response?.data?.error || "Please try again.",
       });
     } finally {
       setIsLoadingPortal(false);
     }
   };
 
-  // --- CORRECTED LOGIC ---
-  const isFreePlan = !subscription || subscription.plan.name === 'free';
-  const planName = subscription?.plan?.display_name || 'Free';
-  
-  // This now correctly gets the limit for the current plan, whether free or paid.
-  const planLimit = subscription?.plan?.video_limit || 1; 
+  // --- RENDER SKELETON WHILE LOADING ---
+  if (isInitialLoading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
+          <p className="text-gray-600">Manage your account and subscription details.</p>
+        </div>
+        {/* We can add a skeleton for the profile card too */}
+        <Card>
+          <CardHeader><Skeleton className="h-8 w-1/4" /></CardHeader>
+          <CardContent><Skeleton className="h-10 w-full max-w-lg" /></CardContent>
+        </Card>
+        <SettingsSkeleton />
+      </div>
+    );
+  }
 
+  // This logic now runs only *after* isInitialLoading is false and data is available.
+  const isFreePlan = subscription?.plan?.name === 'free';
+  const planName = subscription?.plan?.display_name || 'Free';
+  const planLimit = subscription?.plan?.video_limit || 1;
   const creationsCount = creations?.length || 0;
 
   return (
@@ -58,13 +97,13 @@ const SettingsPage = () => {
           <CardDescription>Update your personal information.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-lg">
+          <form className="space-y-4 max-w-lg" onSubmit={(e) => e.preventDefault()}>
             <div className="grid grid-cols-2 gap-4">
-              <div><Label htmlFor="firstName">First Name</Label><Input id="firstName" defaultValue={user?.first_name} /></div>
-              <div><Label htmlFor="lastName">Last Name</Label><Input id="lastName" defaultValue={user?.last_name} /></div>
+              <div><Label htmlFor="firstName">First Name</Label><Input id="firstName" defaultValue={user?.first_name} disabled /></div>
+              <div><Label htmlFor="lastName">Last Name</Label><Input id="lastName" defaultValue={user?.last_name} disabled /></div>
             </div>
             <div><Label htmlFor="email">Email</Label><Input id="email" type="email" value={user?.email} disabled /></div>
-            <Button type="submit">Update Profile</Button>
+            <Button type="submit" disabled>Update Profile (Coming Soon)</Button>
           </form>
         </CardContent>
       </Card>
@@ -81,17 +120,14 @@ const SettingsPage = () => {
               <Badge variant={isFreePlan ? "outline" : "default"} className="text-base">{planName}</Badge>
             </div>
             <div>
-              <p className="font-medium text-right text-slate-700">Monthly Usage</p>
-              {/* The display logic is now simpler and more robust */}
-              <p className="text-gray-600">
-                {creationsCount} / {planLimit} videos
-              </p>
+              <p className="font-medium text-right text-slate-700">Creations This Period</p>
+              <p className="text-gray-600">{creationsCount} / {planLimit}</p>
             </div>
           </div>
           
           {isFreePlan ? (
-            <Button onClick={() => navigate('/pricing')} className="bg-gradient-to-r from-purple-600 to-emerald-600">
-              Upgrade to Pro <ArrowRight className="ml-2 h-4 w-4" />
+            <Button onClick={() => navigate('/pricing')} className="bg-gradient-to-r from-purple-600 to-emerald-600 text-white">
+              Upgrade Plan <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
             <Button onClick={handleManageSubscription} disabled={isLoadingPortal}>
@@ -103,7 +139,7 @@ const SettingsPage = () => {
           <p className="text-sm text-gray-500">
             {isFreePlan 
               ? "Upgrade your plan to unlock premium features and increase your limits."
-              : "You will be redirected to Stripe to manage your subscription, view invoices, or cancel your plan."
+              : "You will be redirected to Stripe to manage your subscription."
             }
           </p>
         </CardContent>

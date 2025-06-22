@@ -10,7 +10,8 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
-import PublicRoute from "./components/PublicRoute"; // <--- 1. IMPORT THE NEW COMPONENT
+import PublicRoute from "./components/PublicRoute"; 
+import PricingPage from "./components/PricingPage";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,8 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+
+            <Route path="/pricing" element={<PricingPage />} />
             
             {/* --- Catch-all Route --- */}
             <Route path="*" element={<NotFound />} />

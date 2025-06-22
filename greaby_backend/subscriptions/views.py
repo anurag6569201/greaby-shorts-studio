@@ -1,10 +1,13 @@
+# subscriptions/views.py
+
 import stripe
+from datetime import datetime
 from django.conf import settings
-from django.shortcuts import redirect
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
+
 from .models import Plan, Subscription
 from users.models import User
 from .serializers import PlanSerializer, SubscriptionSerializer
@@ -12,11 +15,18 @@ from .serializers import PlanSerializer, SubscriptionSerializer
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 class PlanListView(generics.ListAPIView):
-    queryset = Plan.objects.all().order_by('price')
-    permission_classes = (AllowAny,)
+    """
+    Provides a list of all active, priced plans for the pricing page.
+    It excludes the 'free' plan, which is handled implicitly.
+    """
+    queryset = Plan.objects.filter(price__gt=0).order_by('price')
+    permission_classes = [AllowAny]
     serializer_class = PlanSerializer
 
 class CreateCheckoutSessionView(APIView):
+    """
+    Creates a Stripe Checkout session for a user to subscribe to a new plan.
+    """
     def post(self, request, *args, **kwargs):
         plan_id = request.data.get('planId')
         try:
@@ -27,13 +37,14 @@ class CreateCheckoutSessionView(APIView):
         try:
             checkout_session = stripe.checkout.Session.create(
                 client_reference_id=request.user.id,
+                customer=request.user.stripe_customer_id, # Pre-fill customer if they exist
                 success_url=settings.FRONTEND_URL + '/dashboard?session_id={CHECKOUT_SESSION_ID}',
                 cancel_url=settings.FRONTEND_URL + '/pricing',
                 payment_method_types=['card'],
                 mode='subscription',
                 line_items=[{
                     'price': plan.stripe_price_id,
-                    'quantity': 1
+                    'quantity': 1,
                 }]
             )
             return Response({'sessionId': checkout_session.id, 'url': checkout_session.url})
@@ -41,118 +52,116 @@ class CreateCheckoutSessionView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class StripeWebhookView(APIView):
-    permission_classes = (AllowAny,)
+    """
+    Handles incoming webhooks from Stripe to create and update subscriptions.
+    """
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
         payload = request.body
-        sig_header = request.META['HTTP_STRIPE_SIGNATURE']
-        event = None
+        sig_header = request.headers.get('Stripe-Signature')
+        
+        try:
+            event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
+        except (ValueError, stripe.error.SignatureVerificationError) as e:
+            return Response({'error': f'Invalid webhook signature: {e}'}, status=status.HTTP_400_BAD_REQUEST)
+
+        event_handlers = {
+            'checkout.session.completed': self.handle_checkout_session,
+            'customer.subscription.updated': self.handle_subscription_update,
+            'customer.subscription.deleted': self.handle_subscription_update,
+        }
+
+        handler = event_handlers.get(event['type'])
+        if handler:
+            handler(event['data']['object'])
+
+        return Response(status=status.HTTP_200_OK)
+
+    def handle_checkout_session(self, session):
+        user_id = session.get('client_reference_id')
+        stripe_customer_id = session.get('customer')
+        stripe_subscription_id = session.get('subscription')
+
+        if not all([user_id, stripe_customer_id, stripe_subscription_id]):
+            print(f"Webhook Error: Missing data in checkout session {session.get('id')}")
+            return
 
         try:
-            event = stripe.Webhook.construct_event(
-                payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
+            user = User.objects.get(id=user_id)
+            if not user.stripe_customer_id:
+                user.stripe_customer_id = stripe_customer_id
+                user.save()
+
+            stripe_sub = stripe.Subscription.retrieve(stripe_subscription_id)
+            price_id = stripe_sub.items.data[0].price.id
+            plan = Plan.objects.get(stripe_price_id=price_id)
+
+            Subscription.objects.update_or_create(
+                user=user,
+                defaults={
+                    'plan': plan,
+                    'stripe_subscription_id': stripe_subscription_id,
+                    'status': stripe_sub.status,
+                    'current_period_start': datetime.fromtimestamp(stripe_sub.current_period_start),
+                    'current_period_end': datetime.fromtimestamp(stripe_sub.current_period_end),
+                }
             )
-        except ValueError as e:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        except stripe.error.SignatureVerificationError as e:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        except (User.DoesNotExist, Plan.DoesNotExist) as e:
+            print(f"Webhook Error: Could not find User or Plan. {e}")
+        except Exception as e:
+            print(f"Webhook Error in handle_checkout_session: {e}")
 
-        # Handle the checkout.session.completed event
-        if event['type'] == 'checkout.session.completed':
-            session = event['data']['object']
-            user_id = session.get('client_reference_id')
-            stripe_subscription_id = session.get('subscription')
+    def handle_subscription_update(self, subscription_data):
+        stripe_subscription_id = subscription_data.get('id')
+        try:
+            local_subscription = Subscription.objects.get(stripe_subscription_id=stripe_subscription_id)
+            
+            local_subscription.status = subscription_data.status
+            local_subscription.current_period_start = datetime.fromtimestamp(subscription_data.current_period_start)
+            local_subscription.current_period_end = datetime.fromtimestamp(subscription_data.current_period_end)
 
-            try:
-                user = User.objects.get(id=user_id)
-                stripe_sub = stripe.Subscription.retrieve(stripe_subscription_id)
-                plan = Plan.objects.get(stripe_price_id=stripe_sub.items.data[0].price.id)
-                
-                Subscription.objects.update_or_create(
-                    user=user,
-                    defaults={
-                        'plan': plan,
-                        'stripe_subscription_id': stripe_subscription_id,
-                        'status': stripe_sub.status,
-                        'current_period_end': stripe_sub.current_period_end
-                    }
-                )
-            except (User.DoesNotExist, Plan.DoesNotExist) as e:
-                # Log this error
-                print(f"Error handling webhook: {e}")
+            # Ensure the plan is correct if it was changed in Stripe
+            new_price_id = subscription_data.items.data[0].price.id
+            if local_subscription.plan.stripe_price_id != new_price_id:
+                local_subscription.plan = Plan.objects.get(stripe_price_id=new_price_id)
 
-        # Handle other subscription events
-        if event['type'] in ['customer.subscription.updated', 'customer.subscription.deleted']:
-            subscription = event['data']['object']
-            stripe_subscription_id = subscription.get('id')
-            try:
-                sub = Subscription.objects.get(stripe_subscription_id=stripe_subscription_id)
-                sub.status = subscription.status
-                if subscription.status == 'canceled' or subscription.get('cancel_at_period_end'):
-                    sub.status = 'canceled'
-                sub.save()
-            except Subscription.DoesNotExist:
-                print(f"Subscription not found for webhook: {stripe_subscription_id}")
-        
-        return Response(status=status.HTTP_200_OK)
-    
+            local_subscription.save()
+        except (Subscription.DoesNotExist, Plan.DoesNotExist) as e:
+            print(f"Webhook Update Error: Could not find Subscription or Plan. {e}")
+        except Exception as e:
+            print(f"Webhook Error in handle_subscription_update: {e}")
 
 class CreatePortalSessionView(APIView):
-    permission_classes = (AllowAny,)
+    """
+    Creates a Stripe Billing Portal session for a user to manage their subscription.
+    """
     def post(self, request, *args, **kwargs):
         try:
-            # Retrieve the user's active subscription
             subscription = Subscription.objects.get(user=request.user)
             if not subscription.stripe_subscription_id:
                 return Response(
-                    {'error': 'You are on a free plan. Please upgrade to manage your subscription.'},
+                    {'error': 'Free plan users cannot manage subscriptions.'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            stripe_customer_id = getattr(request.user, 'stripe_customer_id', None)
-            
-            if not stripe_customer_id:
-                # This is a fallback. A customer should normally be created during checkout.
-                stripe_sub = stripe.Subscription.retrieve(subscription.stripe_subscription_id)
-                stripe_customer_id = stripe_sub.customer
-                
-                # Save it to our user model for future use
-                request.user.stripe_customer_id = stripe_customer_id
-                request.user.save()
-
-            # --- STEP 4: Create the Portal Session ---
             portal_session = stripe.billing_portal.Session.create(
-                customer=stripe_customer_id,
+                customer=request.user.stripe_customer_id,
                 return_url=f"{settings.FRONTEND_URL}/dashboard?tab=settings",
             )
             return Response({'url': portal_session.url})
-
         except Subscription.DoesNotExist:
-            # This case should be rare now that we create free subs on signup,
-            # but it's good defensive programming.
             return Response({'error': 'No subscription found for this user.'}, status=status.HTTP_404_NOT_FOUND)
-        except stripe.error.StripeError as e:
-            # Handle specific Stripe errors gracefully
-            return Response({'error': f"Stripe error: {e.user_message}"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            # Catch any other unexpected errors
             return Response({'error': 'An unexpected error occurred.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class MySubscriptionView(generics.RetrieveAPIView):
+    """
+    Retrieves the currently authenticated user's subscription details.
+    """
+    serializer_class = SubscriptionSerializer
+    permission_classes = [IsAuthenticated]
 
-class MySubscriptionView(APIView):
-    def get(self, request, *args, **kwargs):
-        try:
-            subscription = Subscription.objects.get(user=request.user)
-            serializer = SubscriptionSerializer(subscription)
-            return Response(serializer.data)
-        except Subscription.DoesNotExist:
-            # Return the free plan details if no subscription exists
-            free_plan = Plan.objects.get(name='free')
-            # Create a dummy subscription object for serialization
-            dummy_sub = {
-                "id": None,
-                "plan": PlanSerializer(free_plan).data,
-                "status": "active",
-                "current_period_end": None
-            }
-            return Response(dummy_sub)
+    def get_object(self):
+        # We can be sure a subscription exists due to the post_save signal on User creation
+        return Subscription.objects.get(user=self.request.user)

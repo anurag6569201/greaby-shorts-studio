@@ -1,3 +1,5 @@
+# creations/urls.py
+
 from django.urls import path
 from .views import VideoGenerationView, CreationHistoryView, CreationDetailView, creation_content_proxy
 

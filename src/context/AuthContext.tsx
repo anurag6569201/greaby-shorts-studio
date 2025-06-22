@@ -15,19 +15,26 @@ export const AuthProvider = ({ children }) => {
         }
       : null
   );
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
   const [subscription, setSubscription] = useState(null); 
   const [creations, setCreations] = useState([]);
+  
+  // For login/signup button spinners
+  const [loading, setLoading] = useState(false);
+  
+  // --- NEW ---
+  // This tracks the initial, essential data fetch when the app loads.
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  const navigate = useNavigate();
 
   const loginUser = async (email, password) => {
     setLoading(true);
     try {
       const response = await api.post("/auth/token/", { email, password });
-      setTokens(response.data);
       localStorage.setItem("accessToken", response.data.access);
       localStorage.setItem("refreshToken", response.data.refresh);
-      await fetchUserProfile();
+      // Set tokens to trigger the useEffect hook which will fetch all data
+      setTokens(response.data); 
       navigate("/dashboard");
       toast.success("Login successful!");
     } catch (error) {
@@ -47,7 +54,8 @@ export const AuthProvider = ({ children }) => {
         email,
         password,
       });
-      await loginUser(email, password); // Automatically log in after successful signup
+      // This will call loginUser, which sets tokens and triggers the data fetch
+      await loginUser(email, password); 
     } catch (error) {
       toast.error("Signup failed. This email may already be in use.");
       console.error("Signup error:", error);
@@ -59,65 +67,69 @@ export const AuthProvider = ({ children }) => {
   const logoutUser = () => {
     setUser(null);
     setTokens(null);
+    setSubscription(null);
+    setCreations([]);
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     navigate("/login");
     toast.info("You have been logged out.");
   };
 
-  const fetchUserProfile = async () => {
-    try {
-      const response = await api.get("/auth/profile/");
-      setUser(response.data);
-    } catch (error) {
-      console.error("Failed to fetch user profile:", error);
-      logoutUser(); // If we can't get profile, tokens might be invalid
-    }
-  };
-
-  const fetchData = async () => {
-    if (!tokens) return;
-    try {
-      // Fetch all data in parallel for efficiency
-      const [profileRes, subRes, creationsRes] = await Promise.all([
-        api.get("/auth/profile/"),
-        api.get("/subscriptions/my-subscription/").catch(() => null), // Gracefully handle no subscription
-        api.get("/creations/history/").catch(() => null),
-      ]);
-      
-      setUser(profileRes.data);
-      if (subRes) setSubscription(subRes.data);
-      if (creationsRes) setCreations(creationsRes.data);
-
-    } catch (error) {
-      console.error("Failed to fetch user data:", error);
-      // If profile fails, it's a critical error, so log out
-      if (error.response?.config?.url.includes('/auth/profile/')) {
-        logoutUser(); 
+  // --- CONSOLIDATED DATA FETCHING LOGIC ---
+  useEffect(() => {
+    const fetchData = async () => {
+      // If there are no tokens, we know we're not logged in.
+      // Stop the initial loading state and exit.
+      if (!tokens) {
+        setIsInitialLoading(false);
+        return;
       }
-    }
-  };
-  
-  useEffect(() => {
+    
+      try {
+        // Fetch all essential user data in parallel for performance.
+        const [profileRes, subRes, creationsRes] = await Promise.all([
+          api.get("/auth/profile/"),
+          api.get("/subscriptions/my-subscription/").catch(() => null),
+          api.get("/creations/history/").catch(() => []),
+        ]);
+        
+        setUser(profileRes.data);
+        setSubscription(subRes.data);
+        setCreations(creationsRes.data);
+
+      } catch (error) {
+        console.error("Failed to fetch user data on load:", error);
+        // If any critical fetch fails (especially profile), it likely means
+        // the token is expired or invalid. Log the user out.
+        if (error.response?.status === 401) {
+          logoutUser();
+        }
+      } finally {
+        // Whether it succeeded or failed, the initial load attempt is now complete.
+        setIsInitialLoading(false);
+      }
+    };
+    
     fetchData();
-  }, [tokens]);
-  
-  useEffect(() => {
-    if (tokens) {
-      fetchUserProfile();
-    }
-  }, [tokens]);
+  }, [tokens]); // This effect re-runs whenever the user logs in (tokens change).
+
 
   const contextData = {
     user,
     tokens,
-    loading,
     subscription, 
-    creations,  
+    creations,
+    loading, // For login/signup actions
+    isInitialLoading, // The new global loading state for components to use
     loginUser,
     signupUser,
     logoutUser,
-    refreshData: fetchData,
+    // A function to allow manual refresh from other components if needed
+    refreshData: () => {
+        // Re-trigger the fetch logic by re-setting the token state
+        // This is a simple way to force the useEffect to run again.
+        if (tokens) setTokens({ ...tokens });
+    }
   };
 
   return (
