@@ -1,7 +1,9 @@
+// src/services/api.js
+
 import axios from "axios";
 import { toast } from "sonner";
 
-const API_URL = "http://127.0.0.1:8000/api/v1/";
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1/";
 
 const api = axios.create({
   baseURL: API_URL,
@@ -18,26 +20,23 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 api.interceptors.response.use(
-  (res) => {
-    return res;
-  },
+  (res) => res,
   async (err) => {
     const originalConfig = err.config;
 
     if (originalConfig.url !== "/auth/token/" && err.response) {
-      // Access Token was expired
       if (err.response.status === 401 && !originalConfig._retry) {
         originalConfig._retry = true;
 
         try {
           const refreshToken = localStorage.getItem("refreshToken");
-          const rs = await axios.post(API_URL + "auth/token/refresh/", {
+          if (!refreshToken) throw new Error("No refresh token available");
+
+          const rs = await axios.post(API_URL + "/auth/token/refresh/", {
             refresh: refreshToken,
           });
 
@@ -47,10 +46,9 @@ api.interceptors.response.use(
 
           return api(originalConfig);
         } catch (_error) {
-          // Refresh token is expired or invalid
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
-          window.location.href = "/login"; // Force reload and redirect to login
+          window.location.href = "/login";
           toast.error("Session expired. Please log in again.");
           return Promise.reject(_error);
         }

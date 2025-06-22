@@ -11,6 +11,7 @@ urlpatterns = [
     path('api/v1/subscriptions/', include('subscriptions.urls')),
     path('api/v1/creations/', include('creations.urls')),
     path('api/v1/audio/', include('audio_creations.urls')),
+    path('api/v1/reels/', include('reels.urls')),
 ]
 
 # Serve media files during development

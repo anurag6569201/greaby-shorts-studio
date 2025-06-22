@@ -148,6 +148,9 @@ const videoCards = [
               <MagneticButton size="lg" className="bg-primary text-primary-foreground text-lg px-8 py-6 shadow-primary/30" onClick={() => navigate('/signup')}>
                 Unleash The AI <ArrowRight className="ml-2 h-5 w-5" />
               </MagneticButton>
+                          <Button size="lg" variant="outline" className="text-lg px-8 py-6" onClick={() => navigate('/pricing')}>
+              View Pricing
+            </Button>
             </motion.div>
           </AnimatedInView>
         </div>
