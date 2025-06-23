@@ -32,6 +32,11 @@ def generate_audio_from_text(self, creation_id: str):
     Celery task to generate audio using Azure's TTS API.
     Handles saving the result to cloud storage and refunding credits on failure.
     """
+    print("--- CELERY WORKER SETTINGS ---")
+    print(f"AZURE_ACCOUNT_NAME: {getattr(settings, 'AZURE_ACCOUNT_NAME', 'NOT FOUND')}")
+    print(f"AZURE_ACCOUNT_KEY IS SET: {'Yes' if getattr(settings, 'AZURE_ACCOUNT_KEY', None) else 'NO'}")
+    print(f"DEFAULT_FILE_STORAGE: {getattr(settings, 'DEFAULT_FILE_STORAGE', 'NOT FOUND')}")
+    print("----------------------------")
     try:
         creation = AudioCreation.objects.get(id=creation_id)
         creation.status = AudioCreation.Status.PROCESSING

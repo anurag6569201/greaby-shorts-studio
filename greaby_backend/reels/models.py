@@ -3,6 +3,7 @@ from django.db import models
 from django.conf import settings
 from creations.models import VideoCreation
 from audio_creations.models import AudioCreation
+from greaby_project.storages import ReelStorage, SubtitleStorage 
 
 class Reel(models.Model):
     class Status(models.TextChoices):
@@ -29,11 +30,11 @@ class Reel(models.Model):
     
     # --- Reel Combination Status ---
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
-    result_file = models.FileField(upload_to='reels/', blank=True, null=True, help_text="The final combined video file.")
+    result_file = models.FileField(storage=ReelStorage(), upload_to='', blank=True, null=True, help_text="The final combined video file.")
     error_message = models.TextField(blank=True, null=True)
 
     # --- NEW: Subtitle Generation Status ---
-    subtitle_file = models.FileField(upload_to='subtitles/', blank=True, null=True, help_text="The generated .srt subtitle file.")
+    subtitle_file = models.FileField(storage=SubtitleStorage(), upload_to='', blank=True, null=True, help_text="The generated .srt subtitle file.")
     subtitle_status = models.CharField(max_length=20, choices=SubtitleStatus.choices, default=SubtitleStatus.NONE)
     subtitle_error_message = models.TextField(blank=True, null=True)
     

@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from .models import CreditPack, Purchase
 from .serializers import CreditPackSerializer, PurchaseRequestSerializer
 from users.models import User
+import time
 
 # Initialize Razorpay client
 client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
@@ -37,18 +38,22 @@ class CreatePurchaseOrderView(views.APIView):
         amount_in_paise = int(credit_pack.price * 100) # Razorpay expects amount in paise
 
         try:
+            timestamp = int(time.time())
+            short_user_id = str(user.id).split('-')[0] # Takes the first 8 chars of the UUID
+            short_pack_id = str(credit_pack.id).split('-')[0] # Takes the first 8 chars of the UUID
+            receipt_id = f"gby_{timestamp}_{short_user_id}"
             # 1. Create Razorpay Order
             order_data = {
                 "amount": amount_in_paise,
                 "currency": "INR", # Change if you support other currencies
-                "receipt": f"receipt_{user.id}_{credit_pack.id}",
+                "receipt": receipt_id,
                 "notes": {
                     "user_id": str(user.id),
                     "credit_pack_id": str(credit_pack.id),
                 }
             }
             razorpay_order = client.order.create(data=order_data)
-
+            print(razorpay_order)
             # 2. Create local Purchase record in 'pending' state
             Purchase.objects.create(
                 user=user,
@@ -83,10 +88,11 @@ class RazorpayWebhookView(views.APIView):
 
     def post(self, request, *args, **kwargs):
         # 1. Verify webhook signature for security
+        razorpay_signature = request.headers.get('X-Razorpay-Signature')
         try:
             client.utility.verify_webhook_signature(
                 request.body.decode('utf-8'),
-                request.headers.get('X-Razorpay-Signature'),
+                razorpay_signature,
                 settings.RAZORPAY_WEBHOOK_SECRET
             )
         except razorpay.errors.SignatureVerificationError:
@@ -99,6 +105,7 @@ class RazorpayWebhookView(views.APIView):
         # 2. Handle the 'payment.captured' event
         if event == 'payment.captured':
             payment_entity = payload.get('payload', {}).get('payment', {}).get('entity', {})
+            print(payment_entity)
             if not payment_entity:
                 return Response(status=status.HTTP_200_OK)
 
@@ -117,6 +124,7 @@ class RazorpayWebhookView(views.APIView):
                     # Update purchase record
                     purchase.status = Purchase.Status.COMPLETED
                     purchase.razorpay_payment_id = razorpay_payment_id
+                    purchase.razorpay_signature = razorpay_signature
                     purchase.save()
                     
                     # Grant credits to the user

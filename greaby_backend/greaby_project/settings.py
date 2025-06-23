@@ -136,12 +136,8 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
 AZURE_ACCOUNT_NAME = config('AZURE_ACCOUNT_NAME')
 AZURE_ACCOUNT_KEY = config('AZURE_ACCOUNT_KEY')
-AZURE_CONTAINER = config('AZURE_CONTAINER')
-AZURE_URL_EXPIRATION_SECS = 3600 # URLs to private files will expire in 1 hour
-AZURE_OVERWRITE_FILES = True # Avoids issues with duplicate file names
-
-MEDIA_URL = f'https://{AZURE_ACCOUNT_NAME}.blob.core.windows.net/{AZURE_CONTAINER}/'
-MEDIA_ROOT = '' # No longer needed as files are not stored locally
+AZURE_URL_EXPIRATION_SECS = 3600 
+AZURE_OVERWRITE_FILES = True 
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

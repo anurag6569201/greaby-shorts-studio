@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.conf import settings
+from greaby_project.storages import VideoStorage
 
 # --- NEW: Abstract Base Class for all AI creations ---
 class AbstractBaseCreation(models.Model):
@@ -22,9 +23,6 @@ class AbstractBaseCreation(models.Model):
     )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     
-    # Stores the generated file in cloud storage (Azure Blob Storage)
-    result_file = models.FileField(upload_to='video_generations/', blank=True, null=True)
-
     # Cost and Error Logging
     credit_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     error_message = models.TextField(blank=True, null=True)
@@ -54,6 +52,9 @@ class VideoCreation(AbstractBaseCreation):
 
     prompt = models.TextField()
     
+    # Stores the generated file in cloud storage (Azure Blob Storage)
+    result_file = models.FileField(storage=VideoStorage(), upload_to='', blank=True, null=True)
+
     # --- Detailed generation parameters ---
     aspect_ratio = models.CharField(max_length=10, choices=AspectRatio.choices, default=AspectRatio.SQUARE)
     resolution = models.CharField(max_length=10, choices=Resolution.choices, default=Resolution.P480)

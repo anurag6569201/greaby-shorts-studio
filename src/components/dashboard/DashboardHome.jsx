@@ -64,7 +64,7 @@ const DashboardHome = ({ setActiveTab }) => {
         <h1 className="text-3xl font-bold">Welcome back, {user?.first_name}!</h1>
         <p className="text-muted-foreground">Here's a summary of your creative workspace.</p>
       </div>
-
+    <br />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -80,8 +80,8 @@ const DashboardHome = ({ setActiveTab }) => {
         <StatCard label="Audios Generated" value={stats?.audios ?? 0} icon={Mic} isLoading={isLoadingStats} />
         <StatCard label="Reels Assembled" value={stats?.reels ?? 0} icon={Clapperboard} isLoading={isLoadingStats} />
       </div>
-            
-      <div className="grid gap-6 md:grid-cols-3">
+            <br />
+      <div className="grid gap-4 md:grid-cols-3">
         <ActionCard title="Generate Video" description="Transform your text prompts into stunning short videos." icon={Video} onClick={() => setActiveTab('video')} />
         <ActionCard title="Generate Audio" description="Create professional voiceovers from text with various voices." icon={Mic} onClick={() => setActiveTab('audio')} />
         <ActionCard title="Assemble a Reel" description="Combine your generated videos and audios into a final reel." icon={Clapperboard} onClick={() => setActiveTab('reels')} />

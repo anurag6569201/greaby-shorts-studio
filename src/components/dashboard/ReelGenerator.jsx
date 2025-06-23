@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clapperboard, Loader2, RefreshCw, Video, Mic, CheckCircle2, Download, Trash2, MoreHorizontal, Edit, Subtitles, AlertCircle } from "lucide-react";
+import { Clapperboard, Loader2, RefreshCw, Video, Mic, CheckCircle2, Download, Trash2, MoreHorizontal, Edit, Subtitles, AlertCircle, Play } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from "@/services/api";
@@ -35,8 +35,19 @@ const AssetCard = ({ asset, type, onSelect, isSelected }) => {
 };
 
 const ReelCard = ({ reel, onEdit, onDelete, onGenerateSubtitles }) => {
+    const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
     const isSubtitleProcessing = reel.subtitle_status === 'pending';
     const isSubtitleReady = reel.subtitle_status === 'completed' && reel.subtitle_url;
+
+    const handleDownload = (url, filename) => {
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        link.setAttribute('target', '_blank');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     return (
         <Card className="overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-shadow">
@@ -56,9 +67,20 @@ const ReelCard = ({ reel, onEdit, onDelete, onGenerateSubtitles }) => {
                 </DropdownMenu>
             </CardHeader>
             <CardContent className="flex-grow flex items-center justify-center p-0">
-                <div className="aspect-video w-full bg-slate-100 flex items-center justify-center">
+                <div className="aspect-video w-full bg-slate-100 flex items-center justify-center relative">
                     {reel.status === 'completed' && reel.result_url ? (
-                        <video src={reel.result_url} controls muted loop className="w-full h-full object-cover bg-black" />
+                        shouldLoadVideo ? (
+                            <video src={reel.result_url} controls autoPlay muted loop className="w-full h-full object-cover bg-black" />
+                        ) : (
+                            <>
+                                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 cursor-pointer group" onClick={() => setShouldLoadVideo(true)}>
+                                    <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <Play className="h-8 w-8 text-white ml-1" />
+                                    </div>
+                                </div>
+                                <div className="w-full h-full bg-slate-200" />
+                            </>
+                        )
                     ) : (
                         <div className="text-center p-4">
                             {['pending', 'processing'].includes(reel.status) ? (
@@ -72,14 +94,14 @@ const ReelCard = ({ reel, onEdit, onDelete, onGenerateSubtitles }) => {
             </CardContent>
             <CardFooter className="p-4 flex flex-wrap gap-2 justify-between items-center bg-muted/50">
                 {isSubtitleReady ? (
-                     <Button size="sm" variant="outline" onClick={() => window.open(reel.subtitle_url, '_blank')}><Download className="h-4 w-4 mr-2" />Download SRT</Button>
+                     <Button size="sm" variant="outline" onClick={() => handleDownload(reel.subtitle_url, `${reel.id}.srt`)}><Download className="h-4 w-4 mr-2" />Download SRT</Button>
                 ) : (
                      <Button size="sm" variant="secondary" onClick={() => onGenerateSubtitles(reel.id)} disabled={isSubtitleProcessing || reel.status !== 'completed'}>
                         {isSubtitleProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : <Subtitles className="h-4 w-4 mr-2" />}
                         {isSubtitleProcessing ? "Generating..." : "Add Subtitles"}
                     </Button>
                 )}
-                {reel.result_url && <Button size="sm" onClick={() => window.open(reel.result_url, '_blank')}><Download className="h-4 w-4 mr-2" />Download Reel</Button>}
+                {reel.result_url && <Button size="sm" onClick={() => handleDownload(reel.result_url, `${reel.id}.mp4`)}><Download className="h-4 w-4 mr-2" />Download Reel</Button>}
             </CardFooter>
         </Card>
     );

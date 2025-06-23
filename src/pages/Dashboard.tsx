@@ -167,7 +167,7 @@ const Dashboard = () => {
           <div className="w-10"></div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-4 lg:p-4 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             {renderContent()}
           </div>

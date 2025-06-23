@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardFooter, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
@@ -6,15 +6,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mic, Loader2, RefreshCw, MoreHorizontal, Edit, Trash2, Sparkles, AlertCircle } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Mic, Loader2, RefreshCw, MoreHorizontal, Edit, Trash2, Sparkles, AlertCircle, Play } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 const AudioCard = ({ audio, onEdit, onDelete }) => {
+  const [shouldLoadAudio, setShouldLoadAudio] = useState(false);
+  const audioRef = React.useRef(null);
+
+  useEffect(() => {
+    if (shouldLoadAudio && audioRef.current) {
+      audioRef.current.play();
+    }
+  }, [shouldLoadAudio]);
+
   return (
     <Card className="overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-shadow">
       <CardHeader className="flex-row items-start justify-between">
@@ -32,15 +43,22 @@ const AudioCard = ({ audio, onEdit, onDelete }) => {
           </DropdownMenuContent>
         </DropdownMenu>
       </CardHeader>
-      <CardContent className="flex-grow flex items-center justify-center p-4">
+      <CardContent className="flex-grow flex items-center justify-center p-4 min-h-[88px]">
         {audio.status === 'completed' && audio.result_url ? (
-          <audio controls src={audio.result_url} className="w-full h-10" />
+          shouldLoadAudio ? (
+            <audio ref={audioRef} controls src={audio.result_url} className="w-full h-10" />
+          ) : (
+            <Button variant="outline" className="w-full h-10" onClick={() => setShouldLoadAudio(true)}>
+              <Play className="h-4 w-4 mr-2" />
+              Preview
+            </Button>
+          )
         ) : (
-          <div className="text-center p-4">
+          <div className="text-center">
             {['pending', 'processing'].includes(audio.status) ? (
-                <><Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" /><p className="text-sm text-muted-foreground mt-2 capitalize">{audio.status}...</p></>
+                <><Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" /><p className="text-xs text-muted-foreground mt-2 capitalize">{audio.status}...</p></>
             ) : (
-                <><AlertCircle className="h-6 w-6 text-destructive mx-auto" /><p className="text-sm text-destructive mt-2 font-semibold">Failed</p></>
+                <><AlertCircle className="h-6 w-6 text-destructive mx-auto" /><p className="text-xs text-destructive mt-2 font-semibold">Failed</p></>
             )}
           </div>
         )}
@@ -65,7 +83,7 @@ const AudioGenerator = () => {
     const [newTitle, setNewTitle] = useState("");
 
     const queryClient = useQueryClient();
-    const { user, fetchUserProfile } = useAuth();
+    const { fetchUserProfile } = useAuth();
     const navigate = useNavigate();
 
     const { data: audios, isLoading: isLoadingHistory, isFetching } = useQuery({
@@ -144,10 +162,10 @@ const AudioGenerator = () => {
                 <CardContent className="space-y-6">
                     <div className="space-y-2"><Label>Title (Optional)</Label><Input placeholder="e.g., Intro Voiceover" value={formData.title} onChange={(e) => handleChange('title', e.target.value)} disabled={isGenerating} /></div>
                     <div className="space-y-2"><Label htmlFor="prompt-area" className="text-base font-semibold">Script</Label><Textarea id="prompt-area" placeholder="Enter the text for your voiceover..." value={formData.text_input} onChange={(e) => handleChange('text_input', e.target.value)} className="min-h-[150px]" disabled={isGenerating} /></div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div><Label>Voice</Label><Select value={formData.voice} onValueChange={(v) => handleChange('voice', v)} disabled={isGenerating}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="alloy">Alloy</SelectItem><SelectItem value="echo">Echo</SelectItem><SelectItem value="fable">Fable</SelectItem><SelectItem value="onyx">Onyx</SelectItem><SelectItem value="nova">Nova</SelectItem><SelectItem value="shimmer">Shimmer</SelectItem></SelectContent></Select></div>
                         <div><Label>Format</Label><Select value={formData.response_format} onValueChange={(v) => handleChange('response_format', v)} disabled={isGenerating}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="mp3">MP3</SelectItem><SelectItem value="opus">Opus</SelectItem><SelectItem value="aac">AAC</SelectItem><SelectItem value="flac">FLAC</SelectItem></SelectContent></Select></div>
-                        <div><Label>Speed</Label><Select value={String(formData.speed)} onValueChange={(v) => handleChange('speed', parseFloat(v))} disabled={isGenerating}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="0.75">Slow</SelectItem><SelectItem value="1.0">Normal</SelectItem><SelectItem value="1.5">Fast</SelectItem></SelectContent></Select></div>
+                        <div><Label>Speed</Label><div className="border border-input bg-background rounded-md px-3 py-2 flex flex-col gap-2"><div className="flex justify-between items-center"><span className="text-muted-foreground" style={{fontSize:'10px'}}>Adjust speed</span><span className="text-primary w-12 text-center" style={{fontSize:'10px'}}>{formData.speed.toFixed(2)}x</span></div><Slider value={[formData.speed]} onValueChange={(value) => handleChange('speed', value[0])} min={0.25} max={4.0} step={0.05} disabled={isGenerating}/></div></div>
                     </div>
                 </CardContent>
                 <CardFooter className="flex items-center justify-between bg-muted/50 p-4 rounded-b-lg">

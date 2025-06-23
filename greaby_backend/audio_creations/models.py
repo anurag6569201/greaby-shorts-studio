@@ -1,5 +1,6 @@
 from django.db import models
-from creations.models import AbstractBaseCreation # Inherit from our new base model
+from creations.models import AbstractBaseCreation
+from greaby_project.storages import AudioStorage 
 
 class AudioCreation(AbstractBaseCreation):
     """
@@ -37,7 +38,7 @@ class AudioCreation(AbstractBaseCreation):
     speed = models.FloatField(default=1.0, help_text="From 0.25 to 4.0")
 
     # Override the upload_to path for the result_file from the base class
-    result_file = models.FileField(upload_to='audio_generations/', blank=True, null=True)
+    result_file = models.FileField(storage=AudioStorage(), upload_to='', blank=True, null=True)
 
     def save(self, *args, **kwargs):
         # Automatically generate a title from the text input if it's empty
