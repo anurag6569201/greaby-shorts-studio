@@ -11,25 +11,17 @@ import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import placeholderVideo from "../../assets/placeholder-video.mp4"; // Placeholder image for video thumbnails
+import {FancyCreationCard} from "./fancy/FancyCreationCard"; // Assuming this is a custom component for displaying creations
 
 const listVariants = {
   visible: { transition: { staggerChildren: 0.07 } },
 };
 
 const cardVariants = {
-  hidden: { opacity: 0, scale: 0.8 },
-  visible: { 
-    opacity: 1, 
-    scale: 1,
-    transition: { 
-      duration: 0.5,
-      type: "spring",
-      stiffness: 300
-    }
-  },
-  exit: { opacity: 0, scale: 0.95 }
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
 };
+
 const CreationCard = React.memo(({ creation }) => {
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
 
@@ -51,98 +43,49 @@ const CreationCard = React.memo(({ creation }) => {
   };
 
   return (
-    <motion.div
-  layout
-  variants={cardVariants}
-  whileHover={{ y: -5 }}
-  className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-card shadow-sm hover:shadow-lg transition-all"
->
-  <div className={`relative ${getAspectRatioClass(creation.aspect_ratio)} bg-slate-100 dark:bg-slate-800`}>
-    {creation.status === 'completed' && creation.result_url ? (
-      <>
-        {shouldLoadVideo ? (
-          <motion.video
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            src={creation.result_url}
-            autoPlay
-            muted
-            loop
-            className="absolute inset-0 w-full h-full object-cover cursor-pointer"
-            onClick={() => setShouldLoadVideo(false)}
-          />
-        ) : (
-          <motion.div
-  initial={{ opacity: 0 }}
-  animate={{ opacity: 1 }}
-  className="absolute inset-0"
->
-  <video
-    src={placeholderVideo}
-    className="w-full h-full object-cover absolute inset-0"
-    muted
-    loop
-    autoPlay
-    playsInline
-  />
-  
-  <motion.div
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.95 }}
-    className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition-colors cursor-pointer"
-    onClick={() => setShouldLoadVideo(true)}
-  >
-    <div className="w-14 h-14 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
-      <Play className="h-6 w-6 text-white ml-1" />
-    </div>
-  </motion.div>
-</motion.div>
-        )}
-      </>
-    ) : (
-      <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-        {['pending', 'processing'].includes(creation.status) ? (
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-            className="mb-2"
-          >
-            <Loader2 className="h-8 w-8 text-primary" />
-          </motion.div>
-        ) : (
-          <AlertCircle className="h-8 w-8 text-destructive mb-2" />
-        )}
-        <p className="text-sm text-muted-foreground capitalize">
-          {creation.status === 'failed' ? 'Failed' : `${creation.status}...`}
-        </p>
-      </div>
-    )}
-  </div>
-
-  <div className="p-3 border-t border-slate-100 dark:border-slate-800">
-    <p className="text-sm font-medium line-clamp-2 mb-2 min-h-[2.5rem]">
-      {creation.prompt}
-    </p>
-    
-    <div className="flex justify-between items-center">
-      <span className="text-xs text-muted-foreground">
-        {new Date(creation.created_at).toLocaleDateString()}
-      </span>
-      
-      {creation.status === 'completed' && (
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={handleDownload}
-          className="text-xs px-3 py-1.5 rounded-lg bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center"
-        >
-          <Download className="h-4 w-4 mr-1.5" />
-          Save
-        </motion.button>
-      )}
-    </div>
-  </div>
-</motion.div>
+    <motion.div layout variants={cardVariants}>
+      <Card className="overflow-hidden flex flex-col h-full shadow-sm hover:shadow-md transition-shadow">
+        <CardContent className="p-0">
+          <div className={`bg-slate-100 dark:bg-slate-800 flex items-center justify-center relative ${getAspectRatioClass(creation.aspect_ratio)}`}>
+            {creation.status === 'completed' && creation.result_url ? (
+                <>
+                    {shouldLoadVideo ? (
+                        <video key={creation.id} src={creation.result_url} controls autoPlay muted loop className="w-full h-full object-cover bg-black" />
+                    ) : (
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 cursor-pointer group" onClick={() => setShouldLoadVideo(true)}>
+                            <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <Play className="h-8 w-8 text-white ml-1" />
+                            </div>
+                        </div>
+                    )}
+                    {/* Placeholder image/thumbnail could go here, under the play button overlay */}
+                    <div className="w-full h-full bg-slate-200" /> 
+                </>
+            ) : (
+              <div className="text-center p-4">
+                {['pending', 'processing'].includes(creation.status) ? (
+                  <><Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" /><p className="text-sm text-muted-foreground capitalize">{creation.status}...</p></>
+                ) : (
+                  <><AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" /><p className="text-sm text-destructive font-semibold">Failed</p></>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+        <div className="p-4 space-y-2 border-t mt-auto bg-card flex-grow">
+          <p className="text-sm font-medium line-clamp-2 text-foreground" title={creation.prompt}>{creation.prompt}</p>
+        </div>
+        <CardFooter className="p-4 pt-0 flex justify-between items-center">
+            <p className="text-xs text-muted-foreground">{new Date(creation.created_at).toLocaleString()}</p>
+            {creation.status === 'completed' && (
+                <Button size="sm" variant="ghost" onClick={handleDownload}>
+                    <Download className="h-4 w-4 mr-2"/>
+                    Download
+                </Button>
+            )}
+        </CardFooter>
+      </Card>
+    </motion.div>
   );
 });
 
@@ -245,8 +188,20 @@ const VideoGenerator = () => {
         ) : (
           <AnimatePresence>
             {creations?.length > 0 ? (
-              <motion.div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-6" variants={listVariants} initial="hidden" animate="visible">
-                {creations.map(c => <CreationCard key={c.id} creation={c} />)}
+              <motion.div 
+                className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4" 
+                variants={listVariants} 
+                initial="hidden" 
+                animate="visible"
+              >
+                {creations.map((creation, index) => (
+                  <FancyCreationCard
+                    key={creation.id}
+                    creation={creation}
+                    cardVariants={cardVariants} // Pass down the animation variants
+                    variant={(index % 2) + 1} // Cycle through 5 color variants dynamically
+                  />
+                ))}
               </motion.div>
             ) : (
               <div className="text-center py-16 border-2 border-dashed rounded-xl">

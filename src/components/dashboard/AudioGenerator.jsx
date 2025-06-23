@@ -48,7 +48,7 @@ const AudioCard = ({ audio, onEdit, onDelete }) => {
           shouldLoadAudio ? (
             <audio ref={audioRef} controls src={audio.result_url} className="w-full h-10" />
           ) : (
-            <Button variant="outline" className="w-full h-10" onClick={() => setShouldLoadAudio(true)}>
+            <Button variant="outline" className="w-full h-10 design-background" onClick={() => setShouldLoadAudio(true)}>
               <Play className="h-4 w-4 mr-2" />
               Preview
             </Button>
@@ -154,32 +154,36 @@ const AudioGenerator = () => {
 
     return (
         <div className="space-y-8">
-            <Card>
-                <CardHeader>
+            <Card className="bg-transparent shadow-none border border-none" style={{border:'none'}}>
+                <CardHeader className="p-0">
                     <CardTitle className="flex items-center text-2xl"><Mic className="h-6 w-6 mr-3 text-primary" />Audio Generation</CardTitle>
                     <CardDescription>Generate a voiceover from text. This will be used for your reels.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <hr style={{marginTop:'10px',marginBottom:'5px'}}/>
+                <CardContent className="space-y-6 p-0 pt-4">
                     <div className="space-y-2"><Label>Title (Optional)</Label><Input placeholder="e.g., Intro Voiceover" value={formData.title} onChange={(e) => handleChange('title', e.target.value)} disabled={isGenerating} /></div>
-                    <div className="space-y-2"><Label htmlFor="prompt-area" className="text-base font-semibold">Script</Label><Textarea id="prompt-area" placeholder="Enter the text for your voiceover..." value={formData.text_input} onChange={(e) => handleChange('text_input', e.target.value)} className="min-h-[150px]" disabled={isGenerating} /></div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2" style={{marginTop:'15px'}}><Label htmlFor="prompt-area" className="text-base font-semibold">Script</Label><Textarea id="prompt-area" placeholder="Enter the text for your voiceover..." value={formData.text_input} onChange={(e) => handleChange('text_input', e.target.value)} className="min-h-[150px]" disabled={isGenerating} style={{minHeight:"200px"}}/></div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                         <div><Label>Voice</Label><Select value={formData.voice} onValueChange={(v) => handleChange('voice', v)} disabled={isGenerating}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="alloy">Alloy</SelectItem><SelectItem value="echo">Echo</SelectItem><SelectItem value="fable">Fable</SelectItem><SelectItem value="onyx">Onyx</SelectItem><SelectItem value="nova">Nova</SelectItem><SelectItem value="shimmer">Shimmer</SelectItem></SelectContent></Select></div>
                         <div><Label>Format</Label><Select value={formData.response_format} onValueChange={(v) => handleChange('response_format', v)} disabled={isGenerating}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="mp3">MP3</SelectItem><SelectItem value="opus">Opus</SelectItem><SelectItem value="aac">AAC</SelectItem><SelectItem value="flac">FLAC</SelectItem></SelectContent></Select></div>
                         <div><Label>Speed</Label><div className="border border-input bg-background rounded-md px-3 py-2 flex flex-col gap-2"><div className="flex justify-between items-center"><span className="text-muted-foreground" style={{fontSize:'10px'}}>Adjust speed</span><span className="text-primary w-12 text-center" style={{fontSize:'10px'}}>{formData.speed.toFixed(2)}x</span></div><Slider value={[formData.speed]} onValueChange={(value) => handleChange('speed', value[0])} min={0.25} max={4.0} step={0.05} disabled={isGenerating}/></div></div>
                     </div>
                 </CardContent>
-                <CardFooter className="flex items-center justify-between bg-muted/50 p-4 rounded-b-lg">
+                <br />
+                <CardFooter className="flex items-center justify-between p-0 rounded-b-lg">
                     <div className="text-sm"><span className="text-muted-foreground">Estimated Cost: </span><span className="font-bold text-primary">{estimatedCost} Credits</span></div>
                     <Button onClick={handleSubmit} disabled={isGenerating || !formData.text_input.trim()} size="lg">
                         {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />} Generate Audio
                     </Button>
                 </CardFooter>
             </Card>
-
+      <br />
+      <hr />
+      <br />
             <div className="space-y-4">
                 <div className="flex justify-between items-center"><h2 className="text-2xl font-bold">Audio Library</h2><Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ['audioCreations'] })} disabled={isFetching}><RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} /> Refresh</Button></div>
                 {isLoadingHistory ? <div className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div> : audios?.length > 0 ? (
-                    <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <motion.div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                         {audios.map(a => <AudioCard key={a.id} audio={a} onEdit={(audio) => { setEditingAudio(audio); setNewTitle(audio.title); }} onDelete={setDeletingAudio} />)}
                     </motion.div>
                 ) : <div className="text-center py-16 border-2 border-dashed rounded-xl"><h3 className="text-xl font-semibold">Your library is empty</h3><p className="text-muted-foreground mt-2">Generated audios will appear here.</p></div>}

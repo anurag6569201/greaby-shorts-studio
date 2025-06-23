@@ -14,7 +14,7 @@ class VideoCreationViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Ensure users can only access their own creations."""
-        return VideoCreation.objects.filter(user=self.request.user)
+        return VideoCreation.objects.filter(user=self.request.user,status=VideoCreation.Status.COMPLETED)
 
     def get_serializer_class(self):
         """Use different serializers for creating vs. displaying."""

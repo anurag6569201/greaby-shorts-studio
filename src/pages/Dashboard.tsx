@@ -143,7 +143,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-muted/40 flex">
-      <aside className="hidden lg:block w-64 bg-background border-r">
+      <aside className="hidden lg:block w-64 bg-background border-r" style={{position: 'sticky', top: 0, height: '100vh'}}>
         <SidebarContent />
       </aside>
       
