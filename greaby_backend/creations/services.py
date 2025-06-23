@@ -1,40 +1,30 @@
-# creations/services.py
+from decimal import Decimal
 
-from datetime import timedelta
-from django.utils import timezone
-from .models import Creation
-from audio_creations.models import AudioCreation
+# --- This is the central "Costing Engine" for video generation ---
+# By keeping it here, we can easily adjust pricing without touching the views or models.
 
-def check_user_quota(user):
+def calculate_video_cost(resolution: str, duration: int, n_variants: int) -> Decimal:
     """
-    Checks if a user can generate a new creation based on their plan.
-    Returns (can_generate: bool, message: str).
+    Calculates the credit cost for generating a video based on its parameters.
     """
-    subscription = getattr(user, 'subscription', None)
-
-    if not subscription or subscription.status != 'active':
-        return False, "Your subscription is not active."
+    # --- Base Costs ---
+    base_cost = Decimal('2.0') # A flat fee for every video generation
     
-    plan = subscription.plan
+    # --- Resolution Multiplier ---
+    resolution_costs = {
+        '480p': Decimal('1.0'),
+        '720p': Decimal('1.5'),
+        '1080p': Decimal('2.5'),
+    }
+    resolution_multiplier = resolution_costs.get(resolution, Decimal('1.0'))
     
-    # For paid plans, check monthly quota. For free plan, it's a lifetime limit.
-    if plan.name == 'free':
-        period_start = None # No time window for free plan
-    else:
-        # In a real app with Stripe, you would use `subscription.current_period_start`
-        period_start = timezone.now() - timedelta(days=30)
+    # --- Duration Cost ---
+    # Example: 0.5 credits per second
+    duration_cost = Decimal(duration) * Decimal('0.5')
     
-    video_query = Creation.objects.filter(user=user)
-    audio_query = AudioCreation.objects.filter(user=user)
-
-    if period_start:
-        video_query = video_query.filter(created_at__gte=period_start)
-        audio_query = audio_query.filter(created_at__gte=period_start)
-
-    total_creations = video_query.count() + audio_query.count()
-
-    if total_creations >= plan.total_creations_limit:
-        msg = "You have reached your lifetime generation limit. Please upgrade." if plan.name == 'free' else "You have reached your monthly generation limit."
-        return False, msg
-
-    return True, "Quota available."
+    # --- Total Cost Calculation ---
+    single_video_cost = base_cost + (duration_cost * resolution_multiplier)
+    total_cost = single_video_cost * Decimal(n_variants)
+    
+    # Return cost rounded to 2 decimal places
+    return round(total_cost, 2)

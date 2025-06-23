@@ -1,11 +1,10 @@
-// src/components/dashboard/DashboardHome.jsx
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useQuery } from "@tanstack/react-query";
-import { Video, Mic, Clapperboard, ArrowRight, Loader2 } from "lucide-react";
+import { Video, Mic, Clapperboard, ArrowRight, Loader2, Coins } from "lucide-react";
 import api from "@/services/api";
+import { useNavigate } from "react-router-dom";
 
 const StatCard = ({ label, value, icon: Icon, isLoading }) => (
   <Card>
@@ -24,8 +23,8 @@ const StatCard = ({ label, value, icon: Icon, isLoading }) => (
 );
 
 const ActionCard = ({ title, description, icon: Icon, onClick }) => (
-  <Card className="hover:border-primary/50 transition-colors">
-    <CardHeader>
+  <Card className="hover:border-primary/50 transition-colors flex flex-col">
+    <CardHeader className="flex-grow">
       <Icon className="h-8 w-8 mb-2 text-primary" />
       <CardTitle>{title}</CardTitle>
       <CardDescription>{description}</CardDescription>
@@ -39,15 +38,15 @@ const ActionCard = ({ title, description, icon: Icon, onClick }) => (
 );
 
 const DashboardHome = ({ setActiveTab }) => {
-  const { user, subscription } = useAuth();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   
   const { data: stats, isLoading: isLoadingStats } = useQuery({
     queryKey: ['dashboardStats'],
     queryFn: async () => {
-      // Fetch counts in parallel
       const [videoRes, audioRes, reelRes] = await Promise.all([
-        api.get('/creations/history/'),
-        api.get('/audio/'),
+        api.get('/videos/'),
+        api.get('/audios/'),
         api.get('/reels/'),
       ]);
       return {
@@ -56,59 +55,36 @@ const DashboardHome = ({ setActiveTab }) => {
         reels: reelRes.data.length,
       };
     },
+    enabled: !!user,
   });
-
-  const creationsCount = (stats?.videos || 0) + (stats?.audios || 0);
-  const creationsLimit = subscription?.plan?.total_creations_limit || 0;
-  const usagePercentage = creationsLimit > 0 ? Math.round((creationsCount / creationsLimit) * 100) : 0;
   
   return (
-    <div className="space-y-4 gap-4">
+    <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold">Welcome back, {user?.first_name}!</h1>
         <p className="text-muted-foreground">Here's a summary of your creative workspace.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Videos Generated" value={stats?.videos} icon={Video} isLoading={isLoadingStats} />
-        <StatCard label="Audios Generated" value={stats?.audios} icon={Mic} isLoading={isLoadingStats} />
-        <StatCard label="Reels Assembled" value={stats?.reels} icon={Clapperboard} isLoading={isLoadingStats} />
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Usage</CardTitle>
+            <CardTitle className="text-sm font-medium">Credit Balance</CardTitle>
+            <Coins className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {isLoadingStats ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{creationsCount} / {creationsLimit}</div>
-                <p className="text-xs text-muted-foreground">{usagePercentage}% of your monthly limit used</p>
-              </>
-            )}
+              <div className="text-2xl font-bold">{user ? parseFloat(user.credit_balance).toFixed(2) : "0.00"}</div>
+              <p className="text-xs text-muted-foreground">Credits available for generation</p>
           </CardContent>
         </Card>
+        <StatCard label="Videos Generated" value={stats?.videos ?? 0} icon={Video} isLoading={isLoadingStats} />
+        <StatCard label="Audios Generated" value={stats?.audios ?? 0} icon={Mic} isLoading={isLoadingStats} />
+        <StatCard label="Reels Assembled" value={stats?.reels ?? 0} icon={Clapperboard} isLoading={isLoadingStats} />
       </div>
             
-      <div className="grid gap-4 md:grid-cols-3">
-        <ActionCard 
-          title="Generate Video" 
-          description="Transform your text prompts into stunning short videos." 
-          icon={Video}
-          onClick={() => setActiveTab('video')}
-        />
-        <ActionCard 
-          title="Generate Audio" 
-          description="Create professional voiceovers from text with various voices." 
-          icon={Mic}
-          onClick={() => setActiveTab('audio')}
-        />
-        <ActionCard 
-          title="Assemble a Reel" 
-          description="Combine your generated videos and audios into a final reel." 
-          icon={Clapperboard}
-          onClick={() => setActiveTab('reels')}
-        />
+      <div className="grid gap-6 md:grid-cols-3">
+        <ActionCard title="Generate Video" description="Transform your text prompts into stunning short videos." icon={Video} onClick={() => setActiveTab('video')} />
+        <ActionCard title="Generate Audio" description="Create professional voiceovers from text with various voices." icon={Mic} onClick={() => setActiveTab('audio')} />
+        <ActionCard title="Assemble a Reel" description="Combine your generated videos and audios into a final reel." icon={Clapperboard} onClick={() => setActiveTab('reels')} />
       </div>
     </div>
   );

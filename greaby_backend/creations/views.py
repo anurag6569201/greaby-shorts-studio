@@ -1,122 +1,78 @@
-# creations/views.py
-
-import jwt
-import requests
-from django.conf import settings
-from django.http import StreamingHttpResponse, HttpResponse
-from rest_framework import generics, status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from django.db import transaction
+from rest_framework import viewsets, status
 from rest_framework.response import Response
 
-from .models import Creation
-from .serializers import CreationRequestSerializer, CreationResponseSerializer
-from .services import check_user_quota
+from .models import VideoCreation
+from .serializers import VideoCreationRequestSerializer, VideoCreationResponseSerializer
 from .tasks import generate_video_from_prompt
-from users.models import User
+from .services import calculate_video_cost
 
-class VideoGenerationView(generics.CreateAPIView):
-    serializer_class = CreationRequestSerializer
+class VideoCreationViewSet(viewsets.ModelViewSet):
+    """
+    A ViewSet for listing, creating, and retrieving Video Creations.
+    """
+    
+    def get_queryset(self):
+        """Ensure users can only access their own creations."""
+        return VideoCreation.objects.filter(user=self.request.user)
+
+    def get_serializer_class(self):
+        """Use different serializers for creating vs. displaying."""
+        if self.action == 'create':
+            return VideoCreationRequestSerializer
+        return VideoCreationResponseSerializer
 
     def create(self, request, *args, **kwargs):
-        # 1. Check overall creation quota
-        can_generate, message = check_user_quota(request.user)
-        if not can_generate:
-            return Response({"detail": message}, status=status.HTTP_402_PAYMENT_REQUIRED)
-        
+        """
+        Handles the creation of a new video generation task.
+        This is the primary endpoint for SPENDING credits.
+        """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
         
-        # 2. Enforce plan-specific feature limits
-        plan = request.user.subscription.plan
-        settings_data = serializer.validated_data.get('settings', {})
-        duration = int(settings_data.get('duration', '5s').replace('s', ''))
-        resolution = settings_data.get('resolution', '480p')
-        aspect_ratio = settings_data.get('aspectRatio', '1:1')
+        # 1. Calculate the credit cost for this specific request
+        cost = calculate_video_cost(
+            resolution=validated_data['resolution'],
+            duration=validated_data['duration'],
+            n_variants=validated_data['n_variants']
+        )
+        
+        user = request.user
+        
+        # 2. Check if the user has enough credits
+        if user.credit_balance < cost:
+            return Response(
+                {"detail": f"Insufficient credits. This action costs {cost}, but you only have {user.credit_balance}."},
+                status=status.HTTP_402_PAYMENT_REQUIRED
+            )
+            
+        # 3. Use a transaction to deduct credits and create the object
+        # This ensures the operation is atomic: both succeed or both fail.
+        try:
+            with transaction.atomic():
+                # Deduct credits from the user's balance
+                user.credit_balance -= cost
+                user.save(update_fields=['credit_balance'])
+                
+                # Create the VideoCreation object, saving the cost
+                creation = VideoCreation.objects.create(
+                    user=user,
+                    credit_cost=cost,
+                    **validated_data
+                )
+        except Exception as e:
+            # This should rarely happen, but it's a safeguard.
+            print(f"ERROR: Transaction failed during video creation for user {user.email}: {e}")
+            return Response({"detail": "An unexpected error occurred. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        if duration > plan.max_video_duration:
-            return Response({"detail": f"Your plan allows a max duration of {plan.max_video_duration}s."}, status=status.HTTP_402_PAYMENT_REQUIRED)
-        if resolution not in plan.video_resolutions:
-            return Response({"detail": f"Resolution '{resolution}' is not available on your plan."}, status=status.HTTP_402_PAYMENT_REQUIRED)
-        if aspect_ratio not in plan.video_aspect_ratios:
-            return Response({"detail": f"Aspect ratio '{aspect_ratio}' is not available on your plan."}, status=status.HTTP_402_PAYMENT_REQUIRED)
-
-        # 3. Create object and queue task
-        creation = serializer.save(user=request.user)
+        # 4. Dispatch the background task
         generate_video_from_prompt.delay(str(creation.id))
         
-        response_serializer = CreationResponseSerializer(creation, context={'request': request})
+        # 5. Return the newly created object's data
+        response_serializer = VideoCreationResponseSerializer(creation, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_202_ACCEPTED)
 
-class CreationHistoryView(generics.ListAPIView):
-    serializer_class = CreationResponseSerializer
-
-    def get_queryset(self):
-        return Creation.objects.filter(user=self.request.user).order_by('-created_at')
-
-class CreationDetailView(generics.RetrieveAPIView):
-    serializer_class = CreationResponseSerializer
-    lookup_field = 'id'
-
-    def get_queryset(self):
-        return Creation.objects.filter(user=self.request.user)
-
-@api_view(['GET', 'HEAD'])
-@permission_classes([AllowAny])
-def creation_content_proxy(request, id):
-    """
-    A hardened, range-aware proxy to stream video content from Azure.
-    This validates a short-lived token and proxies requests to the actual
-    video URL, keeping it secure.
-    """
-    token = request.query_params.get('token')
-    if not token:
-        return HttpResponse('Authentication token missing.', status=403)
-
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
-        if payload.get('creation_id') != str(id):
-            raise jwt.InvalidTokenError("Token-URL mismatch.")
-        if not User.objects.filter(id=payload.get('user_id')).exists():
-            raise jwt.InvalidTokenError("User not found.")
-
-        creation = Creation.objects.get(id=id)
-        if not creation.result_url:
-            return HttpResponse("File not found.", status=404)
-
-        azure_url = creation.result_url
-        azure_headers = {'Api-Key': settings.AZURE_OPENAI_API_KEY}
-        if range_header := request.headers.get('Range', ''):
-            azure_headers['Range'] = range_header
-
-        if request.method == 'HEAD':
-            with requests.head(azure_url, headers=azure_headers, timeout=10) as r:
-                r.raise_for_status()
-                response = HttpResponse(status=r.status_code)
-                for key, value in r.headers.items():
-                    if key.lower() in ['content-type', 'content-length', 'accept-ranges', 'content-range']:
-                        response[key] = value
-                return response
-
-        r = requests.get(azure_url, headers=azure_headers, stream=True, timeout=30)
-        r.raise_for_status()
-
-        response = StreamingHttpResponse(r.iter_content(chunk_size=8192), status=r.status_code, content_type=r.headers.get('Content-Type'))
-        
-        for key, value in r.headers.items():
-            if key.lower() in ['content-length', 'accept-ranges', 'content-range', 'etag']:
-                 response[key] = value
-
-        if 'download' in request.GET:
-            response['Content-Disposition'] = f'attachment; filename="{creation.id}.mp4"'
-            
-        return response
-
-    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
-        return HttpResponse('Authentication link is invalid or has expired.', status=403)
-    except Creation.DoesNotExist:
-        return HttpResponse("Creation not found.", status=404)
-    except requests.exceptions.RequestException as e:
-        return HttpResponse(f"Failed to fetch video from storage.", status=502)
-    except Exception:
-        return HttpResponse("An internal server error occurred.", status=500)
+    # The default 'list' and 'retrieve' actions provided by ModelViewSet work perfectly here.
+    # We do not allow 'update' or 'destroy' for these records to maintain a clear history.
+    http_method_names = ['get', 'post', 'head', 'options']

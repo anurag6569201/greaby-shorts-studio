@@ -1,19 +1,13 @@
-# greaby_project/settings.py
-
 import os
 from pathlib import Path
-from decouple import config, Csv
+from decouple import config
 import dj_database_url
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
-
 SECRET_KEY = config('SECRET_KEY')
-DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
+DEBUG = config('DEBUG', default=False, cast=bool) # Changed default to False for production safety
+ALLOWED_HOSTS = ['*'] # In production, you MUST change this to your domain, e.g., ['api.greaby.com']
 
 # Application definition
 INSTALLED_APPS = [
@@ -28,19 +22,20 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
-    'storages',
+    'storages', # For cloud storage
 
     # Local apps
     'users.apps.UsersConfig',
-    'subscriptions.apps.SubscriptionsConfig',
+    'billing.apps.BillingConfig', # NEW: For handling credits and payments
     'creations.apps.CreationsConfig',         
     'audio_creations.apps.AudioCreationsConfig',
     'reels.apps.ReelsConfig',
 ]
+# REMOVED: 'subscriptions.apps.SubscriptionsConfig' is no longer needed.
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    "whitenoise.middleware.WhiteNoiseMiddleware", # For serving static files in production
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -71,7 +66,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'greaby_project.wsgi.application'
 
 # Database
-# https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 DATABASES = {
     'default': dj_database_url.config(
         default=config('DATABASE_URL'),
@@ -89,7 +83,6 @@ REST_FRAMEWORK = {
 }
 
 # Password validation
-# https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -98,41 +91,57 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-# https://docs.djangoproject.com/en/5.0/topics/i18n/
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# CORS
-CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', cast=Csv())
+# --- CORS (Cross-Origin Resource Sharing) ---
+# IMPORTANT: In production, change this to your frontend's domain
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    # "https://www.your-frontend-app.com", # Add your production frontend URL here
+]
 CORS_ALLOW_CREDENTIALS = True
+# REMOVED: CORS_ALLOW_ALL_ORIGINS = True. This is a security risk.
 
-# Celery
+# --- Celery Configuration ---
 CELERY_BROKER_URL = config('CELERY_BROKER_URL')
 CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+CELERY_ACKS_LATE = True # For task robustness
+CELERY_TASK_TRACK_STARTED = True
 
 # --- Azure AI Settings ---
-AZURE_SORA_ENDPOINT_URL = config('AZURE_SORA_ENDPOINT_URL')
-AZURE_SORA_DEPLOYMENT_NAME = config('AZURE_SORA_DEPLOYMENT_NAME')
-AZURE_OPENAI_API_KEY = config('AZURE_OPENAI_API_KEY')
+AZURE_OPENAI_ENDPOINT_URL = config('AZURE_OPENAI_ENDPOINT_URL')
+AZURE_SORA_DEPLOYMENT_NAME = config('AZURE_SORA_DEPLOYMENT_NAME', default='sora')
 AZURE_TTS_DEPLOYMENT_NAME = config('AZURE_TTS_DEPLOYMENT_NAME', default='gpt-4o-mini-tts')
+AZURE_OPENAI_API_KEY = config('AZURE_OPENAI_API_KEY')
 
-# --- Stripe Settings ---
-STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY')
-STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET')
-FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')
+# --- Razorpay Settings ---
+RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID')
+RAZORPAY_KEY_SECRET = config('RAZORPAY_KEY_SECRET')
+RAZORPAY_WEBHOOK_SECRET = config('RAZORPAY_WEBHOOK_SECRET')
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.0/howto/static-files/
+# --- Static and Media Files ---
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+
+# --- Cloud Storage Configuration (Azure Blob Storage) ---
+# This is the single most important change for a production app.
+# All generated files (videos, audios, reels, subtitles) will be stored here.
+DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
+AZURE_ACCOUNT_NAME = config('AZURE_ACCOUNT_NAME')
+AZURE_ACCOUNT_KEY = config('AZURE_ACCOUNT_KEY')
+AZURE_CONTAINER = config('AZURE_CONTAINER')
+AZURE_URL_EXPIRATION_SECS = 3600 # URLs to private files will expire in 1 hour
+AZURE_OVERWRITE_FILES = True # Avoids issues with duplicate file names
+
+MEDIA_URL = f'https://{AZURE_ACCOUNT_NAME}.blob.core.windows.net/{AZURE_CONTAINER}/'
+MEDIA_ROOT = '' # No longer needed as files are not stored locally
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

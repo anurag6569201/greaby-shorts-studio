@@ -1,5 +1,3 @@
-// src/pages/Signup.jsx
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +33,7 @@ const Signup = () => {
             <span className="text-2xl font-bold">Greaby</span>
           </Link>
           <CardTitle className="text-2xl">Create an Account</CardTitle>
-          <CardDescription>Start creating amazing AI content in seconds.</CardDescription>
+          <CardDescription>Get free credits and start creating AI content in seconds.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

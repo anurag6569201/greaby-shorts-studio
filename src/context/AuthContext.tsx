@@ -1,5 +1,3 @@
-// src/context/AuthContext.jsx
-
 import { createContext, useState, useEffect, useContext, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -9,7 +7,6 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [subscription, setSubscription] = useState(null);
   const [tokens, setTokens] = useState(() =>
     localStorage.getItem("accessToken")
       ? {
@@ -28,10 +25,11 @@ export const AuthProvider = ({ children }) => {
     setAuthLoading(true);
     try {
       const response = await api.post("/auth/token/", { email, password });
+      api.defaults.headers.common["Authorization"] = "Bearer " + response.data.access;
       localStorage.setItem("accessToken", response.data.access);
       localStorage.setItem("refreshToken", response.data.refresh);
-      api.defaults.headers.common["Authorization"] = "Bearer " + response.data.access;
       setTokens(response.data);
+      await fetchUserProfile();
       navigate("/dashboard");
       toast.success("Login successful!");
     } catch (error) {
@@ -58,45 +56,49 @@ export const AuthProvider = ({ children }) => {
   const logoutUser = useCallback(() => {
     setUser(null);
     setTokens(null);
-    setSubscription(null);
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     delete api.defaults.headers.common["Authorization"];
     navigate("/login");
     toast.info("You have been logged out.");
   }, [navigate]);
+  
+  const fetchUserProfile = useCallback(async () => {
+    try {
+        const res = await api.get("/auth/profile/");
+        setUser(res.data);
+    } catch (error) {
+        console.error("Failed to refetch user profile:", error);
+        toast.error("Could not update user information.");
+        logoutUser();
+    }
+  }, [logoutUser]);
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      if (!tokens) {
+      if (!tokens?.access) {
         setIsInitialLoading(false);
         return;
       }
       
+      api.defaults.headers.common["Authorization"] = "Bearer " + tokens.access;
+
       try {
-        const [profileRes, subRes] = await Promise.all([
-          api.get("/auth/profile/"),
-          api.get("/subscriptions/my-subscription/"),
-        ]);
-        
-        setUser(profileRes.data);
-        setSubscription(subRes.data);
+        await fetchUserProfile();
       } catch (error) {
-        console.error("Failed to fetch user data:", error);
-        logoutUser();
+        console.error("Failed to fetch user data, logging out:", error);
       } finally {
         setIsInitialLoading(false);
       }
     };
     
     fetchInitialData();
-  }, [tokens, logoutUser]);
+  }, [tokens, fetchUserProfile]);
 
   const contextData = {
     user,
     setUser,
-    subscription,
-    setSubscription,
+    fetchUserProfile,
     tokens,
     authLoading,
     isInitialLoading,
@@ -106,7 +108,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={contextData}>{!isInitialLoading && children}</AuthContext.Provider>
+    <AuthContext.Provider value={contextData}>
+      {!isInitialLoading && children}
+    </AuthContext.Provider>
   );
 };
 

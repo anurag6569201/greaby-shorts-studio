@@ -1,83 +1,79 @@
-# audio_creations/views.py
-
-from rest_framework import generics, status
+from django.db import transaction
+from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 
 from .models import AudioCreation
 from .serializers import (
     AudioCreationRequestSerializer, 
     AudioCreationResponseSerializer,
-    AudioCreationUpdateSerializer # Import the new serializer
+    AudioCreationUpdateSerializer
 )
 from .tasks import generate_audio_from_text
-from creations.services import check_user_quota
+from .services import calculate_audio_cost
 
-class AudioGenerationView(generics.CreateAPIView):
+class AudioCreationViewSet(viewsets.ModelViewSet):
     """
-    Handles creating a new audio generation task. (POST)
+    A ViewSet for listing, creating, retrieving, and updating Audio Creations.
     """
-    serializer_class = AudioCreationRequestSerializer
-    permission_classes = [IsAuthenticated]
-
-    def create(self, request, *args, **kwargs):
-        # 1. Check overall creation quota
-        can_generate, message = check_user_quota(request.user)
-        if not can_generate:
-            return Response({"detail": message}, status=status.HTTP_402_PAYMENT_REQUIRED)
-        
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        # 2. Enforce plan-specific feature limits for audio
-        plan = request.user.subscription.plan
-        settings_data = serializer.validated_data.get('settings', {})
-        text_input = serializer.validated_data.get('text_input', '')
-        voice = settings_data.get('voice', 'alloy')
-
-        if len(text_input) > plan.max_audio_characters:
-            return Response({"detail": f"Your plan allows a max of {plan.max_audio_characters} characters for audio generation."}, status=status.HTTP_402_PAYMENT_REQUIRED)
-        if voice not in plan.available_voices:
-            return Response({"detail": f"The voice '{voice}' is not available on your plan."}, status=status.HTTP_402_PAYMENT_REQUIRED)
-
-        # 3. Create object and queue task
-        audio_creation = serializer.save(user=request.user)
-        generate_audio_from_text.delay(str(audio_creation.id))
-        
-        response_serializer = AudioCreationResponseSerializer(audio_creation, context={'request': request})
-        return Response(response_serializer.data, status=status.HTTP_202_ACCEPTED)
-
-class AudioHistoryView(generics.ListAPIView):
-    """
-    Handles listing all audio creations for the current user. (GET)
-    """
-    serializer_class = AudioCreationResponseSerializer
-    permission_classes = [IsAuthenticated]
-
+    
     def get_queryset(self):
-        return AudioCreation.objects.filter(user=self.request.user).order_by('-created_at')
-
-# --- NEW: View for full CRUD on a single audio object ---
-class AudioDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Handles retrieving (GET), updating (PATCH), and deleting (DELETE)
-    a single audio creation.
-    """
-    permission_classes = [IsAuthenticated]
-    lookup_field = 'id'
-
-    def get_queryset(self):
-        # Ensure users can only access their own creations
+        """Ensure users can only access their own creations."""
         return AudioCreation.objects.filter(user=self.request.user)
 
     def get_serializer_class(self):
-        # Use a different serializer for updating vs retrieving
-        if self.request.method in ['PUT', 'PATCH']:
+        """Use different serializers based on the action."""
+        if self.action == 'create':
+            return AudioCreationRequestSerializer
+        if self.action in ['update', 'partial_update']:
             return AudioCreationUpdateSerializer
         return AudioCreationResponseSerializer
 
-    def perform_destroy(self, instance):
-        # Also delete the associated file from storage when the object is deleted
-        if instance.result_file:
-            instance.result_file.delete(save=False) # save=False prevents model's save() from being called
-        instance.delete()
+    def create(self, request, *args, **kwargs):
+        """
+        Handles the creation of a new audio generation task.
+        This is the primary endpoint for SPENDING credits on audio.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        
+        # 1. Calculate the credit cost for this specific request
+        cost = calculate_audio_cost(
+            text_input=validated_data['text_input'],
+            response_format=validated_data['response_format']
+        )
+        
+        user = request.user
+        
+        # 2. Check if the user has enough credits
+        if user.credit_balance < cost:
+            return Response(
+                {"detail": f"Insufficient credits. This action costs {cost}, but you only have {user.credit_balance}."},
+                status=status.HTTP_402_PAYMENT_REQUIRED
+            )
+            
+        # 3. Use a transaction to deduct credits and create the object
+        try:
+            with transaction.atomic():
+                user.credit_balance -= cost
+                user.save(update_fields=['credit_balance'])
+                
+                creation = AudioCreation.objects.create(
+                    user=user,
+                    credit_cost=cost,
+                    **validated_data
+                )
+        except Exception as e:
+            print(f"ERROR: Transaction failed during audio creation for user {user.email}: {e}")
+            return Response({"detail": "An unexpected error occurred. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # 4. Dispatch the background task
+        generate_audio_from_text.delay(str(creation.id))
+        
+        # 5. Return the newly created object's data
+        response_serializer = AudioCreationResponseSerializer(creation, context={'request': request})
+        return Response(response_serializer.data, status=status.HTTP_202_ACCEPTED)
+
+    # We allow PATCH for updating the title, but not full PUT.
+    # We do not allow DELETE to maintain a clear history.
+    http_method_names = ['get', 'post', 'patch', 'head', 'options']

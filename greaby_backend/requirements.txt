@@ -1,13 +1,24 @@
+# Django & DRF
 django
 djangorestframework
 djangorestframework-simplejwt
-python-decouple
-psycopg2-binary
 django-cors-headers
+django-decouple
+dj-database-url
+psycopg2-binary
+
+# Celery & Message Broker
 celery
 redis
-requests
-azure-identity
-django-storages
-boto3
-dj-database-url
+
+# Cloud Storage
+django-storages[azure]
+azure-storage-blob
+
+# Payment
+razorpay
+
+# Utilities
+gunicorn # For production deployment
+whitenoise
+mutagen # For reading audio file metadata

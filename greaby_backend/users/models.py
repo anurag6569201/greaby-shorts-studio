@@ -1,5 +1,3 @@
-# users/models.py
-
 import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -10,7 +8,13 @@ class User(AbstractUser):
     email = models.EmailField('email address', unique=True)
     username = None # We use email as the unique identifier
 
-    stripe_customer_id = models.CharField(max_length=100, blank=True, null=True, help_text="The user's Stripe Customer ID.")
+    # NEW: The central credit balance for each user in our Pay-As-You-Go system.
+    credit_balance = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=0.00,
+        help_text="The user's current credit balance for generating content."
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

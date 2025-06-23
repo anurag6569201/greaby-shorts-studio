@@ -1,23 +1,17 @@
-# users/signals.py
-
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
-from subscriptions.models import Plan, Subscription
+
+# Define the starting credit amount in one place
+NEW_USER_CREDIT_GRANT = 10.00
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
-def create_free_subscription_for_new_user(sender, instance, created, **kwargs):
+def grant_credits_to_new_user(sender, instance, created, **kwargs):
     """
-    When a new user is created, automatically create a free subscription for them.
-    This ensures every user has a plan and quota from the moment they sign up.
+    When a new user is created, automatically grant them a starting
+    credit balance to encourage them to try the platform.
     """
     if created:
-        try:
-            free_plan = Plan.objects.get(name='free')
-            Subscription.objects.create(
-                user=instance,
-                plan=free_plan,
-                status='active'
-            )
-        except Plan.DoesNotExist:
-            print("CRITICAL ERROR: 'free' plan not found. Cannot create subscription for new user.")
+        instance.credit_balance = NEW_USER_CREDIT_GRANT
+        instance.save(update_fields=['credit_balance'])
+        print(f"Granted {NEW_USER_CREDIT_GRANT} starting credits to new user: {instance.email}")

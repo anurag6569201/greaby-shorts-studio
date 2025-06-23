@@ -1,5 +1,3 @@
-// src/App.jsx
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,11 +14,18 @@ import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PublicRoute from "./components/auth/PublicRoute";
 
+
+import AboutPage from "./pages/intro/AboutPage";
+import BlogPage from "./pages/intro/BlogPage";
+import ContactPage from "./pages/intro/ContactPage";
+import TermsPage from "./pages/intro/TermsPage";
+import PrivacyPage from "./pages/intro/PrivacyPage";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false, // Optional: disable auto-refetch
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5,
     },
   },
 });
@@ -39,8 +44,13 @@ const App = () => (
             
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             
-            {/* PricingPage is accessible to both logged-in and guest users */}
+            {/* Shared/Marketing Routes */}
             <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>

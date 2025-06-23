@@ -1,11 +1,11 @@
-# creations/urls.py
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import VideoCreationViewSet
 
-from django.urls import path
-from .views import VideoGenerationView, CreationHistoryView, CreationDetailView, creation_content_proxy
+router = DefaultRouter()
+# The base name is 'video' for URLs like /api/v1/videos/{id}/
+router.register('', VideoCreationViewSet, basename='video')
 
 urlpatterns = [
-    path('generate/video/', VideoGenerationView.as_view(), name='generate-video'),
-    path('history/', CreationHistoryView.as_view(), name='creation-history'),
-    path('<uuid:id>/', CreationDetailView.as_view(), name='creation-detail'),
-    path('content/<uuid:id>/', creation_content_proxy, name='creation-content'),
+    path('', include(router.urls)),
 ]

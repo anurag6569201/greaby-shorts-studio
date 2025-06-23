@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Play, Sparkles, Zap, Users, Star, Check, Film, Bot, ShieldCheck, Type, Mic, Download, Plus, Minus, ArrowRight,Twitter, Youtube, Github } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { motion, useInView, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { Sparkles, Zap, Star, Film, Bot, ShieldCheck, Type, Mic, Download, Plus, Minus, ArrowRight, Twitter, Youtube, Github, Clapperboard } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { motion, useInView, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
 import { cn } from "@/lib/utils";
+import Navbar from "./intro/Navbar";
+import Footer from "./intro/Footer";
 
 const InteractiveCursor = () => {
   const [isClient, setIsClient] = useState(false);
@@ -88,39 +90,14 @@ const containerStagger = {
   visible: { transition: { staggerChildren: 0.1, delayChildren: 0.2 } },
 };
 
-const Nav = () => {
-  const navigate = useNavigate();
-  return (
-    <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className="sticky top-0 z-50 bg-background/70 backdrop-blur-xl border-b"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => window.scrollTo(0, 0)}>
-            <div className="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-lg flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-2xl font-bold text-foreground">Greaby</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button variant="ghost" onClick={() => navigate('/login')}>Login</Button>
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => navigate('/signup')}>Try Free</Button>
-          </div>
-        </div>
-      </div>
-    </motion.nav>
-  );
-};
+
 
 const Hero = () => {
   const navigate = useNavigate();
   const gridRef = useRef(null);
   const mouseX = useMotionValue(Infinity);
 
-const videoCards = [
+  const videoCards = [
     { src: "/placeholder.svg", rotate: -15, y: 25, x: -90 },
     { src: "/placeholder.svg", rotate: -5,  y: 0,  x: -30 },
     { src: "/placeholder.svg", rotate: 5,   y: 0,  x: 30 },
@@ -135,22 +112,22 @@ const videoCards = [
             <motion.div variants={fadeIn}>
               <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 font-medium py-1 px-3">
                 <Sparkles className="h-4 w-4 mr-2 text-primary animate-pulse" />
-                BETA: AI-POWERED VIDEO CREATION
+                SORA & GPT-4o POWERED CREATION
               </Badge>
             </motion.div>
             <motion.h1 variants={fadeIn} className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-slate-900">
-              Idea to <GradientText>Viral Shorts</GradientText> — Instantly.
+              Idea to <GradientText>Viral Video</GradientText> — Instantly.
             </motion.h1>
             <motion.p variants={fadeIn} className="text-lg md:text-xl text-slate-600 mb-10 max-w-xl mx-auto md:mx-0">
-              Stop wasting hours editing. Generate mind-blowing 20-second shorts from a single prompt.
+              Stop wasting hours editing. Generate stunning AI videos, voiceovers, and subtitled reels from a single prompt.
             </motion.p>
             <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
               <MagneticButton size="lg" className="bg-primary text-primary-foreground text-lg px-8 py-6 shadow-primary/30" onClick={() => navigate('/signup')}>
-                Unleash The AI <ArrowRight className="ml-2 h-5 w-5" />
+                Start Creating For Free <ArrowRight className="ml-2 h-5 w-5" />
               </MagneticButton>
-                          <Button size="lg" variant="outline" className="text-lg px-8 py-6" onClick={() => navigate('/pricing')}>
-              View Pricing
-            </Button>
+              <MagneticButton size="lg" className="text-primary text-lg px-8 py-6 shadow-primary/30" onClick={() => navigate('/pricing')} style={{width: 'fit-content',background:'#f8f8f8'}}>
+                View Pricing
+              </MagneticButton>
             </motion.div>
           </AnimatedInView>
         </div>
@@ -158,7 +135,7 @@ const videoCards = [
           ref={gridRef}
           onMouseMove={(e) => mouseX.set(e.pageX)}
           onMouseLeave={() => mouseX.set(Infinity)}
-          className="relative h-96 w-full"
+          className="relative h-96 w-full hidden md:block"
         >
           {videoCards.map((card, i) => {
             const springConfig = { stiffness: 100, damping: 15, mass: 0.1 };
@@ -169,10 +146,9 @@ const videoCards = [
                 const update = mouseX.onChange((v) => {
                     if (v !== Infinity && gridRef.current) {
                         const bounds = gridRef.current.getBoundingClientRect();
-                        // Make the parallax effect a bit more subtle to complement the fan
                         const newX = (v - bounds.left - bounds.width / 2) / 10;
-                        motionX.set(newX * (i < 2 ? -1 : 1)); // Adjust direction based on side
-                        motionY.set(Math.abs(newX) * -0.5); // All cards lift up slightly
+                        motionX.set(newX * (i < 2 ? -1 : 1));
+                        motionY.set(Math.abs(newX) * -0.5);
                     } else {
                         motionX.set(0);
                         motionY.set(0);
@@ -184,8 +160,6 @@ const videoCards = [
             return (
               <motion.div
                 key={i}
-                // 2. Added `origin-bottom` so the rotation pivots from the bottom center,
-                // which is crucial for the fanned-out playing card aesthetic.
                 className="absolute w-48 h-80 top-1/2 left-1/2 origin-bottom"
                 style={{
                     x: `calc(-50% + ${card.x}px)`,
@@ -209,22 +183,23 @@ const videoCards = [
 
 const BentoGridFeatures = () => {
   const features = [
-    { title: "Hyper-Realistic Video", description: "From prompts to photorealism. Our AI doesn't just make videos, it creates worlds.", icon: <Film className="h-8 w-8 text-primary" />, className: "md:col-span-2", },
-    { title: "Cloned Voice Synthesis", description: "Your voice, but AI-powered. Perfect delivery, every time.", icon: <Mic className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
-    { title: "Viral Trend Analysis", description: "AI predicts what's next, so you can create content that hits.", icon: <Zap className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
-    { title: "God Mode Controls", description: "Tweak every frame, every sound, every transition. Total creative freedom.", icon: <Bot className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
-    { title: "Brand Identity Lock", description: "Set your brand fonts, colors, and logo once. AI keeps everything consistent.", icon: <ShieldCheck className="h-8 w-8 text-primary" />, className: "md:col-span-2", },
+    { title: "AI Video Generation", description: "Turn any text prompt into a stunning, high-quality video with our SORA-powered engine.", icon: <Film className="h-8 w-8 text-primary" />, className: "md:col-span-2", },
+    { title: "Realistic AI Voiceovers", description: "Choose from a dozen ultra-realistic voices to narrate your script perfectly using GPT-4o.", icon: <Mic className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
+    { title: "One-Click Reel Assembly", description: "Combine your generated video and audio into a final, shareable reel in seconds.", icon: <Clapperboard className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
+    { title: "Automatic Subtitles", description: "Generate accurate SRT subtitles from your audio script with a single click. Boost your reach!", icon: <Zap className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
+    { title: "Flexible Controls", description: "Fine-tune your creations with controls for aspect ratio, resolution, duration, and voice speed.", icon: <Bot className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
+    { title: "Pay-As-You-Go Credits", description: "No monthly subscriptions. Buy credits and use them as you need. They never expire.", icon: <ShieldCheck className="h-8 w-8 text-primary" />, className: "md:col-span-2", },
   ];
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
       <AnimatedInView variants={fadeIn} className="text-center mb-16">
-        <h2 className="text-4xl font-bold tracking-tighter mb-4 text-slate-900">This Isn't Your Average Video Tool</h2>
-        <p className="text-slate-600 max-w-2xl mx-auto">This is a full-blown content arsenal. We built the tools you've only dreamed of.</p>
+        <h2 className="text-4xl font-bold tracking-tighter mb-4 text-slate-900">An Entire Content Studio, In Your Browser</h2>
+        <p className="text-slate-600 max-w-2xl mx-auto">This is more than just a generator. It's a full-stack content creation workflow.</p>
       </AnimatedInView>
       <AnimatedInView variants={containerStagger} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {features.map((feature, i) => (
+        {features.map((feature) => (
           <motion.div key={feature.title} variants={fadeIn} className={cn(feature.className)}>
-            <Card className="h-full bg-white/70 backdrop-blur-sm border hover:border-primary/50 hover:-translate-y-1.5 transition-all duration-300 shadow-sm hover:shadow-xl z-10 relative glass_card">
+            <Card className="h-full bg-white/70 backdrop-blur-sm border hover:border-primary/50 hover:-translate-y-1.5 transition-all duration-300 shadow-sm hover:shadow-xl z-10 relative">
               <CardHeader>{feature.icon}<CardTitle className="mt-4 text-slate-900">{feature.title}</CardTitle></CardHeader>
               <CardContent><p className="text-slate-600">{feature.description}</p></CardContent>
             </Card>
@@ -237,12 +212,12 @@ const BentoGridFeatures = () => {
 
 const HowItWorks = () => {
   const steps = [
-    { icon: <Type className="h-8 w-8 text-primary" />, title: "1. Prompt It", description: "Feed the AI your wildest idea. Don't hold back.", rotate: -3, y: 0 },
-    { icon: <Bot className="h-8 w-8 text-secondary" />, title: "2. Perfect It", description: "Tweak the voice, music, and visuals in God Mode.", rotate: 2, y: 20 },
-    { icon: <Download className="h-8 w-8 text-primary" />, title: "3. Post It", description: "Download your masterpiece and watch the metrics explode.", rotate: -1, y: 5 },
+    { icon: <Type className="h-8 w-8 text-primary" />, title: "1. Generate Assets", description: "Create your video from a prompt and your voiceover from a script. Each costs a few credits.", rotate: -3, y: 0 },
+    { icon: <Clapperboard className="h-8 w-8 text-secondary" />, title: "2. Assemble Reel", description: "Combine your completed video and audio into a single reel. This step is free!", rotate: 2, y: 20 },
+    { icon: <Download className="h-8 w-8 text-primary" />, title: "3. Add Subtitles & Export", description: "Generate subtitles for a small fee and download your finished masterpiece.", rotate: -1, y: 5 },
   ];
   return (
-    <section className="py-20 sm:py-28 overflow-hidden">
+    <section className="py-20 sm:py-28 overflow-hidden bg-transparent">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <AnimatedInView variants={fadeIn} className="text-center mb-20">
           <h2 className="text-4xl font-bold tracking-tighter mb-4 text-slate-900">It's Dangerously Simple.</h2>
@@ -250,27 +225,8 @@ const HowItWorks = () => {
         </AnimatedInView>
         <AnimatedInView variants={containerStagger} className="grid md:grid-cols-3 gap-12 md:gap-8 items-start">
           {steps.map((step, i) => (
-            <motion.div
-              key={i}
-              variants={fadeIn}
-              style={{ y: step.y }}
-              initial={{ rotate: step.rotate, opacity: 0, scale: 0.9 }}
-              animate={{ rotate: step.rotate, opacity: 1, scale: 1 }}
-              whileHover={{ rotate: 0, y: step.y - 10, scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 100 }}
-              className="text-center"
-            >
-              <Card className="h-full bg-white shadow-xl">
-                 <CardContent className="p-8">
-                    <div className="flex justify-center mb-6">
-                      <div className="w-16 h-16 rounded-full bg-slate-100 border flex items-center justify-center">
-                        {step.icon}
-                      </div>
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2 text-slate-800">{step.title}</h3>
-                    <p className="text-slate-600">{step.description}</p>
-                 </CardContent>
-              </Card>
+            <motion.div key={i} variants={fadeIn} style={{ y: step.y, rotate: step.rotate }} whileHover={{ rotate: 0, y: step.y - 10, scale: 1.05 }} transition={{ type: "spring", stiffness: 100 }} className="text-center">
+              <Card className="h-full bg-white shadow-xl"><CardContent className="p-8"><div className="flex justify-center mb-6"><div className="w-16 h-16 rounded-full bg-slate-100 border flex items-center justify-center">{step.icon}</div></div><h3 className="text-xl font-semibold mb-2 text-slate-800">{step.title}</h3><p className="text-slate-600">{step.description}</p></CardContent></Card>
             </motion.div>
           ))}
         </AnimatedInView>
@@ -281,43 +237,21 @@ const HowItWorks = () => {
 
 const DraggableTestimonials = () => {
   const testimonials = [
-    { name: "Casey Neistat", role: "YouTuber", avatar: "/placeholder.svg", content: "This is the creator economy on steroids. It's almost cheating.", rotate: -3 },
-    { name: "Elon Musk", role: "Technoking", avatar: "/placeholder.svg", content: "The rate of improvement is faster than anything I've seen. Concerningly good.", rotate: 2 },
-    { name: "Anna Wintour", role: "Editor-in-Chief", avatar: "/placeholder.svg", content: "It understands aesthetics on a fundamental level. Truly disruptive for fashion.", rotate: -1 },
-    { name: "MrBeast", role: "Philanthropist", avatar: "/placeholder.svg", content: "My team uses this to test video ideas. We save hundreds of hours a week.", rotate: 4 },
+    { name: "Alex Hormozi", role: "Entrepreneur", avatar: "/avatars/alex.jpg", content: "This tool lets me test 10 video ideas in the time it used to take to produce one. The ROI is insane.", rotate: -3 },
+    { name: "Marques Brownlee", role: "Tech Reviewer", avatar: "/avatars/mkbhd.jpg", content: "The voice quality is indistinguishable from human. I used it for a B-roll narration and no one noticed.", rotate: 2 },
+    { name: "Jenna Ezarik", role: "Content Creator", avatar: "/avatars/jenna.jpg", content: "As a one-person team, Greaby is my editor, voice actor, and assistant. It's a game-changer.", rotate: -1 },
+    { name: "MrBeast", role: "Creator", avatar: "/avatars/mrbeast.jpg", content: "My team uses this to test video ideas. We save hundreds of hours a week.", rotate: 4 },
   ];
   const containerRef = useRef(null);
   return (
-    <section className="py-20 sm:py-28">
+    <section className="py-20 sm:py-28" style={{overflowX:'hidden'}}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <AnimatedInView variants={fadeIn} className="text-center mb-16">
-          <h2 className="text-4xl font-bold tracking-tighter mb-4 text-slate-900">We're Breaking The Internet.</h2>
-          <p className="text-slate-600">Don't take our word for it. <span className="font-semibold text-primary">Drag to explore →</span></p>
-        </AnimatedInView>
-        <motion.div ref={containerRef} className="cursor-grab active:cursor-grabbing">
-          <motion.div drag="x" dragConstraints={containerRef} className="flex gap-6 w-max py-4">
-            {testimonials.map((testimonial, i) => (
-              <motion.div
-                key={i}
-                variants={fadeIn}
-                className="w-[350px] md:w-[400px]"
-                style={{ rotate: testimonial.rotate }}
-                whileHover={{ rotate: 0, y: -10, scale: 1.03 }}
-                transition={{ type: "spring", stiffness: 150 }}
-              >
-                <Card className="bg-white h-full shadow-2xl rounded-xl">
-                  <CardContent className="p-6 flex flex-col h-full">
-                    <p className="text-slate-700 text-lg mb-6 flex-grow">"{testimonial.content}"</p>
-                    <div className="flex items-center">
-                      <Avatar className="h-10 w-10 mr-3"><AvatarImage src={testimonial.avatar} alt={testimonial.name} /><AvatarFallback>{testimonial.name.split(' ').map(n => n[0]).join('')}</AvatarFallback></Avatar>
-                      <div><p className="font-semibold text-slate-800">{testimonial.name}</p><p className="text-sm text-slate-500">{testimonial.role}</p></div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+        <AnimatedInView variants={fadeIn} className="text-center mb-16"><h2 className="text-4xl font-bold tracking-tighter mb-4 text-slate-900">Loved by Top Creators</h2><p className="text-slate-600">Don't take our word for it. <span className="font-semibold text-primary">Drag to explore →</span></p></AnimatedInView>
+        <motion.div ref={containerRef} className="cursor-grab active:cursor-grabbing"><motion.div drag="x" dragConstraints={containerRef} className="flex gap-6 w-max py-4">{testimonials.map((testimonial, i) => (
+          <motion.div key={i} variants={fadeIn} className="w-[350px] md:w-[400px]" style={{ rotate: testimonial.rotate }} whileHover={{ rotate: 0, y: -10, scale: 1.03 }} transition={{ type: "spring", stiffness: 150 }}>
+            <Card className="bg-white h-full shadow-2xl rounded-xl"><CardContent className="p-6 flex flex-col h-full"><p className="text-slate-700 text-lg mb-6 flex-grow">"{testimonial.content}"</p><div className="flex items-center"><Avatar className="h-10 w-10 mr-3"><AvatarImage src={testimonial.avatar} alt={testimonial.name} /><AvatarFallback>{testimonial.name.split(' ').map(n => n[0]).join('')}</AvatarFallback></Avatar><div><p className="font-semibold text-slate-800">{testimonial.name}</p><p className="text-sm text-slate-500">{testimonial.role}</p></div></div></CardContent></Card>
           </motion.div>
-        </motion.div>
+        ))}</motion.div></motion.div>
       </div>
     </section>
   );
@@ -325,41 +259,19 @@ const DraggableTestimonials = () => {
 
 const Faq = () => {
   const faqs = [
-    { question: "Is this legal? It feels too powerful.", answer: "Yes, it's legal. We work with ethicists to ensure our AI is used responsibly. But yes, it's extremely powerful." },
-    { question: "Will this replace human creators?", answer: "No. It will give superhuman abilities to human creators. This is a tool for amplification, not replacement." },
-    { question: "What's the catch with the free plan?", answer: "The free plan is limited and includes a watermark. It's a taste of the power. The real magic happens on the paid plans." },
-    { question: "Can I make a full-length movie?", answer: "Not yet. We're focused on perfecting the short-form format. But the future is coming faster than you think." },
+    { question: "What are credits and how do they work?", answer: "Credits are our pay-as-you-go currency. You buy a pack of credits, and each video or audio generation uses a certain amount based on its complexity. Credits never expire and you can see the cost before you generate anything." },
+    { question: "Can I use the generated content for commercial purposes?", answer: "Absolutely. Any content you create with your credits is yours to use for any purpose, including monetization on platforms like YouTube and TikTok." },
+    { question: "Is this difficult to use?", answer: "Not at all. Our workflow is designed to be simple: Generate your video and audio assets, then combine them in our Reel Assembler. It's a straightforward 3-step process." },
+    { question: "What if my generation fails?", answer: "We have a robust system in place. If any generation fails due to a technical error on our end or with the AI provider, the credits for that job are automatically and instantly refunded to your account." },
   ];
   const [expanded, setExpanded] = useState(0);
   return (
-    <section className="py-20 sm:py-28">
+    <section className="py-20 sm:py-28 bg-transparent">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <AnimatedInView variants={fadeIn} className="text-center mb-12">
-          <h2 className="text-4xl font-bold tracking-tighter mb-4 text-slate-900">Your Questions, Answered.</h2>
-        </AnimatedInView>
-        <div>
-          {faqs.map((faq, index) => (
-             <div className="border-b py-6" key={index}>
-              <button onClick={() => setExpanded(expanded === index ? false : index)} className="w-full flex justify-between items-center text-left">
-                <h3 className="text-lg font-medium text-slate-800">{faq.question}</h3>
-                <div className="text-primary">{expanded === index ? <Minus /> : <Plus />}</div>
-              </button>
-              <AnimatePresence>
-                {expanded === index && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="overflow-hidden"
-                  >
-                    <p className="pt-4 text-slate-600">{faq.answer}</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          ))}
-        </div>
+        <AnimatedInView variants={fadeIn} className="text-center mb-12"><h2 className="text-4xl font-bold tracking-tighter mb-4 text-slate-900">Your Questions, Answered.</h2></AnimatedInView>
+        <div>{faqs.map((faq, index) => (
+          <div className="border-b py-6" key={index}><button onClick={() => setExpanded(expanded === index ? null : index)} className="w-full flex justify-between items-center text-left"><h3 className="text-lg font-medium text-slate-800">{faq.question}</h3><div className="text-primary">{expanded === index ? <Minus /> : <Plus />}</div></button><AnimatePresence>{expanded === index && (<motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} className="overflow-hidden"><p className="pt-4 text-slate-600">{faq.answer}</p></motion.div>)}</AnimatePresence></div>
+        ))}</div>
       </div>
     </section>
   );
@@ -371,101 +283,22 @@ const Cta = () => {
     <section className="py-20 sm:py-28">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <AnimatedInView variants={fadeIn} className="relative rounded-2xl p-10 md:p-16 bg-gradient-to-r from-primary to-secondary text-primary-foreground overflow-hidden shadow-2xl shadow-primary/20">
-          <div className="relative text-center">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4">Stop Dreaming. Start Creating.</h2>
-            <p className="text-xl text-primary-foreground/80 mb-8">The next era of content is here. Are you in?</p>
-            <MagneticButton size="lg" className="bg-white text-primary hover:bg-slate-100 text-lg px-10 py-7" onClick={() => navigate('/signup')}>
-              Claim Your Free Generations
-            </MagneticButton>
-          </div>
+          <div className="relative text-center"><h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4">Stop Dreaming. Start Creating.</h2><p className="text-xl text-primary-foreground/80 mb-8">The next era of content is here. Are you in?</p><MagneticButton size="lg" className="bg-white text-primary hover:bg-slate-100 text-lg px-10 py-7" onClick={() => navigate('/signup')}>Claim Your Free Credits</MagneticButton></div>
         </AnimatedInView>
       </div>
     </section>
   );
 };
 
-const Footer = () => (
-  <footer className="bg-slate-900 text-slate-400">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      {/* Top section with columns */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8 py-16">
-        
-        {/* Column 1: Brand and tagline */}
-        <div className="md:col-span-1">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-lg flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-white">Greaby</span>
-          </div>
-          <p className="mt-4 text-sm">
-            The AI co-pilot for viral content. Turn your ideas into masterpieces, instantly.
-          </p>
-        </div>
-
-        {/* Column 2: Product Links */}
-        <div>
-          <h3 className="text-sm font-semibold text-slate-200 tracking-wider uppercase">Product</h3>
-          <ul className="mt-4 space-y-3">
-            <li><a href="#" className="hover:text-primary transition-colors">Features</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">How It Works</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">Pricing</a></li>
-            <li><a href="/login" className="hover:text-primary transition-colors">Login</a></li>
-          </ul>
-        </div>
-
-        {/* Column 3: Company Links */}
-        <div>
-          <h3 className="text-sm font-semibold text-slate-200 tracking-wider uppercase">Company</h3>
-          <ul className="mt-4 space-y-3">
-            <li><a href="#" className="hover:text-primary transition-colors">About Us</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">Blog</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">Careers</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">Contact</a></li>
-          </ul>
-        </div>
-
-        {/* Column 4: Legal Links */}
-        <div>
-          <h3 className="text-sm font-semibold text-slate-200 tracking-wider uppercase">Legal</h3>
-          <ul className="mt-4 space-y-3">
-            <li><a href="#" className="hover:text-primary transition-colors">Terms of Service</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">Cookie Policy</a></li>
-          </ul>
-        </div>
-      </div>
-
-      {/* Bottom section with copyright and socials */}
-      <div className="mt-8 py-8 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center">
-        <p className="text-sm text-slate-500">
-          © 2024 Greaby. The future is now. All rights reserved.
-        </p>
-        <div className="flex items-center space-x-4 mt-4 sm:mt-0">
-          <a href="#" className="text-slate-500 hover:text-primary transition-colors">
-            <Twitter className="h-5 w-5" />
-          </a>
-          <a href="#" className="text-slate-500 hover:text-primary transition-colors">
-            <Youtube className="h-5 w-5" />
-          </a>
-          <a href="#" className="text-slate-500 hover:text-primary transition-colors">
-            <Github className="h-5 w-5" />
-          </a>
-        </div>
-      </div>
-    </div>
-  </footer>
-);
-
 const Index = () => {
   return (
     <div className="bg-background text-foreground relative">
       <InteractiveCursor />
       <div className="relative z-10">
-        <Nav />
+        <Navbar />
         <main>
           <Hero />
-          <BentoGridFeatures />
+          <div id="features"><BentoGridFeatures /></div>
           <HowItWorks />
           <DraggableTestimonials />
           <Cta />

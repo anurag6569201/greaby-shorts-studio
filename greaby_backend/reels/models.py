@@ -1,15 +1,19 @@
-# reels/models.py
-
 import uuid
 from django.db import models
 from django.conf import settings
-from creations.models import Creation as VideoCreation
+from creations.models import VideoCreation
 from audio_creations.models import AudioCreation
 
 class Reel(models.Model):
     class Status(models.TextChoices):
         PENDING = 'pending', 'Pending'
         PROCESSING = 'processing', 'Processing'
+        COMPLETED = 'completed', 'Completed'
+        FAILED = 'failed', 'Failed'
+
+    class SubtitleStatus(models.TextChoices):
+        NONE = 'none', 'Not Generated'
+        PENDING = 'pending', 'Pending'
         COMPLETED = 'completed', 'Completed'
         FAILED = 'failed', 'Failed'
 
@@ -20,15 +24,24 @@ class Reel(models.Model):
     title = models.CharField(max_length=255)
     
     # Link to the source assets
-    video_creation = models.ForeignKey(VideoCreation, on_delete=models.SET_NULL, null=True)
-    audio_creation = models.ForeignKey(AudioCreation, on_delete=models.SET_NULL, null=True)
+    video_creation = models.ForeignKey(VideoCreation, on_delete=models.SET_NULL, null=True, related_name='reels')
+    audio_creation = models.ForeignKey(AudioCreation, on_delete=models.SET_NULL, null=True, related_name='reels')
     
+    # --- Reel Combination Status ---
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
-    
-    # The final combined video file
-    result_file = models.FileField(upload_to='reels/', blank=True, null=True)
+    result_file = models.FileField(upload_to='reels/', blank=True, null=True, help_text="The final combined video file.")
     error_message = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+
+    # --- NEW: Subtitle Generation Status ---
+    subtitle_file = models.FileField(upload_to='subtitles/', blank=True, null=True, help_text="The generated .srt subtitle file.")
+    subtitle_status = models.CharField(max_length=20, choices=SubtitleStatus.choices, default=SubtitleStatus.NONE)
+    subtitle_error_message = models.TextField(blank=True, null=True)
     
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+
     def __str__(self):
         return f"Reel '{self.title}' for {self.user.email} ({self.status})"

@@ -1,5 +1,3 @@
-# users/serializers.py
-
 from rest_framework import serializers
 from .models import User
 
@@ -10,13 +8,14 @@ class RegisterUserSerializer(serializers.ModelSerializer):
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        password = validated_data.pop('password')
-        user = User(**validated_data)
-        user.set_password(password)
-        user.save()
-        return user
+        return User.objects.create_user(**validated_data)
 
 class UserSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the user's profile information.
+    Includes the credit balance so the frontend can display it.
+    """
     class Meta:
         model = User
-        fields = ('id', 'email', 'first_name', 'last_name')
+        fields = ('id', 'email', 'first_name', 'last_name', 'credit_balance')
+        read_only_fields = ('credit_balance',)

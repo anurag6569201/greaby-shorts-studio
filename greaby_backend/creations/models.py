@@ -1,10 +1,13 @@
-# creations/models.py
-
 import uuid
 from django.db import models
 from django.conf import settings
 
-class Creation(models.Model):
+# --- NEW: Abstract Base Class for all AI creations ---
+class AbstractBaseCreation(models.Model):
+    """
+    An abstract model that provides common fields for any AI-generated content.
+    Reduces code duplication between VideoCreation and AudioCreation.
+    """
     class Status(models.TextChoices):
         PENDING = 'pending', 'Pending'
         PROCESSING = 'processing', 'Processing'
@@ -15,16 +18,53 @@ class Creation(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
-        related_name='video_creations'
+        related_name='%(class)s_creations' # Dynamically creates related_name, e.g., 'videocreation_creations'
     )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     
-    prompt = models.TextField()
-    settings = models.JSONField(default=dict, help_text="Stores aspectRatio, resolution, duration etc.")
-    
-    result_url = models.URLField(max_length=1024, blank=True, null=True, help_text="Direct URL to the generated video file")
+    # Stores the generated file in cloud storage (Azure Blob Storage)
+    result_file = models.FileField(upload_to='video_generations/', blank=True, null=True)
+
+    # Cost and Error Logging
+    credit_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     error_message = models.TextField(blank=True, null=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+        ordering = ['-created_at']
+
+
+# --- RENAMED & REFACTORED: From 'Creation' to 'VideoCreation' ---
+class VideoCreation(AbstractBaseCreation):
+    """
+    Represents a single video generation task and its result.
+    """
+    class AspectRatio(models.TextChoices):
+        SQUARE = '1:1', '1:1 (Square)'
+        LANDSCAPE = '16:9', '16:9 (Landscape)'
+        PORTRAIT = '9:16', '9:16 (Portrait)'
+
+    class Resolution(models.TextChoices):
+        P480 = '480p', '480p (SD)'
+        P720 = '720p', '720p (HD)'
+        P1080 = '1080p', '1080p (Full HD)'
+
+    prompt = models.TextField()
+    
+    # --- Detailed generation parameters ---
+    aspect_ratio = models.CharField(max_length=10, choices=AspectRatio.choices, default=AspectRatio.SQUARE)
+    resolution = models.CharField(max_length=10, choices=Resolution.choices, default=Resolution.P480)
+    duration = models.PositiveIntegerField(
+        choices=[(5, '5s'), (10, '10s'), (15, '15s'), (20, '20s')], 
+        default=5
+    )
+    n_variants = models.PositiveIntegerField(
+        choices=[(1, '1 Video'), (2, '2 Videos')], 
+        default=1
+    )
 
     def __str__(self):
-        return f"Video for {self.user.email} ({self.status}) at {self.created_at.strftime('%Y-%m-%d')}"
+        return f"Video for {self.user.email} - '{self.prompt[:30]}...' ({self.status})"

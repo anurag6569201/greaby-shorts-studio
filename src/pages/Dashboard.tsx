@@ -1,17 +1,13 @@
-// src/pages/Dashboard.jsx
-
 import { useState, useEffect } from "react";
-import { useSearchParams, useLocation } from "react-router-dom";
-import { toast } from "sonner";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sparkles, Home, Video, Mic, Clapperboard, Settings, LogOut, User, Menu, X } from "lucide-react";
+import { Sparkles, Home, Video, Mic, Clapperboard, Settings, LogOut, User, Menu, CreditCard, Coins } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-// Component stubs - we will create these next
 import DashboardHome from "@/components/dashboard/DashboardHome";
 import VideoGenerator from "@/components/dashboard/VideoGenerator";
 import AudioGenerator from "@/components/dashboard/AudioGenerator";
@@ -30,7 +26,6 @@ const getInitials = (firstName = "", lastName = "") => {
 };
 
 const Dashboard = () => {
-  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, logoutUser } = useAuth();
   
@@ -38,25 +33,14 @@ const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
-    // Sync tab state with URL query param
     const tab = searchParams.get("tab") || "home";
     setActiveTab(tab);
-
-    // Handle post-checkout toast message
-    if (searchParams.has("session_id")) {
-      toast.success("Subscription successful!", {
-        description: "Your new plan is now active. Welcome aboard!",
-      });
-      // Clean up URL
-      searchParams.delete("session_id");
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, [searchParams, setSearchParams, location]);
+  }, [searchParams]);
 
   const handleSetTab = (tabId) => {
     setActiveTab(tabId);
     setSearchParams({ tab: tabId }, { replace: true });
-    setIsSidebarOpen(false); // Close sidebar on mobile after selection
+    setIsSidebarOpen(false);
   };
   
   const renderContent = () => {
@@ -69,6 +53,20 @@ const Dashboard = () => {
     }
   };
 
+  const CreditBalance = () => (
+    <Button variant="outline" className="w-full justify-start text-left h-auto py-2" onClick={() => handleSetTab('pricing')}>
+      <div className="flex items-center space-x-3">
+        <Coins className="h-5 w-5 text-yellow-500" />
+        <div className="flex flex-col items-start">
+          <span className="text-xs text-muted-foreground">Credits</span>
+          <span className="font-semibold text-sm text-foreground">
+            {user ? parseFloat(user.credit_balance).toFixed(2) : "0.00"}
+          </span>
+        </div>
+      </div>
+    </Button>
+  );
+
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b flex items-center justify-between">
@@ -80,7 +78,11 @@ const Dashboard = () => {
         </div>
       </div>
       
-      <nav className="p-4 space-y-2 flex-grow">
+      <div className="p-4">
+        <CreditBalance />
+      </div>
+
+      <nav className="px-4 space-y-2 flex-grow">
         {sidebarItems.map((item) => (
           <button
             key={item.id}
@@ -124,9 +126,9 @@ const Dashboard = () => {
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
             </DropdownMenuItem>
-            <DropdownMenuItem disabled>
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile (soon)</span>
+            <DropdownMenuItem onClick={() => handleSetTab('pricing')}>
+              <CreditCard className="mr-2 h-4 w-4" />
+              <span>Buy Credits</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logoutUser} className="text-red-600 focus:bg-red-50 focus:text-red-700">
@@ -141,12 +143,10 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-muted/40 flex">
-      {/* Static Sidebar for larger screens */}
       <aside className="hidden lg:block w-64 bg-background border-r">
         <SidebarContent />
       </aside>
       
-      {/* Mobile Sidebar (Drawer) */}
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/60 z-40 lg:hidden" 
@@ -159,15 +159,15 @@ const Dashboard = () => {
       )}
 
       <div className="flex-1 flex flex-col">
-        {/* Mobile Header */}
         <header className="lg:hidden p-4 bg-background border-b flex items-center">
            <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)}>
             <Menu className="h-6 w-6" />
           </Button>
           <div className="flex-grow text-center text-lg font-semibold capitalize">{activeTab}</div>
+          <div className="w-10"></div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-4 lg:p-4 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             {renderContent()}
           </div>

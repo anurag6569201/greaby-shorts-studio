@@ -1,24 +1,22 @@
 # reels/views.py
-
-from rest_framework import generics, status, viewsets
+from django.db import transaction
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 
-from .models import Reel, VideoCreation, AudioCreation
+from .models import Reel
+from creations.models import VideoCreation
+from audio_creations.models import AudioCreation
 from .serializers import ReelCreateSerializer, ReelResponseSerializer, ReelUpdateSerializer
-from .tasks import combine_video_and_audio
+from .tasks import combine_video_and_audio, generate_subtitles_for_reel
 
 class ReelViewSet(viewsets.ModelViewSet):
-    """
-    A ViewSet for listing, creating, retrieving, updating, and deleting Reels.
-    """
-    permission_classes = [IsAuthenticated]
+    """A ViewSet for listing, creating, retrieving, updating, and deleting Reels."""
     
     def get_queryset(self):
-        # Ensure users can only see their own reels
         return Reel.objects.filter(user=self.request.user).select_related(
             'video_creation', 'audio_creation'
-        ).order_by('-created_at')
+        )
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -34,9 +32,8 @@ class ReelViewSet(viewsets.ModelViewSet):
         video_id = serializer.validated_data.get('video_creation_id')
         audio_id = serializer.validated_data.get('audio_creation_id')
         
-        # --- Validation ---
+        # --- Validation: Ensure source assets exist, are completed, and belong to the user ---
         try:
-            # Ensure the source assets exist, are completed, and belong to the user
             video = VideoCreation.objects.get(id=video_id, user=request.user, status=VideoCreation.Status.COMPLETED)
             audio = AudioCreation.objects.get(id=audio_id, user=request.user, status=AudioCreation.Status.COMPLETED)
         except (VideoCreation.DoesNotExist, AudioCreation.DoesNotExist):
@@ -45,22 +42,48 @@ class ReelViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # --- Create the Reel object and dispatch the task ---
+        # --- Create Reel object and dispatch combination task (0 credit cost) ---
         reel = Reel.objects.create(
             user=request.user,
             title=serializer.validated_data.get('title'),
             video_creation=video,
-            audio_creation=audio,
-            status=Reel.Status.PENDING
+            audio_creation=audio
         )
-        
         combine_video_and_audio.delay(str(reel.id))
 
-        response_serializer = ReelResponseSerializer(reel, context={'request': request})
+        response_serializer = self.get_serializer(reel)
         return Response(response_serializer.data, status=status.HTTP_202_ACCEPTED)
 
+    # --- NEW ACTION for subtitles ---
+    @action(detail=True, methods=['post'], url_path='generate-subtitles')
+    def generate_subtitles(self, request, pk=None):
+        reel = self.get_object()
+
+        if reel.status != Reel.Status.COMPLETED:
+            return Response({"detail": "Reel combination must be complete first."}, status=status.HTTP_400_BAD_REQUEST)
+        if reel.subtitle_status == Reel.SubtitleStatus.PENDING:
+            return Response({"detail": "Subtitle generation is already in progress."}, status=status.HTTP_409_CONFLICT)
+        if not reel.audio_creation or not reel.audio_creation.text_input:
+            return Response({"detail": "Source audio or its text script is missing."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        subtitle_cost = 1.0 # A small fee for the processing
+        user = request.user
+        if user.credit_balance < subtitle_cost:
+            return Response({"detail": f"Insufficient credits. This action costs {subtitle_cost} credits."}, status=status.HTTP_402_PAYMENT_REQUIRED)
+        
+        with transaction.atomic():
+            user.credit_balance -= subtitle_cost
+            user.save(update_fields=['credit_balance'])
+            reel.subtitle_status = Reel.SubtitleStatus.PENDING
+            reel.save(update_fields=['subtitle_status'])
+            # We can log this credit usage in a future 'CreditUsage' model if needed.
+
+        generate_subtitles_for_reel.delay(str(reel.id))
+        
+        return Response(self.get_serializer(reel).data, status=status.HTTP_202_ACCEPTED)
+        
     def perform_destroy(self, instance):
-        # Delete the associated file from storage
-        if instance.result_file:
-            instance.result_file.delete(save=False)
+        # Delete associated files from cloud storage
+        if instance.result_file: instance.result_file.delete(save=False)
+        if instance.subtitle_file: instance.subtitle_file.delete(save=False)
         instance.delete()
