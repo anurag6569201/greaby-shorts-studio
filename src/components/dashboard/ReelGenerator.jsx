@@ -233,7 +233,14 @@ const ReelGenerator = () => {
   const { data: reels, isLoading: isLoadingReels, isFetching: isFetchingReels } = useQuery({
     queryKey: ['reels'],
     queryFn: () => api.get('/reels/').then(res => res.data),
-    refetchInterval: (data) => Array.isArray(data) && data.some(c => ['pending', 'processing'].includes(c.status) || c.subtitle_status === 'pending') ? 5000 : false,
+    refetchInterval: (data) => 
+      Array.isArray(data) && data.some(
+        c => (
+          ['pending', 'processing'].includes(c.status) ||
+          !['completed', 'failed'].includes(c.status) ||
+          c.subtitle_status === 'pending'
+        )
+      ) ? 5000 : false,
     onSuccess: (newData) => {
       newData.forEach(newReel => {
         const oldReel = reelsCache.current.find(r => r.id === newReel.id);
@@ -329,7 +336,7 @@ const ReelGenerator = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" style={{ maxHeight: '400px', overflowY: 'auto' }}>
             <div className="space-y-2">
               <Label>1. Choose a Video</Label>
-              <ScrollArea className="h-64 w-full rounded-md" style={completedVideos.length > 0 ? {} : {border: '2px dashed #e4e7eb'}}>
+              <ScrollArea className="h-64 w-full rounded-md p-2" style={completedVideos.length > 0 ? {border: '2px dashed #e4e7eb'} : {border: '2px dashed #e4e7eb'}}>
                 {isLoadingAssets && <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin" /></div>}
                 {completedVideos.length > 0 ? (
                   <div className="space-y-3">
@@ -351,7 +358,7 @@ const ReelGenerator = () => {
             </div>
             <div className="space-y-2">
               <Label>2. Choose an Audio Track</Label>
-              <ScrollArea className="h-64 w-full rounded-md" style={completedAudios.length > 0 ? {} : {border: '2px dashed #e4e7eb'}}>
+              <ScrollArea className="h-64 w-full rounded-md p-2" style={completedAudios.length > 0 ? {border: '2px dashed #e4e7eb'} : {border: '2px dashed #e4e7eb'}}>
                 {isLoadingAssets && <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin" /></div>}
                 {completedAudios.length > 0 ? (
                   <div className="space-y-3">{completedAudios.map(a => <AssetCard key={a.id} asset={a} type="audio" onSelect={setSelectedAudio} isSelected={selectedAudio === a.id} />)}</div>

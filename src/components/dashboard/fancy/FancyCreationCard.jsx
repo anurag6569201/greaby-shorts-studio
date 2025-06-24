@@ -70,7 +70,7 @@ export const FancyCreationCard = ({ creation, cardVariants, variant = 1 }) => {
     } else {
       return (
         <div className="w-full h-full flex items-center justify-center text-center p-4">
-          {['pending', 'processing'].includes(creation.status) ? (
+          {['pending', 'processing'].includes(creation.status) || !['completed', 'failed'].includes(creation.status) ? (
             <div>
               <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
               <p className="text-sm text-slate-600 font-medium capitalize">{creation.status}...</p>

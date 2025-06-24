@@ -55,7 +55,7 @@ const AudioCard = ({ audio, onEdit, onDelete }) => {
           )
         ) : (
           <div className="text-center">
-            {['pending', 'processing'].includes(audio.status) ? (
+            {['pending', 'processing'].includes(audio.status) || !['completed', 'failed'].includes(audio.status) ? (
                 <><Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" /><p className="text-xs text-muted-foreground mt-2 capitalize">{audio.status}...</p></>
             ) : (
                 <><AlertCircle className="h-6 w-6 text-destructive mx-auto" /><p className="text-xs text-destructive mt-2 font-semibold">Failed</p></>
@@ -89,7 +89,6 @@ const AudioGenerator = () => {
     const { data: audios, isLoading: isLoadingHistory, isFetching } = useQuery({
         queryKey: ['audioCreations'],
         queryFn: () => api.get('/audios/').then(res => res.data),
-        refetchInterval: (data) => Array.isArray(data) && data.some(c => ['pending', 'processing'].includes(c.status)) ? 5000 : false,
     });
     
     const { mutate: generateAudio, isLoading: isGenerating } = useMutation({

@@ -21,6 +21,8 @@ import ContactPage from "./pages/intro/ContactPage";
 import TermsPage from "./pages/intro/TermsPage";
 import PrivacyPage from "./pages/intro/PrivacyPage";
 
+import { WebSocketProvider } from "./context/WebSocketContext";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -35,25 +37,27 @@ const App = () => (
     <TooltipProvider>
       <BrowserRouter>
         <AuthProvider>
-          <Toaster />
-          <Sonner position="bottom-right" richColors />
-          <Routes>
-            <Route path="/" element={<PublicRoute><Index /></PublicRoute>} />
-            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-            <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
-            
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            
-            {/* Shared/Marketing Routes */}
-            <Route path="/pricing" element={<PricingPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/blog" element={<BlogPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            <Route path="/terms" element={<TermsPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <WebSocketProvider>
+            <Toaster />
+            <Sonner position="bottom-right" richColors />
+            <Routes>
+              <Route path="/" element={<PublicRoute><Index /></PublicRoute>} />
+              <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+              <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+
+              {/* Shared/Marketing Routes */}
+              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/blog" element={<BlogPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </WebSocketProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

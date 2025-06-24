@@ -108,7 +108,6 @@ const VideoGenerator = () => {
   const { data: creations, isLoading: isLoadingHistory, isFetching } = useQuery({
     queryKey: ['videoCreations'],
     queryFn: () => api.get('/videos/').then(res => res.data),
-    refetchInterval: (data) => Array.isArray(data) && data.some(c => ['pending', 'processing'].includes(c.status)) ? 5000 : false,
   });
 
   const { mutate: generateVideo, isLoading: isGenerating } = useMutation({
