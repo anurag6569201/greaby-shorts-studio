@@ -8,7 +8,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .models import CreditPack, Purchase
-from .serializers import CreditPackSerializer, PurchaseRequestSerializer
+from .serializers import CreditPackSerializer, PurchaseRequestSerializer, PurchaseHistorySerializer
 from users.models import User
 import time
 
@@ -144,3 +144,18 @@ class RazorpayWebhookView(views.APIView):
                 return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response(status=status.HTTP_200_OK)
+    
+
+class PurchaseHistoryListView(generics.ListAPIView):
+    """
+    Lists all completed purchases for the currently authenticated user.
+    """
+    serializer_class = PurchaseHistorySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Return only completed purchases for the current user, ordered by most recent first.
+        return Purchase.objects.filter(
+            user=self.request.user, 
+            status=Purchase.Status.COMPLETED
+        ).order_by('-created_at')

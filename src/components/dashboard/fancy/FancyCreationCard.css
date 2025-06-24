@@ -38,7 +38,16 @@
   radial-gradient(at 28% 4%, hsl(262, 83%, 58%) 0px, transparent 50%),
   radial-gradient(at 69% 49%, hsl(262, 79%, 66%) 0px, transparent 50%),
   radial-gradient(at 94% 14%, hsla(232,66%,62%,1) 0px, transparent 50%);
-  opacity: 0.4;
+  opacity: 0.6;
+}
+.design-background1{
+  filter: blur(var(--blur));
+background-color: #faff99;
+background-image: 
+  radial-gradient(at 33% 82%, hsla(254, 71%, 69%, 0.6) 0px, transparent 50%),
+  radial-gradient(at 28% 4%, hsla(262, 83%, 58%, 0.6) 0px, transparent 50%),
+  radial-gradient(at 69% 49%, hsla(262, 79%, 66%, 0.6) 0px, transparent 50%),
+  radial-gradient(at 94% 14%, hsla(232, 66%, 62%, 0.6) 0px, transparent 50%);
 }
 /* Add other .variant-N::before rules here if you need them... */
 
@@ -90,4 +99,40 @@ position: absolute;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+}
+
+.fancy-card.no-overlay::after {
+  display: none;
+}
+
+/* FancyCreationCard.css or your global CSS */
+.play-button-glow {
+  position: relative;
+}
+
+.play-button-glow::before {
+  content: '';
+  position: absolute;
+  width: 120%;
+  height: 120%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.3);
+  filter: blur(8px);
+  opacity: 0.7;
+  animation: pulse 2s infinite ease-in-out;
+  z-index: -1;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 1;
+  }
 }

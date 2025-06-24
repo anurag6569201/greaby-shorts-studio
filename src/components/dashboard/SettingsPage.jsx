@@ -40,13 +40,14 @@ const SettingsPage = () => {
         <h1 className="text-3xl font-bold">Settings</h1>
         <p className="text-muted-foreground">Manage your account and billing details.</p>
       </div>
-
-      <Card>
-        <CardHeader>
+      <hr style={{marginTop:'10px',marginBottom:'5px'}}/>
+      <Card className="bg-transparent shadow-none border border-none" style={{border:'none'}}>
+        <CardHeader className="p-0 pt-4">
           <CardTitle>Profile</CardTitle>
           <CardDescription>This is how your name appears in the application.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <br />
+        <CardContent className="p-0 pt-2">
           <form onSubmit={handleProfileUpdate} className="space-y-4 max-w-lg">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -69,13 +70,16 @@ const SettingsPage = () => {
           </form>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
+      <br />
+      <hr />
+      <br />
+      <Card className="bg-transparent shadow-none border border-none" style={{border:'none'}}>
+        <CardHeader className="p-0 pt-2">
           <CardTitle>Billing & Credits</CardTitle>
           <CardDescription>Manage your credits and view your balance.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <br />
+        <CardContent className="space-y-4 p-0">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border rounded-lg bg-muted/50 gap-4">
             <div>
               <p className="font-medium flex items-center"><Coins className="h-4 w-4 mr-2 text-yellow-500"/>Current Credit Balance</p>

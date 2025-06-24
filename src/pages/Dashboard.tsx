@@ -6,19 +6,22 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sparkles, Home, Video, Mic, Clapperboard, Settings, LogOut, User, Menu, CreditCard, Coins } from "lucide-react";
+import { Sparkles, Home, Video, Mic, Clapperboard, Settings, LogOut, User, Menu, CreditCard, Coins,History } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import DashboardHome from "@/components/dashboard/DashboardHome";
 import VideoGenerator from "@/components/dashboard/VideoGenerator";
 import AudioGenerator from "@/components/dashboard/AudioGenerator";
 import ReelGenerator from "@/components/dashboard/ReelGenerator";
 import SettingsPage from "@/components/dashboard/SettingsPage";
+import PricingPage from "@/components/dashboard/PricingPage";
+import HistoryPage from "@/components/dashboard/HistoryPage";
 
 const sidebarItems = [
   { id: "home", label: "Home", icon: Home },
   { id: "video", label: "Video", icon: Video },
   { id: "audio", label: "Audio", icon: Mic },
   { id: "reels", label: "Reels", icon: Clapperboard },
+  { id: "history", label: "Usage History", icon: History },
 ];
 
 const getInitials = (firstName = "", lastName = "") => {
@@ -48,7 +51,9 @@ const Dashboard = () => {
       case "video": return <VideoGenerator />;
       case "audio": return <AudioGenerator />;
       case "reels": return <ReelGenerator />;
+      case "pricing": return <PricingPage />;
       case "settings": return <SettingsPage />;
+      case "history": return <HistoryPage />;
       default: return <DashboardHome setActiveTab={handleSetTab} />;
     }
   };

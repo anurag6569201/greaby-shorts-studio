@@ -34,13 +34,26 @@ class ReelViewSet(viewsets.ModelViewSet):
         
         # --- Validation: Ensure source assets exist, are completed, and belong to the user ---
         try:
+            # Step 1: Check DB status and ownership
             video = VideoCreation.objects.get(id=video_id, user=request.user, status=VideoCreation.Status.COMPLETED)
             audio = AudioCreation.objects.get(id=audio_id, user=request.user, status=AudioCreation.Status.COMPLETED)
+
+            # Step 2: Check if the file field actually has a file assigned to it.
+            if not video.result_file or not audio.result_file:
+                raise ValueError("Source asset is marked as complete but is missing the result file.")
+
         except (VideoCreation.DoesNotExist, AudioCreation.DoesNotExist):
             return Response(
                 {"detail": "One or more source assets not found, not complete, or do not belong to you."},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        except ValueError as e:
+            print(f"Reel creation validation failed for user {request.user.email}: {e}")
+            return Response(
+                {"detail": "A source asset is corrupted or missing its file. Please try regenerating it."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
 
         # --- Create Reel object and dispatch combination task (0 credit cost) ---
         reel = Reel.objects.create(

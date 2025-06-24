@@ -24,3 +24,22 @@ class PurchaseRequestSerializer(serializers.Serializer):
         except CreditPack.DoesNotExist:
             raise serializers.ValidationError("This credit pack is not available for purchase.")
         return pack
+    
+
+class PurchaseHistorySerializer(serializers.ModelSerializer):
+    """
+    Serializes a user's purchase history for display.
+    """
+    credit_pack_name = serializers.CharField(source='credit_pack.name', read_only=True)
+
+    class Meta:
+        model = Purchase
+        fields = (
+            'id',
+            'status',
+            'credit_pack_name',
+            'credits_purchased',
+            'amount_paid',
+            'created_at',
+        )
+        read_only_fields = fields
