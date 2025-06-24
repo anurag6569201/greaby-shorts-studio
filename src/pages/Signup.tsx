@@ -1,5 +1,3 @@
-// src/pages/Signup.jsx
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,6 +45,7 @@ const OtpInput = ({ otp, setOtp, disabled }) => {
                     onKeyDown={(e) => handleKeyDown(e, index)}
                     className="w-12 h-14 text-center text-2xl font-bold"
                     disabled={disabled}
+                    autoComplete="one-time-code"
                 />
             ))}
         </div>
@@ -80,7 +79,7 @@ const Signup = () => {
                 password: formData.password 
             });
             toast.success("Registration successful!", { description: "Please check your email for the verification code." });
-            setIsOtpModalOpen(true); // Open the OTP modal on success
+            setIsOtpModalOpen(true);
         } catch (error) {
             toast.error(error.response?.data?.detail || "Signup failed. This email may already be in use.");
         } finally {
@@ -99,10 +98,10 @@ const Signup = () => {
             await api.post('/auth/verify-otp/', { email: formData.email, otp: fullOtp });
             toast.success("Account verified successfully! Logging you in...");
             setIsOtpModalOpen(false);
-            // After successful OTP verification, automatically log the user in
             await loginUser(formData.email, formData.password);
         } catch (error) {
             toast.error(error.response?.data?.detail || "Verification failed.");
+            setOtp(['', '', '', '', '', '']); // Clear OTP input on failure
         } finally {
             setOtpLoading(false);
         }

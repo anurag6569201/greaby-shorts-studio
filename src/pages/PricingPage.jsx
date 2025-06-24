@@ -127,7 +127,7 @@ const PricingPage = () => {
                  </Link>
                 <Button variant="ghost" onClick={() => navigate(user ? '/dashboard' : '/login')}>{user ? 'Go to Dashboard' : 'Login'}</Button>
             </header>
-            <main className="py-16 sm:py-24 px-4">
+            <main className="py-16 sm:py-24 px-4" style={{width:'100%'}}>
                 <div className="text-center max-w-3xl mx-auto">
                     <h1 className="text-4xl md:text-5xl font-bold text-gray-900">Top Up Your Creative Fuel</h1>
                     <p className="mt-4 text-lg text-muted-foreground">Buy credits as you go. No subscriptions, no monthly fees. Use them whenever you want.</p>
@@ -136,7 +136,7 @@ const PricingPage = () => {
                 {isLoadingPacks ? (
                     <div className="text-center mt-12"><Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" /></div>
                 ) : (
-                    <div className={`mt-16 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-${Math.min(processedPacks.length, 3)} gap-8 max-w-5xl mx-auto items-stretch`}>
+                    <div className={`mt-16 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-${Math.min(processedPacks.length, 3)} gap-8 container items-stretch`}>
                         {processedPacks.map(pack => 
                             <CreditPackCard 
                                 key={pack.id} 

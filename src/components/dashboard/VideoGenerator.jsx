@@ -11,7 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import {FancyCreationCard} from "./fancy/FancyCreationCard"; // Assuming this is a custom component for displaying creations
+import { FancyCreationCard } from "./fancy/FancyCreationCard"; // Assuming this is a custom component for displaying creations
 
 const listVariants = {
   visible: { transition: { staggerChildren: 0.07 } },
@@ -30,7 +30,7 @@ const CreationCard = React.memo(({ creation }) => {
     if (aspectRatio === "1:1") return "aspect-square";
     return "aspect-video";
   };
-  
+
   const handleDownload = (e) => {
     e.stopPropagation(); // Prevent triggering the play button
     const link = document.createElement('a');
@@ -48,19 +48,19 @@ const CreationCard = React.memo(({ creation }) => {
         <CardContent className="p-0">
           <div className={`bg-slate-100 dark:bg-slate-800 flex items-center justify-center relative ${getAspectRatioClass(creation.aspect_ratio)}`}>
             {creation.status === 'completed' && creation.result_url ? (
-                <>
-                    {shouldLoadVideo ? (
-                        <video key={creation.id} src={creation.result_url} controls autoPlay muted loop className="w-full h-full object-cover bg-black" />
-                    ) : (
-                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 cursor-pointer group" onClick={() => setShouldLoadVideo(true)}>
-                            <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <Play className="h-8 w-8 text-white ml-1" />
-                            </div>
-                        </div>
-                    )}
-                    {/* Placeholder image/thumbnail could go here, under the play button overlay */}
-                    <div className="w-full h-full bg-slate-200" /> 
-                </>
+              <>
+                {shouldLoadVideo ? (
+                  <video key={creation.id} src={creation.result_url} controls autoPlay muted loop className="w-full h-full object-cover bg-black" />
+                ) : (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 cursor-pointer group" onClick={() => setShouldLoadVideo(true)}>
+                    <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Play className="h-8 w-8 text-white ml-1" />
+                    </div>
+                  </div>
+                )}
+                {/* Placeholder image/thumbnail could go here, under the play button overlay */}
+                <div className="w-full h-full bg-slate-200" />
+              </>
             ) : (
               <div className="text-center p-4">
                 {['pending', 'processing'].includes(creation.status) ? (
@@ -76,13 +76,13 @@ const CreationCard = React.memo(({ creation }) => {
           <p className="text-sm font-medium line-clamp-2 text-foreground" title={creation.prompt}>{creation.prompt}</p>
         </div>
         <CardFooter className="p-4 pt-0 flex justify-between items-center">
-            <p className="text-xs text-muted-foreground">{new Date(creation.created_at).toLocaleString()}</p>
-            {creation.status === 'completed' && (
-                <Button size="sm" variant="ghost" onClick={handleDownload}>
-                    <Download className="h-4 w-4 mr-2"/>
-                    Download
-                </Button>
-            )}
+          <p className="text-xs text-muted-foreground">{new Date(creation.created_at).toLocaleString()}</p>
+          {creation.status === 'completed' && (
+            <Button size="sm" variant="ghost" onClick={handleDownload}>
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </Button>
+          )}
         </CardFooter>
       </Card>
     </motion.div>
@@ -113,16 +113,23 @@ const VideoGenerator = () => {
 
   const { mutate: generateVideo, isLoading: isGenerating } = useMutation({
     mutationFn: (newCreation) => api.post('/videos/', newCreation),
-    onSuccess: () => {
+    onSuccess: (response) => {
       toast.success("Video generation started!", { description: "Your new creation will appear in your library shortly." });
-      queryClient.invalidateQueries({ queryKey: ['videoCreations'] });
+
+      // Manually update the react-query cache to add the new "pending" creation instantly
+      queryClient.setQueryData(['videoCreations'], (oldData = []) => {
+        // The backend returns the new creation object in the response.data
+        return [response.data, ...oldData];
+      });
+
+      // We still invalidate other queries and refetch the user profile
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       fetchUserProfile();
       setPrompt("");
     },
     onError: (error) => {
       if (error.response?.status === 402) {
-        toast.error("Insufficient Credits", { 
+        toast.error("Insufficient Credits", {
           description: error.response?.data?.detail || "Please purchase more credits to continue.",
           action: { label: "Buy Credits", onClick: () => navigate('/pricing') }
         });
@@ -143,16 +150,16 @@ const VideoGenerator = () => {
 
   return (
     <div className="space-y-8">
-      <Card className="bg-transparent shadow-none border border-none" style={{border:'none'}}>
+      <Card className="bg-transparent shadow-none border border-none" style={{ border: 'none' }}>
         <CardHeader className="p-0">
           <CardTitle className="text-2xl flex items-center"><Sparkles className="h-6 w-6 mr-3 text-primary" />Video Generation</CardTitle>
           <CardDescription>Describe your vision, choose your settings, and let our AI bring it to life.</CardDescription>
         </CardHeader>
-        <hr style={{marginTop:'10px',marginBottom:'5px'}}/>
+        <hr style={{ marginTop: '10px', marginBottom: '5px' }} />
         <CardContent className="space-y-6 p-0 pt-4">
           <div className="space-y-2">
             <Label htmlFor="prompt-area" className="text-base font-semibold">Prompt</Label>
-            <Textarea id="prompt-area" placeholder="A hyper-realistic video of a cat DJing at a party..." value={prompt} onChange={(e) => setPrompt(e.target.value)} className="min-h-[120px] text-base" disabled={isGenerating} style={{minHeight:"200px"}}/>
+            <Textarea id="prompt-area" placeholder="A hyper-realistic video of a cat DJing at a party..." value={prompt} onChange={(e) => setPrompt(e.target.value)} className="min-h-[120px] text-base" disabled={isGenerating} style={{ minHeight: "200px" }} />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
             <div><Label>Aspect Ratio</Label><Select value={settings.aspectRatio} onValueChange={(v) => setSettings(s => ({ ...s, aspectRatio: v }))} disabled={isGenerating}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1:1">Square (1:1)</SelectItem><SelectItem value="16:9">Landscape (16:9)</SelectItem><SelectItem value="9:16">Portrait (9:16)</SelectItem></SelectContent></Select></div>
@@ -173,9 +180,7 @@ const VideoGenerator = () => {
           </Button>
         </CardFooter>
       </Card>
-      <br />
       <hr />
-      <br />
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Video Library</h2>
@@ -188,10 +193,10 @@ const VideoGenerator = () => {
         ) : (
           <AnimatePresence>
             {creations?.length > 0 ? (
-              <motion.div 
-                className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4" 
-                variants={listVariants} 
-                initial="hidden" 
+              <motion.div
+                className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4"
+                variants={listVariants}
+                initial="hidden"
                 animate="visible"
               >
                 {creations.map((creation, index) => (
@@ -204,7 +209,7 @@ const VideoGenerator = () => {
                 ))}
               </motion.div>
             ) : (
-              <div className="text-center py-16 border-2 border-dashed rounded-xl">
+              <div className="text-center py-16 border-2 border-dashed rounded-xl p-4">
                 <h3 className="text-xl font-semibold">Your gallery is empty</h3>
                 <p className="text-muted-foreground mt-2">Use the controls above to create your first video.</p>
               </div>

@@ -123,10 +123,12 @@ const HistoryPage = () => {
                             </TableBody>
                         </Table>
                     ) : (
-                        <div className="text-center py-16 border-2 border-dashed rounded-xl">
+                        <>
+                        <div className="text-center py-16 border-2 border-dashed rounded-xl p-4 mt-3">
                             <h3 className="text-xl font-semibold">No History Yet</h3>
                             <p className="text-muted-foreground mt-2">Your credit purchases and generation expenses will appear here.</p>
                         </div>
+                        </>
                     )}
                 </CardContent>
             </Card>

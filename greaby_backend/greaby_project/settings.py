@@ -50,7 +50,7 @@ ROOT_URLCONF = 'greaby_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR,'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -142,3 +142,18 @@ AZURE_CONNECTION_TIMEOUT_SECS = 600
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# --- Frontend Url ---
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')
+
+# --- Email Configuration ---
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+
+# SMTP Settings (for Gmail, etc.)
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='anurag6569201@gmail.com')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='ihasreqxxrrtzmrc')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Greaby AI <noreply@example.com>')

@@ -11,6 +11,7 @@ from .models import CreditPack, Purchase
 from .serializers import CreditPackSerializer, PurchaseRequestSerializer, PurchaseHistorySerializer
 from users.models import User
 import time
+from greaby_project.email_utils import send_template_email
 
 # Initialize Razorpay client
 client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
@@ -133,6 +134,22 @@ class RazorpayWebhookView(views.APIView):
                     user.save(update_fields=['credit_balance'])
                     
                     print(f"SUCCESS: Granted {purchase.credits_purchased} credits to {user.email}.")
+                    
+                    # --- SENDING PURCHASE RECEIPT EMAIL ---
+                    email_context = {
+                        'first_name': user.first_name,
+                        'credits_purchased': purchase.credits_purchased,
+                        'pack_name': purchase.credit_pack.name,
+                        'amount_paid': purchase.amount_paid,
+                        'new_balance': user.credit_balance,
+                        'dashboard_url': f"{settings.FRONTEND_URL}/dashboard"
+                    }
+                    send_template_email(
+                        subject=f"Your Greaby Purchase Receipt - Order #{purchase.id.hex[:8]}",
+                        template_name="emails/purchase_receipt.html",
+                        context=email_context,
+                        recipient_list=[user.email]
+                    )
 
             except Purchase.DoesNotExist:
                 # This can happen if a webhook is for an old/already processed order.

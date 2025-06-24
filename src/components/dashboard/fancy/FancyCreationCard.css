@@ -33,7 +33,7 @@
 
 .design-background{
     filter: blur(var(--blur));
-  background-color: #faff99;
+  background-color: #f7f7f8;
   background-image: radial-gradient(at 33% 82%, hsla(254,71%,69%,1) 0px, transparent 50%),
   radial-gradient(at 28% 4%, hsl(262, 83%, 58%) 0px, transparent 50%),
   radial-gradient(at 69% 49%, hsl(262, 79%, 66%) 0px, transparent 50%),
@@ -42,7 +42,7 @@
 }
 .design-background1{
   filter: blur(var(--blur));
-background-color: #faff99;
+background-color: #f7f7f8;
 background-image: 
   radial-gradient(at 33% 82%, hsla(254, 71%, 69%, 0.6) 0px, transparent 50%),
   radial-gradient(at 28% 4%, hsla(262, 83%, 58%, 0.6) 0px, transparent 50%),

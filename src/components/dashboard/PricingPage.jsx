@@ -118,17 +118,18 @@ const PricingPage = () => {
     
     return (
         <>
-        <div className="min-h-screen bg-slate-50">
-            <main className="py-16 sm:py-24">
-                <div className="text-center max-w-3xl mx-auto">
-                    <h1 className="text-4xl md:text-5xl font-bold text-gray-900">Top Up Your Creative Fuel</h1>
-                    <p className="mt-4 text-lg text-muted-foreground">Buy credits as you go. No subscriptions, no monthly fees. Use them whenever you want.</p>
+        <div className="min-h-100 bg-slate-50 flex align-center">
+            <main className="" style={{width:'100%'}}>
+                <div className="text-left">
+                    <h1 className="text-2xl font-bold text-gray-900">Top Up Your Creative Fuel</h1>
+                    <p className="text-lg text-muted-foreground">Buy credits as you go. No subscriptions, no monthly fees. Use them whenever you want.</p>
                 </div>
                 <br />
+                <hr /><br />
                 {isLoadingPacks ? (
                     <div className="text-center mt-12"><Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" /></div>
                 ) : (
-                    <div className={`mt-16 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-${Math.min(processedPacks.length, 3)} gap-6 max-w-5xl mx-auto items-stretch`}>
+                    <div className={`mt-16 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-${Math.min(processedPacks.length, 3)} gap-6 mx-auto items-stretch`}>
                         {processedPacks.map(pack => 
                             <CreditPackCard 
                                 key={pack.id} 

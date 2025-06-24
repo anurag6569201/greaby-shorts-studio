@@ -177,16 +177,14 @@ const AudioGenerator = () => {
                     </Button>
                 </CardFooter>
             </Card>
-      <br />
       <hr />
-      <br />
             <div className="space-y-4">
                 <div className="flex justify-between items-center"><h2 className="text-2xl font-bold">Audio Library</h2><Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ['audioCreations'] })} disabled={isFetching}><RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} /> Refresh</Button></div>
                 {isLoadingHistory ? <div className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div> : audios?.length > 0 ? (
                     <motion.div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                         {audios.map(a => <AudioCard key={a.id} audio={a} onEdit={(audio) => { setEditingAudio(audio); setNewTitle(audio.title); }} onDelete={setDeletingAudio} />)}
                     </motion.div>
-                ) : <div className="text-center py-16 border-2 border-dashed rounded-xl"><h3 className="text-xl font-semibold">Your library is empty</h3><p className="text-muted-foreground mt-2">Generated audios will appear here.</p></div>}
+                ) : <div className="text-center py-16 border-2 border-dashed rounded-xl p-4"><h3 className="text-xl font-semibold">Your library is empty</h3><p className="text-muted-foreground mt-2">Generated audios will appear here.</p></div>}
             </div>
 
             <Dialog open={!!editingAudio} onOpenChange={() => setEditingAudio(null)}><DialogContent><DialogHeader><DialogTitle>Edit Audio Title</DialogTitle><DialogDescription>Give your audio a new title to easily identify it later.</DialogDescription></DialogHeader><div className="grid gap-4 py-4"><Label htmlFor="title">Title</Label><Input id="title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} /></div><DialogFooter><Button variant="outline" onClick={() => setEditingAudio(null)}>Cancel</Button><Button onClick={handleUpdateTitle} disabled={isUpdating}>{isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save Changes</Button></DialogFooter></DialogContent></Dialog>
