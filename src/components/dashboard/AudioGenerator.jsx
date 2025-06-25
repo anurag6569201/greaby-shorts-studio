@@ -18,67 +18,124 @@ import { useNavigate } from "react-router-dom";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 const VOICE_OPTIONS = [
-    // English Voices
-    { value: 'en-US-AvaMultilingualNeural', label: 'Ava', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
-    { value: 'en-US-AndrewMultilingualNeural', label: 'Andrew', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
-    { value: 'en-US-JennyNeural', label: 'Jenny', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
-    { value: 'en-US-GuyNeural', label: 'Guy', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
-    { value: 'en-US-AriaNeural', label: 'Aria', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
-    { value: 'en-US-AnaNeural', label: 'Ana', group: 'English (US)', accent: 'US', gender: 'Child', flag: '🇺🇸' },
-    { value: 'en-GB-SoniaNeural', label: 'Sonia', group: 'English (UK)', accent: 'UK', gender: 'Female', flag: '🇬🇧' },
-    { value: 'en-GB-RyanNeural', label: 'Ryan', group: 'English (UK)', accent: 'UK', gender: 'Male', flag: '🇬🇧' },
-    { value: 'en-GB-LibbyNeural', label: 'Libby', group: 'English (UK)', accent: 'UK', gender: 'Female', flag: '🇬🇧' },
-    { value: 'en-GB-MaisieNeural', label: 'Maisie', group: 'English (UK)', accent: 'UK', gender: 'Child', flag: '🇬🇧' },
-    { value: 'en-AU-NatashaNeural', label: 'Natasha', group: 'English (Australia)', accent: 'AU', gender: 'Female', flag: '🇦🇺' },
-    { value: 'en-AU-WilliamNeural', label: 'William', group: 'English (Australia)', accent: 'AU', gender: 'Male', flag: '🇦🇺' },
-    { value: 'en-IN-NeerjaNeural', label: 'Neerja', group: 'English (India)', accent: 'IN', gender: 'Female', flag: '🇮🇳' },
-    { value: 'en-IN-PrabhatNeural', label: 'Prabhat', group: 'English (India)', accent: 'IN', gender: 'Male', flag: '🇮🇳' },
-
-    // Spanish Voices
-    { value: 'es-MX-DaliaNeural', label: 'Dalia', group: 'Spanish (Mexico)', accent: 'MX', gender: 'Female', flag: '🇲🇽' },
-    { value: 'es-MX-JorgeNeural', label: 'Jorge', group: 'Spanish (Mexico)', accent: 'MX', gender: 'Male', flag: '🇲🇽' },
-    { value: 'es-ES-ElviraNeural', label: 'Elvira', group: 'Spanish (Spain)', accent: 'ES', gender: 'Female', flag: '🇪🇸' },
-    { value: 'es-ES-AlvaroNeural', label: 'Alvaro', group: 'Spanish (Spain)', accent: 'ES', gender: 'Male', flag: '🇪🇸' },
-    { value: 'es-US-PalomaNeural', label: 'Paloma', group: 'Spanish (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
-    { value: 'es-US-AlonsoNeural', label: 'Alonso', group: 'Spanish (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
-
-    // French Voices
-    { value: 'fr-FR-DeniseNeural', label: 'Denise', group: 'French', accent: 'FR', gender: 'Female', flag: '🇫🇷' },
-    { value: 'fr-FR-HenriNeural', label: 'Henri', group: 'French', accent: 'FR', gender: 'Male', flag: '🇫🇷' },
-    { value: 'fr-CA-SylvieNeural', label: 'Sylvie', group: 'French (Canada)', accent: 'CA', gender: 'Female', flag: '🇨🇦' },
-    { value: 'fr-CA-JeanNeural', label: 'Jean', group: 'French (Canada)', accent: 'CA', gender: 'Male', flag: '🇨🇦' },
+    // Chinese Voices
+    { value: 'zh-CN-XiaochenMultilingualNeural4', label: 'Xiaochen', group: 'Chinese (Mandarin)', accent: 'CN', gender: 'Female', flag: '🇨🇳' },
+    { value: 'zh-CN-Xiaochen:DragonHDLatestNeural', label: 'Xiaochen', group: 'Chinese (Mandarin)', accent: 'CN', gender: 'Female', flag: '🇨🇳' },
+    { value: 'zh-CN-XiaoxiaoMultilingualNeural4', label: 'Xiaoxiao', group: 'Chinese (Mandarin)', accent: 'CN', gender: 'Female', flag: '🇨🇳' },
+    { value: 'zh-CN-XiaoyuMultilingualNeural4', label: 'Xiaoyu', group: 'Chinese (Mandarin)', accent: 'CN', gender: 'Female', flag: '🇨🇳' },
+    { value: 'zh-CN-Yunfan:DragonHDLatestNeural', label: 'Yunfan', group: 'Chinese (Mandarin)', accent: 'CN', gender: 'Male', flag: '🇨🇳' },
+    { value: 'zh-CN-YunxiaoMultilingualNeural1,4', label: 'Yunxiao', group: 'Chinese (Mandarin)', accent: 'CN', gender: 'Male', flag: '🇨🇳' },
+    { value: 'zh-CN-YunyiMultilingualNeural4', label: 'Yunyi', group: 'Chinese (Mandarin)', accent: 'CN', gender: 'Male', flag: '🇨🇳' },
 
     // German Voices
-    { value: 'de-DE-KatjaNeural', label: 'Katja', group: 'German', accent: 'DE', gender: 'Female', flag: '🇩🇪' },
-    { value: 'de-DE-ConradNeural', label: 'Conrad', group: 'German', accent: 'DE', gender: 'Male', flag: '🇩🇪' },
-    { value: 'de-AT-IngridNeural', label: 'Ingrid', group: 'German (Austria)', accent: 'AT', gender: 'Female', flag: '🇦🇹' },
-    { value: 'de-CH-LeniNeural', label: 'Leni', group: 'German (Switzerland)', accent: 'CH', gender: 'Female', flag: '🇨🇭' },
+    { value: 'de-DE-FlorianMultilingualNeural4', label: 'Florian', group: 'German', accent: 'DE', gender: 'Male', flag: '🇩🇪' },
+    { value: 'de-DE-Florian:DragonHDLatestNeural', label: 'Florian', group: 'German', accent: 'DE', gender: 'Male', flag: '🇩🇪' },
+    { value: 'de-DE-SeraphinaMultilingualNeural4', label: 'Seraphina', group: 'German', accent: 'DE', gender: 'Female', flag: '🇩🇪' },
+    { value: 'de-DE-Seraphina:DragonHDLatestNeural', label: 'Seraphina', group: 'German', accent: 'DE', gender: 'Female', flag: '🇩🇪' },
 
-    // Chinese Voices
-    { value: 'zh-CN-XiaoxiaoNeural', label: 'Xiaoxiao', group: 'Chinese (Mandarin)', accent: 'CN', gender: 'Female', flag: '🇨🇳' },
-    { value: 'zh-CN-YunxiNeural', label: 'Yunxi', group: 'Chinese (Mandarin)', accent: 'CN', gender: 'Male', flag: '🇨🇳' },
-    { value: 'zh-HK-HiuMaanNeural', label: 'HiuMaan', group: 'Chinese (Cantonese)', accent: 'HK', gender: 'Female', flag: '🇭🇰' },
-    { value: 'zh-TW-HsiaoChenNeural', label: 'HsiaoChen', group: 'Chinese (Taiwan)', accent: 'TW', gender: 'Female', flag: '🇹🇼' },
+    // English (UK) Voices
+    { value: 'en-GB-AdaMultilingualNeural4', label: 'Ada', group: 'English (UK)', accent: 'UK', gender: 'Female', flag: '🇬🇧' },
+    { value: 'en-GB-OllieMultilingualNeural4', label: 'Ollie', group: 'English (UK)', accent: 'UK', gender: 'Male', flag: '🇬🇧' },
+
+    // English (India) Voices
+    { value: 'en-IN-AartiNeural', label: 'Aarti', group: 'English (India)', accent: 'IN', gender: 'Female', flag: '🇮🇳' },
+
+    // English (US) Voices
+    { value: 'en-US-Adam:DragonHDLatestNeural', label: 'Adam', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-Alloy:DragonHDLatestNeural1', label: 'Alloy', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-AlloyTurboMultilingualNeural4', label: 'AlloyTurbo', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-AmberNeural', label: 'Amber', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-AnaNeural', label: 'Ana', group: 'English (US)', accent: 'US', gender: 'Child', flag: '🇺🇸' },
+    { value: 'en-US-AndrewNeural', label: 'Andrew', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-AndrewMultilingualNeural4', label: 'Andrew', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-Andrew:DragonHDLatestNeural', label: 'Andrew', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-Andrew2:DragonHDLatestNeural', label: 'Andrew2', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-Andrew3:DragonHDLatestNeural1', label: 'Andrew3', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-AriaNeural', label: 'Aria', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-Aria:DragonHDLatestNeural1', label: 'Aria', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-AshleyNeural', label: 'Ashley', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-AvaNeural', label: 'Ava', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-AvaMultilingualNeural4', label: 'Ava', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-Ava:DragonHDLatestNeural', label: 'Ava', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-Ava3:DragonHDLatestNeural1', label: 'Ava3', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-BrandonNeural', label: 'Brandon', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-BrandonMultilingualNeural4', label: 'Brandon', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-Bree:DragonHDLatestNeural1', label: 'Bree', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-BrianNeural', label: 'Brian', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-BrianMultilingualNeural4', label: 'Brian', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-Brian:DragonHDLatestNeural', label: 'Brian', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-ChristopherNeural', label: 'Christopher', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-ChristopherMultilingualNeural4', label: 'Christopher', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-CoraNeural', label: 'Cora', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-CoraMultilingualNeural4', label: 'Cora', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-DavisNeural', label: 'Davis', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-Davis:DragonHDLatestNeural', label: 'Davis', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-EchoTurboMultilingualNeural4', label: 'EchoTurbo', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-ElizabethNeural', label: 'Elizabeth', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-EmmaNeural', label: 'Emma', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-EmmaMultilingualNeural4', label: 'Emma', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-Emma:DragonHDLatestNeural', label: 'Emma', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-Emma2:DragonHDLatestNeural', label: 'Emma2', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-EricNeural', label: 'Eric', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-FableTurboMultilingualNeural4', label: 'FableTurbo', group: 'English (US)', accent: 'US', gender: 'Neutral', flag: '🇺🇸' },
+    { value: 'en-US-GuyNeural', label: 'Guy', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-JacobNeural', label: 'Jacob', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-JaneNeural', label: 'Jane', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-JasonNeural', label: 'Jason', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-JennyNeural', label: 'Jenny', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-JennyMultilingualNeural4', label: 'Jenny', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-Jenny:DragonHDLatestNeural1', label: 'Jenny', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-KaiNeural', label: 'Kai', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-LunaNeural', label: 'Luna', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-MichelleNeural', label: 'Michelle', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-MonicaNeural', label: 'Monica', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-MultiTalker-Ava-Andrew:DragonHDLatestNeural1', label: 'MultiTalker-Ava-Andrew', group: 'English (US)', accent: 'US', gender: 'Neutral', flag: '🇺🇸' },
+    { value: 'en-US-MultiTalker-Ava-Steffan:DragonHDLatestNeural1', label: 'MultiTalker-Ava-Steffan', group: 'English (US)', accent: 'US', gender: 'Neutral', flag: '🇺🇸' },
+    { value: 'en-US-NancyNeural', label: 'Nancy', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-Nova:DragonHDLatestNeural1', label: 'Nova', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-NovaTurboMultilingualNeural4', label: 'NovaTurbo', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-OnyxTurboMultilingualNeural4', label: 'OnyxTurbo', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-Phoebe:DragonHDLatestNeural1', label: 'Phoebe', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-RogerNeural', label: 'Roger', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-RyanMultilingualNeural4', label: 'Ryan', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-SaraNeural', label: 'Sara', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-Serena:DragonHDLatestNeural1', label: 'Serena', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-ShimmerTurboMultilingualNeural4', label: 'ShimmerTurbo', group: 'English (US)', accent: 'US', gender: 'Female', flag: '🇺🇸' },
+    { value: 'en-US-SteffanNeural', label: 'Steffan', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-SteffanMultilingualNeural1,4', label: 'Steffan', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-Steffan:DragonHDLatestNeural', label: 'Steffan', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+    { value: 'en-US-TonyNeural', label: 'Tony', group: 'English (US)', accent: 'US', gender: 'Male', flag: '🇺🇸' },
+
+    // Spanish Voices
+    { value: 'es-ES-ArabellaMultilingualNeural4', label: 'Arabella', group: 'Spanish (Spain)', accent: 'ES', gender: 'Female', flag: '🇪🇸' },
+    { value: 'es-ES-IsidoraMultilingualNeural4', label: 'Isidora', group: 'Spanish (Spain)', accent: 'ES', gender: 'Female', flag: '🇪🇸' },
+    { value: 'es-ES-TristanMultilingualNeural4', label: 'Tristan', group: 'Spanish (Spain)', accent: 'ES', gender: 'Male', flag: '🇪🇸' },
+    { value: 'es-ES-Tristan:DragonHDLatestNeural', label: 'Tristan', group: 'Spanish (Spain)', accent: 'ES', gender: 'Male', flag: '🇪🇸' },
+    { value: 'es-ES-XimenaMultilingualNeural4', label: 'Ximena', group: 'Spanish (Spain)', accent: 'ES', gender: 'Female', flag: '🇪🇸' },
+    { value: 'es-ES-Ximena:DragonHDLatestNeural', label: 'Ximena', group: 'Spanish (Spain)', accent: 'ES', gender: 'Female', flag: '🇪🇸' },
+
+    // French Voices
+    { value: 'fr-FR-LucienMultilingualNeural4', label: 'Lucien', group: 'French', accent: 'FR', gender: 'Male', flag: '🇫🇷' },
+    { value: 'fr-FR-RemyMultilingualNeural4', label: 'Remy', group: 'French', accent: 'FR', gender: 'Male', flag: '🇫🇷' },
+    { value: 'fr-FR-Remy:DragonHDLatestNeural', label: 'Remy', group: 'French', accent: 'FR', gender: 'Male', flag: '🇫🇷' },
+    { value: 'fr-FR-VivienneMultilingualNeural4', label: 'Vivienne', group: 'French', accent: 'FR', gender: 'Female', flag: '🇫🇷' },
+    { value: 'fr-FR-Vivienne:DragonHDLatestNeural', label: 'Vivienne', group: 'French', accent: 'FR', gender: 'Female', flag: '🇫🇷' },
+
+    // Italian Voices
+    { value: 'it-IT-AlessioMultilingualNeural4', label: 'Alessio', group: 'Italian', accent: 'IT', gender: 'Male', flag: '🇮🇹' },
+    { value: 'it-IT-GiuseppeMultilingualNeural4', label: 'Giuseppe', group: 'Italian', accent: 'IT', gender: 'Male', flag: '🇮🇹' },
+    { value: 'it-IT-IsabellaMultilingualNeural4', label: 'Isabella', group: 'Italian', accent: 'IT', gender: 'Female', flag: '🇮🇹' },
+    { value: 'it-IT-MarcelloMultilingualNeural4', label: 'Marcello', group: 'Italian', accent: 'IT', gender: 'Male', flag: '🇮🇹' },
 
     // Japanese Voices
-    { value: 'ja-JP-NanamiNeural', label: 'Nanami', group: 'Japanese', accent: 'JP', gender: 'Female', flag: '🇯🇵' },
-    { value: 'ja-JP-KeitaNeural', label: 'Keita', group: 'Japanese', accent: 'JP', gender: 'Male', flag: '🇯🇵' },
+    { value: 'ja-JP-Nanami:DragonHDLatestNeural', label: 'Nanami', group: 'Japanese', accent: 'JP', gender: 'Female', flag: '🇯🇵' },
 
-    // Hindi Voices
-    { value: 'hi-IN-SwaraNeural', label: 'Swara', group: 'Hindi', accent: 'IN', gender: 'Female', flag: '🇮🇳' },
-    { value: 'hi-IN-MadhurNeural', label: 'Madhur', group: 'Hindi', accent: 'IN', gender: 'Male', flag: '🇮🇳' },
+    // Korean Voices
+    { value: 'ko-KR-HyunsuMultilingualNeural4', label: 'Hyunsu', group: 'Korean', accent: 'KR', gender: 'Male', flag: '🇰🇷' },
 
-    // Other Popular Languages
-    { value: 'pt-BR-FranciscaNeural', label: 'Francisca', group: 'Portuguese (Brazil)', accent: 'BR', gender: 'Female', flag: '🇧🇷' },
-    { value: 'pt-BR-AntonioNeural', label: 'Antonio', group: 'Portuguese (Brazil)', accent: 'BR', gender: 'Male', flag: '🇧🇷' },
-    { value: 'it-IT-ElsaNeural', label: 'Elsa', group: 'Italian', accent: 'IT', gender: 'Female', flag: '🇮🇹' },
-    { value: 'it-IT-DiegoNeural', label: 'Diego', group: 'Italian', accent: 'IT', gender: 'Male', flag: '🇮🇹' },
-    { value: 'ru-RU-SvetlanaNeural', label: 'Svetlana', group: 'Russian', accent: 'RU', gender: 'Female', flag: '🇷🇺' },
-    { value: 'ru-RU-DmitryNeural', label: 'Dmitry', group: 'Russian', accent: 'RU', gender: 'Male', flag: '🇷🇺' },
-    { value: 'ar-EG-SalmaNeural', label: 'Salma', group: 'Arabic (Egypt)', accent: 'EG', gender: 'Female', flag: '🇪🇬' },
-    { value: 'ar-EG-ShakirNeural', label: 'Shakir', group: 'Arabic (Egypt)', accent: 'EG', gender: 'Male', flag: '🇪🇬' },
-    { value: 'ko-KR-SunHiNeural', label: 'Sun-Hi', group: 'Korean', accent: 'KR', gender: 'Female', flag: '🇰🇷' },
-    { value: 'ko-KR-InJoonNeural', label: 'In-Joon', group: 'Korean', accent: 'KR', gender: 'Male', flag: '🇰🇷' },
+    // Portuguese Voices
+    { value: 'pt-BR-MacerioMultilingualNeural4', label: 'Macerio', group: 'Portuguese (Brazil)', accent: 'BR', gender: 'Male', flag: '🇧🇷' },
+    { value: 'pt-BR-ThalitaMultilingualNeural4', label: 'Thalita', group: 'Portuguese (Brazil)', accent: 'BR', gender: 'Female', flag: '🇧🇷' },
 ];
 
 const GENDER_OPTIONS = [
@@ -161,7 +218,7 @@ const VoiceSelector = ({ value, onChange, disabled }) => {
     stopPreview();
     
     try {
-      const audio = new Audio(`/voice-previews/${voice.value}.mp3`);
+      const audio = new Audio(`/voice-previews/${voice.value}-General-Audio-wav.wav`);
       audioRef.current = audio;
       setPreviewingVoice(voice.value);
       
