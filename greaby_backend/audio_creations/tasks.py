@@ -1,4 +1,4 @@
-import requests
+import azure.cognitiveservices.speech as speechsdk
 from celery import shared_task
 from django.conf import settings
 from django.db import transaction
@@ -8,10 +8,6 @@ from asgiref.sync import async_to_sync
 
 from .models import AudioCreation
 from greaby_project.email_utils import send_template_email
-
-# --- We can use the same helper function, just need to import it ---
-# (It's better to move this to a shared location like `notifications/utils.py`
-# but for now, we can redefine it here for simplicity and to be self-contained)
 
 def send_progress_update(user_id, creation_id, status_message, creation_type='audio'):
     """Sends a progress update over WebSocket."""
@@ -33,7 +29,6 @@ def send_progress_update(user_id, creation_id, status_message, creation_type='au
     except Exception as e:
         print(f"Failed to send progress update: {e}")
 
-
 def refund_credits_audio(creation_id: str, reason: str):
     """A helper function to atomically refund credits to a user for audio."""
     try:
@@ -51,53 +46,70 @@ def refund_credits_audio(creation_id: str, reason: str):
                 creation.save(update_fields=['credit_cost', 'error_message', 'status'])
                 print(f"REFUND: Refunded {original_cost} credits to {user.email} for audio creation {creation.id}.")
     except Exception as e:
-        print(f"CRITICAL: Failed to refund credits for audio creation {creation.id}. Error: {e}")
+        print(f"CRITICAL: Failed to refund credits for audio creation {creation_id}. Error: {e}")
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=30, acks_late=True)
+@shared_task(bind=True)
 def generate_audio_from_text(self, creation_id: str):
     creation = None
     try:
         creation = AudioCreation.objects.get(id=creation_id)
         creation.status = AudioCreation.Status.PROCESSING
         creation.save(update_fields=['status'])
-        send_progress_update(creation.user.id, creation.id, "Queued: Preparing AI request...")
+        send_progress_update(creation.user.id, creation.id, "Queued: Preparing request...")
     except AudioCreation.DoesNotExist:
         return f"AudioCreation with id {creation_id} not found."
 
     try:
-        # --- 1. Prepare Request to Azure ---
-        send_progress_update(creation.user.id, creation.id, "Step 1/3: Contacting AI model...")
-        api_key = settings.AZURE_OPENAI_API_KEY
-        api_version = "2024-05-01-preview"
-        url = ( f"{settings.AZURE_OPENAI_ENDPOINT_URL}openai/deployments/"
-                f"{settings.AZURE_TTS_DEPLOYMENT_NAME}/audio/speech?api-version={api_version}" )
-        headers = { 'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json' }
-        body = {
-            "model": settings.AZURE_TTS_DEPLOYMENT_NAME, "input": creation.text_input, "voice": creation.voice,
-            "response_format": creation.response_format, "speed": creation.speed,
+        send_progress_update(creation.user.id, creation.id, "Step 1/2: Contacting Speech Service...")
+        speech_config = speechsdk.SpeechConfig(
+            subscription=settings.AZURE_SPEECH_KEY, 
+            endpoint=settings.AZURE_SPEECH_ENDPOINT
+        )
+        speech_config.speech_synthesis_voice_name = creation.voice
+        
+        output_format_map = {
+            'mp3': speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3,
+            'opus': speechsdk.SpeechSynthesisOutputFormat.Ogg16Khz16BitMonoOpus,
+            'aac': speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3,
+            'flac': speechsdk.SpeechSynthesisOutputFormat.Audio24Khz160KBitRateMonoMp3,
+            'wav': speechsdk.SpeechSynthesisOutputFormat.Riff24Khz16BitMonoPcm,
         }
-        
-        # --- 2. Make API call ---
-        send_progress_update(creation.user.id, creation.id, "Step 2/3: AI is generating your audio...")
-        response = requests.post(url, headers=headers, json=body, stream=True, timeout=60)
-        
-        if not response.ok:
-            try:
-                error_message = response.json().get("error", {}).get("message", response.text)
-            except requests.exceptions.JSONDecodeError:
-                error_message = response.text
-            raise Exception(f"Azure TTS API failed: {error_message}")
+        output_format = output_format_map.get(creation.response_format, speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3)
+        speech_config.set_speech_synthesis_output_format(output_format)
 
-        # --- 3. Save the Result to Cloud Storage ---
-        send_progress_update(creation.user.id, creation.id, "Step 3/3: Finalizing...")
+        synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config)
+
+        rate_percentage = f"{((creation.speed - 1.0) * 100):+.2f}%"
+        ssml_string = f"""
+        <speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>
+            <voice name='{creation.voice}'>
+                <prosody rate='{rate_percentage}'>
+                    {creation.text_input}
+                </prosody>
+            </voice>
+        </speak>
+        """
+        
+        send_progress_update(creation.user.id, creation.id, "Step 2/2: Synthesizing audio...")
+        result = synthesizer.speak_ssml_async(ssml_string).get()
+
+        if result.reason == speechsdk.ResultReason.Canceled:
+            cancellation_details = result.cancellation_details
+            error_details = cancellation_details.error_details if cancellation_details.error_details else "No details provided."
+            raise Exception(f"Speech synthesis canceled: {cancellation_details.reason}. Details: {error_details}")
+        
+        if not result.audio_data:
+            raise Exception("Synthesis completed but no audio data was returned.")
+
+        audio_data = result.audio_data
         file_name = f'{creation.id}.{creation.response_format}'
-        file_content = ContentFile(response.content)
+        file_content = ContentFile(audio_data)
+        
         creation.result_file.save(file_name, file_content, save=False)
         creation.status = AudioCreation.Status.COMPLETED
         creation.error_message = None
         creation.save(update_fields=['result_file', 'status', 'error_message'])
     
-        # --- Send Final 'Completed' Notification ---
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f'user_{creation.user.id}',
@@ -117,16 +129,12 @@ def generate_audio_from_text(self, creation_id: str):
         print(f"ERROR during audio generation for {creation_id}: {error_message}")
         if creation:
             refund_credits_audio(creation_id, error_message)
-            # --- Send Final 'Failed' Notification ---
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(
                 f'user_{creation.user.id}',
                 {'type': 'send_notification', 'message': {'event': 'creation_failed', 'creation_type': 'audio', 'creation_id': str(creation.id)}}
             )
-            email_context = {
-                'creation_type': 'Audio', 'prompt': creation.title, 'error': error_message,
-                'dashboard_url': f"{settings.FRONTEND_URL}/dashboard?tab=audio"
-            }
+            email_context = { 'creation_type': 'Audio', 'prompt': creation.title, 'error': error_message, 'dashboard_url': f"{settings.FRONTEND_URL}/dashboard?tab=audio" }
             send_template_email("Your Audio Generation Failed", "emails/generation_failed.html", email_context, [creation.user.email])
         
         return f"Failed and refunded audio creation {creation_id}."

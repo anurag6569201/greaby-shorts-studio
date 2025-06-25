@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -23,6 +22,7 @@ const Navbar = () => {
             <span className="text-2xl font-bold text-foreground">Greaby</span>
           </Link>
           <div className="flex items-center space-x-2">
+            <Button variant="ghost" onClick={() => navigate('/pricing')}>Pricing</Button>
             <Button variant="ghost" onClick={() => navigate('/login')}>Login</Button>
             <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => navigate('/signup')}>Try Free</Button>
           </div>
