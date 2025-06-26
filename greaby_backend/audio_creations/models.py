@@ -1,8 +1,7 @@
-# audio_creations/models.py
 from django.db import models
 from creations.models import AbstractBaseCreation
 from greaby_project.storages import AudioStorage
-from .voices import VOICE_CHOICES # Import the new choices
+from .voices import VOICE_CHOICES
 
 class AudioCreation(AbstractBaseCreation):
     class ResponseFormat(models.TextChoices):
@@ -15,7 +14,7 @@ class AudioCreation(AbstractBaseCreation):
     title = models.CharField(max_length=255, blank=True)
     text_input = models.TextField()
 
-    voice = models.CharField(max_length=50, choices=VOICE_CHOICES, default='en-US-JennyNeural')
+    voice = models.CharField(max_length=100, choices=VOICE_CHOICES, default='en-US-JennyNeural')
     response_format = models.CharField(max_length=10, choices=ResponseFormat.choices, default=ResponseFormat.MP3)
     speed = models.FloatField(default=1.0, help_text="From 0.25 to 4.0")
 

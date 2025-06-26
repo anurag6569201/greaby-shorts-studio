@@ -1,30 +1,26 @@
 from decimal import Decimal
+from .costs import (
+    PLATFORM_FEE,
+    VOICE_MULTIPLIERS,
+    DEFAULT_VOICE_MULTIPLIER
+)
 
-# --- This is the central "Costing Engine" for audio generation ---
-
-def calculate_audio_cost(text_input: str, response_format: str) -> Decimal:
+def calculate_audio_cost(text_input: str, response_format: str, voice: str) -> Decimal:
     """
-    Calculates the credit cost for generating audio based on its parameters.
+    Calculates audio cost by looking up the specific multiplier for the voice.
+    Formula: Platform Fee + (Character Cost * Voice Multiplier)
     """
-    # --- Base Costs ---
-    base_cost = Decimal('0.5') # A flat fee for every audio generation
+    voice_multiplier = VOICE_MULTIPLIERS.get(voice, DEFAULT_VOICE_MULTIPLIER)
     
-    # --- Character-based Cost ---
-    # Example: 1 credit per 1000 characters
     character_cost = Decimal(len(text_input)) / Decimal('1000.0')
 
-    # --- Format Surcharge ---
-    # Lossless formats are larger and might cost more to store/process.
-    format_costs = {
-        'flac': Decimal('0.2'),
-        'wav': Decimal('0.2'),
-        'pcm': Decimal('0.2'),
-    }
+    usage_cost = character_cost * voice_multiplier
+
+    format_costs = { 'flac': Decimal('0.2'), 'wav': Decimal('0.2') }
     format_surcharge = format_costs.get(response_format, Decimal('0.0'))
 
-    # --- Total Cost Calculation ---
-    total_cost = base_cost + character_cost + format_surcharge
+    total_cost = PLATFORM_FEE + usage_cost + format_surcharge
     
-    # Return cost rounded to 2 decimal places, with a minimum cost.
-    min_cost = Decimal('0.5')
-    return max(round(total_cost, 2), min_cost)
+    final_cost = round(total_cost, 2)
+    
+    return max(final_cost, PLATFORM_FEE)

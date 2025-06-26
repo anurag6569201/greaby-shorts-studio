@@ -7,10 +7,8 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
 from .models import AudioCreation
-from greaby_project.email_utils import send_template_email
 
 def send_progress_update(user_id, creation_id, status_message, creation_type='audio'):
-    """Sends a progress update over WebSocket."""
     try:
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
@@ -25,12 +23,10 @@ def send_progress_update(user_id, creation_id, status_message, creation_type='au
                 }
             }
         )
-        print(f"PROGRESS for {creation_id}: {status_message}")
     except Exception as e:
         print(f"Failed to send progress update: {e}")
 
 def refund_credits_audio(creation_id: str, reason: str):
-    """A helper function to atomically refund credits to a user for audio."""
     try:
         with transaction.atomic():
             creation = AudioCreation.objects.select_for_update().get(id=creation_id)
@@ -44,7 +40,6 @@ def refund_credits_audio(creation_id: str, reason: str):
                 creation.error_message = f"Task failed: {reason}. Credits have been refunded."
                 creation.status = AudioCreation.Status.FAILED
                 creation.save(update_fields=['credit_cost', 'error_message', 'status'])
-                print(f"REFUND: Refunded {original_cost} credits to {user.email} for audio creation {creation.id}.")
     except Exception as e:
         print(f"CRITICAL: Failed to refund credits for audio creation {creation_id}. Error: {e}")
 
@@ -115,18 +110,10 @@ def generate_audio_from_text(self, creation_id: str):
             f'user_{creation.user.id}',
             {'type': 'send_notification', 'message': {'event': 'creation_completed', 'creation_type': 'audio', 'creation_id': str(creation.id)}}
         )
-
-        email_context = {
-            'creation_type': 'Audio', 'prompt': creation.title,
-            'dashboard_url': f"{settings.FRONTEND_URL}/dashboard?tab=audio"
-        }
-        send_template_email("Your Audio Generation is Complete!", "emails/generation_complete.html", email_context, [creation.user.email])
-        
         return f"Successfully processed audio creation {creation.id}."
 
     except Exception as e:
         error_message = str(e)
-        print(f"ERROR during audio generation for {creation_id}: {error_message}")
         if creation:
             refund_credits_audio(creation_id, error_message)
             channel_layer = get_channel_layer()
@@ -134,7 +121,4 @@ def generate_audio_from_text(self, creation_id: str):
                 f'user_{creation.user.id}',
                 {'type': 'send_notification', 'message': {'event': 'creation_failed', 'creation_type': 'audio', 'creation_id': str(creation.id)}}
             )
-            email_context = { 'creation_type': 'Audio', 'prompt': creation.title, 'error': error_message, 'dashboard_url': f"{settings.FRONTEND_URL}/dashboard?tab=audio" }
-            send_template_email("Your Audio Generation Failed", "emails/generation_failed.html", email_context, [creation.user.email])
-        
         return f"Failed and refunded audio creation {creation_id}."
