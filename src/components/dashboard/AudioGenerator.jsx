@@ -50,7 +50,7 @@ import {
   Filter,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
 import { motion } from "framer-motion";
@@ -84,12 +84,12 @@ const LANGUAGE_GROUPS = [
 ];
 
 const getTierFromMultiplier = (multiplier) => {
-  if (multiplier <= 0.0)
+  if (multiplier <= 0.3)
     return {
-      name: "Free",
-      label: "Free",
+      name: "Promotional",
+      label: "Promotional",
       icon: <Star className="h-3 w-3 mr-1" />,
-      multiplier: "0x",
+      multiplier: "0.3x",
     };
   if (multiplier <= 1.0)
     return {
@@ -188,7 +188,7 @@ const VoiceSelector = ({
   const TIER_OPTIONS = useMemo(() => {
     if (!voiceOptions) return [{ value: "all", label: "All Tiers" }];
     const tierNames = {
-      0: "Free",
+      0.3: "Promotional",
       1: "Local Pro",
       1.5: "Global",
       2.5: "Premium AI",
@@ -476,7 +476,6 @@ const AudioCard = ({ audio, onEdit }) => {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onEdit(audio)}><Edit className="mr-2 h-4 w-4" /> Edit Title</DropdownMenuItem>
-            {/* <DropdownMenuItem onClick={() => onDelete(audio)} className="text-red-600 focus:text-red-600 focus:bg-red-50"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem> */}
           </DropdownMenuContent>
         </DropdownMenu>
       </CardHeader>
@@ -518,7 +517,8 @@ const calculateAudioCostBreakdown = (
       total: PLATFORM_FEE.toFixed(2),
       breakdown: {
         platformFee: PLATFORM_FEE,
-        usageCost: 0,
+        baseCharacterCost: 0,
+        multipliedCost: 0,
         formatSurcharge: 0,
       },
     };
@@ -529,17 +529,18 @@ const calculateAudioCostBreakdown = (
     ? selectedVoice.multiplier
     : DEFAULT_MULTIPLIER;
   const characterCost = text_input.length / 1000.0;
-  const usageCost = characterCost * voiceMultiplier;
+  const multipliedCost = characterCost * voiceMultiplier;
   const formatCosts = { flac: 0.2, wav: 0.2 };
   const formatSurcharge = formatCosts[response_format] || 0.0;
-  const totalCost = PLATFORM_FEE + usageCost + formatSurcharge;
+  const totalCost = PLATFORM_FEE + characterCost + multipliedCost + formatSurcharge;
   const finalCost = Math.max(Math.round(totalCost * 100) / 100, PLATFORM_FEE);
 
   return {
     total: finalCost.toFixed(2),
     breakdown: {
       platformFee: PLATFORM_FEE,
-      usageCost: usageCost,
+      baseCharacterCost: characterCost,
+      multipliedCost: multipliedCost,
       formatSurcharge: formatSurcharge,
     },
   };
@@ -560,13 +561,21 @@ const AudioGenerator = () => {
   const navigate = useNavigate();
 
   const {
-    data: audios,
+    data,
+    fetchNextPage,
+    hasNextPage,
     isLoading: isLoadingHistory,
     isFetching,
-  } = useQuery({
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ["audioCreations"],
-    queryFn: () => api.get("/audios/").then((res) => res.data),
+    queryFn: ({ pageParam = '/audios/' }) => api.get(pageParam).then((res) => res.data),
+    getNextPageParam: (lastPage) => lastPage.next?.replace(api.defaults.baseURL, '') || undefined,
   });
+  
+  const audios = useMemo(() => data?.pages.flatMap(page => page.results) ?? [], [data]);
+
+
   const { data: voiceOptionsData, isLoading: isLoadingVoices } = useQuery({
     queryKey: ["voiceOptions"],
     queryFn: () => api.get("/audios/voice-options/").then((res) => res.data),
@@ -588,10 +597,7 @@ const AudioGenerator = () => {
     mutationFn: (newAudio) => api.post("/audios/", newAudio),
     onSuccess: (response) => {
       toast.success("Audio generation started!");
-      queryClient.setQueryData(["audioCreations"], (oldData = []) => [
-        response.data,
-        ...oldData,
-      ]);
+      queryClient.invalidateQueries({ queryKey: ["audioCreations"] });
       queryClient.invalidateQueries({ queryKey: ["dashboardStats"] });
       fetchUserProfile();
       setFormData((prev) => ({ ...prev, title: "", text_input: "" }));
@@ -753,8 +759,12 @@ const AudioGenerator = () => {
                       Platform Fee: {cost.breakdown.platformFee?.toFixed(2)}
                     </div>
                     <div>
-                      Usage Cost (Length x Voice):{" "}
-                      {cost.breakdown.usageCost?.toFixed(2)}
+                      Base Character Cost:{" "}
+                      {cost.breakdown.baseCharacterCost?.toFixed(2)}
+                    </div>
+                    <div>
+                      Voice Cost (Base x Multiplier):{" "}
+                      {cost.breakdown.multipliedCost?.toFixed(2)}
                     </div>
                     {cost.breakdown.formatSurcharge > 0 && (
                       <div>
@@ -790,10 +800,10 @@ const AudioGenerator = () => {
             onClick={() =>
               queryClient.invalidateQueries({ queryKey: ["audioCreations"] })
             }
-            disabled={isFetching}
+            disabled={isFetching && !isFetchingNextPage}
           >
             <RefreshCw
-              className={`h-4 w-4 mr-2 ${isFetching ? "animate-spin" : ""}`}
+              className={`h-4 w-4 mr-2 ${isFetching && !isFetchingNextPage ? "animate-spin" : ""}`}
             />{" "}
             Refresh
           </Button>
@@ -803,6 +813,7 @@ const AudioGenerator = () => {
             <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
           </div>
         ) : audios?.length > 0 ? (
+          <>
           <motion.div
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
             initial={{ opacity: 0 }}
@@ -819,6 +830,21 @@ const AudioGenerator = () => {
               />
             ))}
           </motion.div>
+          {hasNextPage && (
+              <div className="mt-6 text-center">
+                <Button
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  variant="outline"
+                >
+                  {isFetchingNextPage ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Load More
+                </Button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-16 border-2 border-dashed rounded-xl p-4">
             <h3 className="text-xl font-semibold">Your library is empty</h3>

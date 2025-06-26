@@ -51,7 +51,7 @@ const DashboardHome = ({ setActiveTab }) => {
       ]);
       return {
         videos: videoRes.data.length,
-        audios: audioRes.data.length,
+        audios: audioRes.data.count,
         reels: reelRes.data.length,
       };
     },
