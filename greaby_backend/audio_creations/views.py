@@ -1,10 +1,7 @@
-# audio_creations/views.py
-
 from django.db import transaction
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination # <--- ADD THIS IMPORT
 
 from .models import AudioCreation
 from .serializers import (
@@ -18,23 +15,11 @@ from .voices import VOICE_CHOICES
 from .costs import VOICE_MULTIPLIERS, DEFAULT_VOICE_MULTIPLIER
 
 
-# Define a standard pagination class
-class StandardResultsSetPagination(PageNumberPagination):
-    page_size = 9  # Number of items per page
-    page_size_query_param = 'page_size'
-    max_page_size = 50
-
-
 class AudioCreationViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'head', 'options']
-    pagination_class = StandardResultsSetPagination  # <--- ADD THIS LINE
-
+    
     def get_queryset(self):
-        # Order by creation date to ensure consistent pagination
-        return AudioCreation.objects.filter(
-            user=self.request.user,
-            status=AudioCreation.Status.COMPLETED
-        ).order_by('-created_at') # <--- ADD .order_by()
+        return AudioCreation.objects.filter(user=self.request.user)
 
     def get_serializer_class(self):
         if self.action == 'create':

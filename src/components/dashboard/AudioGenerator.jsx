@@ -50,7 +50,7 @@ import {
   Filter,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
 import { motion } from "framer-motion";
@@ -84,12 +84,12 @@ const LANGUAGE_GROUPS = [
 ];
 
 const getTierFromMultiplier = (multiplier) => {
-  if (multiplier <= 0.3)
+  if (multiplier <= 0.0)
     return {
-      name: "Promotional",
-      label: "Promotional",
+      name: "Free",
+      label: "Free",
       icon: <Star className="h-3 w-3 mr-1" />,
-      multiplier: "0.3x",
+      multiplier: "0x",
     };
   if (multiplier <= 1.0)
     return {
@@ -126,11 +126,10 @@ const VoiceCard = ({
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
-      className={`border rounded-lg p-3 cursor-pointer transition-all relative ${
-        isSelected
+      className={`border rounded-lg p-3 cursor-pointer transition-all relative ${isSelected
           ? "border-primary bg-primary/10"
           : "border-muted hover:border-primary/30"
-      }`}
+        }`}
       onClick={() => onSelect(voice.value)}
     >
       <div className="flex items-start gap-3">
@@ -188,7 +187,7 @@ const VoiceSelector = ({
   const TIER_OPTIONS = useMemo(() => {
     if (!voiceOptions) return [{ value: "all", label: "All Tiers" }];
     const tierNames = {
-      0.3: "Promotional",
+      0: "Free",
       1: "Local Pro",
       1.5: "Global",
       2.5: "Premium AI",
@@ -303,7 +302,7 @@ const VoiceSelector = ({
           style={{ maxHeight: "80vh", overflowX: "hidden" }}
         >
           <div className="flex flex-col h-full">
-            <div className="p-3 border-b" style={{position:'sticky', top: 0, zIndex: 10}}>
+            <div className="p-3 border-b" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
               <div className="flex flex-col md:flex-row gap-2" >
                 <Input
                   placeholder="Search voices..."
@@ -476,6 +475,7 @@ const AudioCard = ({ audio, onEdit }) => {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onEdit(audio)}><Edit className="mr-2 h-4 w-4" /> Edit Title</DropdownMenuItem>
+            {/* <DropdownMenuItem onClick={() => onDelete(audio)} className="text-red-600 focus:text-red-600 focus:bg-red-50"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem> */}
           </DropdownMenuContent>
         </DropdownMenu>
       </CardHeader>
@@ -492,9 +492,9 @@ const AudioCard = ({ audio, onEdit }) => {
         ) : (
           <div className="text-center">
             {['pending', 'processing'].includes(audio.status) || !['completed', 'failed'].includes(audio.status) ? (
-                <><Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" /><p className="text-xs text-muted-foreground mt-2 capitalize">{audio.status}...</p></>
+              <><Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" /><p className="text-xs text-muted-foreground mt-2 capitalize">{audio.status}...</p></>
             ) : (
-                <><AlertCircle className="h-6 w-6 text-destructive mx-auto" /><p className="text-xs text-destructive mt-2 font-semibold">Failed</p></>
+              <><AlertCircle className="h-6 w-6 text-destructive mx-auto" /><p className="text-xs text-destructive mt-2 font-semibold">Failed</p></>
             )}
           </div>
         )}
@@ -512,13 +512,13 @@ const calculateAudioCostBreakdown = (
   const PLATFORM_FEE = 0.5;
   const DEFAULT_MULTIPLIER = 1.5;
 
-  if (!voiceOptions) {
+  if (!voiceOptions || !text_input) {
     return {
       total: PLATFORM_FEE.toFixed(2),
       breakdown: {
         platformFee: PLATFORM_FEE,
         baseCharacterCost: 0,
-        multipliedCost: 0,
+        premiumVoiceCost: 0,
         formatSurcharge: 0,
       },
     };
@@ -528,19 +528,27 @@ const calculateAudioCostBreakdown = (
   const voiceMultiplier = selectedVoice
     ? selectedVoice.multiplier
     : DEFAULT_MULTIPLIER;
-  const characterCost = text_input.length / 1000.0;
-  const multipliedCost = characterCost * voiceMultiplier;
+
+  // 1. Calculate Base Character Cost (always applies)
+  const baseCharacterCost = text_input.length / 1000.0;
+
+  // 2. Calculate Premium Voice Cost (additional cost)
+  const premiumVoiceCost = baseCharacterCost * voiceMultiplier;
+
+  // 3. Calculate Format Surcharge
   const formatCosts = { flac: 0.2, wav: 0.2 };
   const formatSurcharge = formatCosts[response_format] || 0.0;
-  const totalCost = PLATFORM_FEE + characterCost + multipliedCost + formatSurcharge;
+
+  // 4. Sum all components for the total cost
+  const totalCost = PLATFORM_FEE + baseCharacterCost + premiumVoiceCost + formatSurcharge;
   const finalCost = Math.max(Math.round(totalCost * 100) / 100, PLATFORM_FEE);
 
   return {
     total: finalCost.toFixed(2),
     breakdown: {
       platformFee: PLATFORM_FEE,
-      baseCharacterCost: characterCost,
-      multipliedCost: multipliedCost,
+      baseCharacterCost: baseCharacterCost,
+      premiumVoiceCost: premiumVoiceCost,
       formatSurcharge: formatSurcharge,
     },
   };
@@ -561,21 +569,13 @@ const AudioGenerator = () => {
   const navigate = useNavigate();
 
   const {
-    data,
-    fetchNextPage,
-    hasNextPage,
+    data: audios,
     isLoading: isLoadingHistory,
     isFetching,
-    isFetchingNextPage,
-  } = useInfiniteQuery({
+  } = useQuery({
     queryKey: ["audioCreations"],
-    queryFn: ({ pageParam = '/audios/' }) => api.get(pageParam).then((res) => res.data),
-    getNextPageParam: (lastPage) => lastPage.next?.replace(api.defaults.baseURL, '') || undefined,
+    queryFn: () => api.get("/audios/").then((res) => res.data),
   });
-  
-  const audios = useMemo(() => data?.pages.flatMap(page => page.results) ?? [], [data]);
-
-
   const { data: voiceOptionsData, isLoading: isLoadingVoices } = useQuery({
     queryKey: ["voiceOptions"],
     queryFn: () => api.get("/audios/voice-options/").then((res) => res.data),
@@ -597,7 +597,10 @@ const AudioGenerator = () => {
     mutationFn: (newAudio) => api.post("/audios/", newAudio),
     onSuccess: (response) => {
       toast.success("Audio generation started!");
-      queryClient.invalidateQueries({ queryKey: ["audioCreations"] });
+      queryClient.setQueryData(["audioCreations"], (oldData = []) => [
+        response.data,
+        ...oldData,
+      ]);
       queryClient.invalidateQueries({ queryKey: ["dashboardStats"] });
       fetchUserProfile();
       setFormData((prev) => ({ ...prev, title: "", text_input: "" }));
@@ -754,23 +757,28 @@ const AudioGenerator = () => {
                   <Info className="h-4 w-4 text-muted-foreground cursor-pointer" />
                 </TooltipTrigger>
                 <TooltipContent className="text-xs">
-                  <div className="space-y-1 p-1">
-                    <div>
-                      Platform Fee: {cost.breakdown.platformFee?.toFixed(2)}
-                    </div>
-                    <div>
-                      Base Character Cost:{" "}
-                      {cost.breakdown.baseCharacterCost?.toFixed(2)}
-                    </div>
-                    <div>
-                      Voice Cost (Base x Multiplier):{" "}
-                      {cost.breakdown.multipliedCost?.toFixed(2)}
-                    </div>
-                    {cost.breakdown.formatSurcharge > 0 && (
+                  <div className="space-y-1 p-1 font-medium">
+                    <p>Breakdown:</p>
+                    <div className="pl-2 font-normal text-muted-foreground">
                       <div>
-                        Format Fee: {cost.breakdown.formatSurcharge?.toFixed(2)}
+                        Platform Fee: {cost.breakdown.platformFee?.toFixed(2)}
                       </div>
-                    )}
+                      <div>
+                        Usage Cost: {cost.breakdown.baseCharacterCost?.toFixed(2)}
+                      </div>
+                      {cost.breakdown.premiumVoiceCost > 0 && (
+                        <div>
+                          Voice Premium: {cost.breakdown.premiumVoiceCost?.toFixed(2)}
+                        </div>
+                      )}
+                      {cost.breakdown.formatSurcharge > 0 && (
+                        <div>
+                          Format Fee: {cost.breakdown.formatSurcharge?.toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                    <hr className="my-1" />
+                    <p>Total: {cost.total}</p>
                   </div>
                 </TooltipContent>
               </Tooltip>
@@ -800,10 +808,10 @@ const AudioGenerator = () => {
             onClick={() =>
               queryClient.invalidateQueries({ queryKey: ["audioCreations"] })
             }
-            disabled={isFetching && !isFetchingNextPage}
+            disabled={isFetching}
           >
             <RefreshCw
-              className={`h-4 w-4 mr-2 ${isFetching && !isFetchingNextPage ? "animate-spin" : ""}`}
+              className={`h-4 w-4 mr-2 ${isFetching ? "animate-spin" : ""}`}
             />{" "}
             Refresh
           </Button>
@@ -813,7 +821,6 @@ const AudioGenerator = () => {
             <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
           </div>
         ) : audios?.length > 0 ? (
-          <>
           <motion.div
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
             initial={{ opacity: 0 }}
@@ -830,21 +837,6 @@ const AudioGenerator = () => {
               />
             ))}
           </motion.div>
-          {hasNextPage && (
-              <div className="mt-6 text-center">
-                <Button
-                  onClick={() => fetchNextPage()}
-                  disabled={isFetchingNextPage}
-                  variant="outline"
-                >
-                  {isFetchingNextPage ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  Load More
-                </Button>
-              </div>
-            )}
-          </>
         ) : (
           <div className="text-center py-16 border-2 border-dashed rounded-xl p-4">
             <h3 className="text-xl font-semibold">Your library is empty</h3>
