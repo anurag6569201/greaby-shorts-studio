@@ -6,7 +6,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sparkles, Home, Video, Mic, Clapperboard, Settings, LogOut, User, Menu, CreditCard, Coins,History } from "lucide-react";
+import { Sparkles, Home, Video, Mic, Clapperboard, Settings, LogOut, Menu, CreditCard, Coins, History, MicVocalIcon, Languages as LanguagesIcon } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import DashboardHome from "@/components/dashboard/DashboardHome";
 import VideoGenerator from "@/components/dashboard/VideoGenerator";
@@ -15,12 +15,15 @@ import ReelGenerator from "@/components/dashboard/ReelGenerator";
 import SettingsPage from "@/components/dashboard/SettingsPage";
 import PricingPage from "@/components/dashboard/PricingPage";
 import HistoryPage from "@/components/dashboard/HistoryPage";
+import ComingSoonPage from "@/components/dashboard/ComingSoonPage"; // Import the new component
 
 const sidebarItems = [
   { id: "home", label: "Home", icon: Home },
   { id: "video", label: "Video", icon: Video },
   { id: "audio", label: "Audio", icon: Mic },
-  { id: "reels", label: "Reels", icon: Clapperboard },
+  { id: "reels", label: "Reels", icon: Clapperboard, beta: true },
+  { id: "Transcription", label: "Transcription", icon: MicVocalIcon, soon: true },
+  { id: "Video Dub", label: "Video Dub", icon: LanguagesIcon, soon: true },
   { id: "history", label: "Usage History", icon: History },
 ];
 
@@ -54,6 +57,20 @@ const Dashboard = () => {
       case "pricing": return <PricingPage />;
       case "settings": return <SettingsPage />;
       case "history": return <HistoryPage />;
+      case "Transcription": return (
+        <ComingSoonPage 
+            featureName="AI Transcription"
+            featureDescription="Automatically convert your audio and video files into accurate, time-stamped text with speaker identification."
+            onBack={() => handleSetTab('home')}
+        />
+      );
+      case "Video Dub": return (
+        <ComingSoonPage 
+            featureName="Video Dub"
+            featureDescription="Translate and dub your videos into multiple languages using realistic AI voices, while maintaining lip-sync."
+            onBack={() => handleSetTab('home')}
+        />
+      );
       default: return <DashboardHome setActiveTab={handleSetTab} />;
     }
   };
@@ -99,15 +116,19 @@ const Dashboard = () => {
             }`}
           >
             <item.icon className="h-5 w-5" />
-<span>
-  {item.label}{' '}
-  {item.label === 'Reels' && (
-    <span className="ml-2 inline-block rounded-full px-2 py-0.5 text-xs font-semibold bg-primary/10 text-primary border-primary/20">
-      Beta
-    </span>
-  )}
-</span>
-
+            <span className="flex-grow">
+              {item.label}
+            </span>
+            {item.beta && (
+                <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                    Beta
+                </span>
+            )}
+            {item.soon && (
+                <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                    Soon
+                </span>
+            )}
           </button>
         ))}
       </nav>
@@ -180,7 +201,7 @@ const Dashboard = () => {
           <div className="w-10"></div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-4 lg:p-4 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             {renderContent()}
           </div>
