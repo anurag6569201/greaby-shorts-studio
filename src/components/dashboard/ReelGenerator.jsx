@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardFooter, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import api from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from 'framer-motion';
+import { PaginationControls } from "@/components/ui/PaginationControls";
 
 function truncateWords(text, wordLimit) {
   if (!text) return '';
@@ -26,15 +27,14 @@ const AssetCard = ({ asset, type, onSelect, isSelected }) => {
   const isVideo = type === 'video';
   return (
     <div
-      className={`p-3 border border-transparent rounded-lg cursor-pointer transition-all
-  ${isSelected 
-    ? 'ring-2 ring-inset ring-primary bg-primary/5' 
-    : 'hover:ring-1 hover:ring-inset hover:ring-slate-400'}`}
+      className={`p-3 border rounded-lg cursor-pointer transition-all ${isSelected 
+        ? 'ring-2 ring-inset ring-primary bg-primary/5' 
+        : 'border-muted hover:bg-muted/50'}`}
       onClick={() => onSelect(asset.id)}
     >
       <div className="flex items-center space-x-3">
-        <div className={`w-10 h-10 rounded-md flex items-center justify-center ${isVideo ? 'bg-purple-100' : 'bg-emerald-100'}`}>
-          {isVideo ? <Video className="h-5 w-5 text-purple-600" /> : <Mic className="h-5 w-5 text-emerald-600" />}
+        <div className={`w-10 h-10 rounded-md flex items-center justify-center ${isVideo ? 'bg-purple-100 dark:bg-purple-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'}`}>
+          {isVideo ? <Video className="h-5 w-5 text-purple-600 dark:text-purple-400" /> : <Mic className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
         </div>
         <div className="flex-grow overflow-hidden">
           <p className="text-sm font-medium truncate">{truncateWords(isVideo ? asset.prompt : asset.title, 10)}</p>
@@ -68,150 +68,69 @@ const ReelCard = ({ reel, onEdit, onDelete, onGenerateSubtitles }) => {
   };
 
   return (
-    <Card className="design-background1 relative shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-      <div className="design-background1 relative aspect-video w-full overflow-hidden">
-        {/* ▶️ Video or Placeholder */}
+    <Card className="fancy-card-reel shadow-sm hover:shadow-md transition-shadow overflow-hidden group">
+      <div className="relative aspect-video w-full overflow-hidden bg-transparent">
         {reel.status === 'completed' && reel.result_url ? (
           shouldLoadVideo ? (
-            <video
-              src={reel.result_url}
-              controls
-              autoPlay
-              muted
-              loop
-              className="w-full h-full object-cover"
-            />
+            <video src={reel.result_url} controls autoPlay muted loop className="w-full h-full object-cover" />
           ) : (
             <>
-              <div
-                className="absolute inset-0 z-10 flex items-center justify-center cursor-pointer group"
-                onClick={() => {
-                  setShouldLoadVideo(true);
-                }}
-              >
-                <div className="w-16 h-16 rounded-full bg-transparent backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform play-button-glow">
-                  <Play className="h-8 w-8 text-white ml-1" />
-                </div>
+              <div className="absolute inset-0 z-10 flex items-center justify-center cursor-pointer" onClick={() => setShouldLoadVideo(true)}>
+          <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Play className="h-8 w-8 text-white ml-1" />
+          </div>
               </div>
-              <div className="w-full h-full" style={{background:'rgb(0 0 0 / 0.4)'}} />
+              <div className="w-full h-full " />
             </>
           )
         ) : (
-          <div className="flex flex-col justify-center items-center h-full text-center px-4">
+          <div className="flex flex-col justify-center items-center h-full text-center px-4 text-white">
             {['pending', 'processing'].includes(reel.status) ? (
-              <>
-                <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-                <p className="text-sm text-muted-foreground capitalize">
-                  {reel.status}...
-                </p>
-              </>
+              <><Loader2 className="h-8 w-8 animate-spin text-primary mb-2" /><p className="text-sm capitalize">{reel.status}...</p></>
             ) : (
-              <>
-                <AlertCircle className="h-8 w-8 text-destructive mb-2" />
-                <p className="text-sm text-destructive font-semibold">
-                  Failed
-                </p>
-              </>
+              <><AlertCircle className="h-8 w-8 text-destructive mb-2" /><p className="text-sm text-destructive font-semibold">Failed</p></>
             )}
           </div>
         )}
 
-        {/* 🧠 Top Overlay (Header) */}
-        <AnimatePresence>
-
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3 }}
-            className="absolute top-0 left-0 w-full z-20 bg-transparent px-4 py-3 flex items-start justify-between"
-          >
+        <div className="absolute top-0 left-0 w-full z-20 bg-gradient-to-b to-transparent p-3 flex items-start justify-between">
             <div className="text-white overflow-hidden">
-              <h3 className="text-sm font-semibold truncate">{reel.title}</h3>
-              <p className="text-xs text-gray-300">{new Date(reel.created_at).toLocaleString()}</p>
+              <h3 className="text-sm text-gray-800 font-semibold truncate">{reel.title}</h3>
+              <p className="text-xs text-gray-500">{new Date(reel.created_at).toLocaleString()}</p>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-white hover:text-grey bg-transparent hover:bg-transparent focus:bg-transparent focus:text-grey">
+                <Button variant="ghost" size="icon" className="text-gray-800 hover:bg-white/10 h-8 w-8">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onEdit(reel)}>
-                  <Edit className="mr-2 h-4 w-4" /> Edit Title
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onDelete(reel)}
-                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onEdit(reel)}><Edit className="mr-2 h-4 w-4" /> Edit Title</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDelete(reel)} className="text-red-600 focus:text-red-600 focus:bg-red-50"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </motion.div>
-        </AnimatePresence>
+        </div>
 
-        {/* 🎬 Bottom Overlay (Footer/Actions) */}
         <AnimatePresence>
           {showOverlay && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ duration: 0.3 }}
-              className="absolute bottom-0 left-0 w-full z-20 bg-transparent px-4 py-3 flex flex-wrap justify-left items-center gap-2"
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+              className="absolute bottom-0 left-0 w-full z-20 bg-gradient-to-t from-black/60 to-transparent p-3 flex items-center gap-2">
               {isSubtitleReady ? (
-                <Button
-                  size="sm"
-                  variant=""
-                  style={{ backgroundColor: '#7b39ed', padding: '0px 10px', color: 'white' }}
-                  onClick={() => handleDownload(reel.subtitle_url, `${reel.id}.srt`)}
-                >
-                  <Subtitles className="" />
-                  <Download className="" />
-
-                </Button>
+                <Button size="sm" variant="secondary" onClick={() => handleDownload(reel.subtitle_url, `${reel.id}.srt`)}><Download className="h-4 w-4 mr-2" /> Download .SRT</Button>
               ) : (
-                <Button
-                  size="sm"
-                  variant=""
-                  style={{ backgroundColor: '#7b39ed', padding: '0px 10px', color: 'white' }}
-                  onClick={() => onGenerateSubtitles(reel.id)}
-                  disabled={isSubtitleProcessing || reel.status !== 'completed'}
-                >
-                  {isSubtitleProcessing ? (
-                    <Loader2 className=" animate-spin" />
-                  ) : (
-                    <Subtitles className="" />
-                  )}
-                  {isSubtitleProcessing ? '...' : ''}
+                <Button size="sm" variant="secondary" onClick={() => onGenerateSubtitles(reel.id)} disabled={isSubtitleProcessing || reel.status !== 'completed'} className="bg-[#bc9bf5] hover:bg-[#a97bf0] text-white">
+                  {isSubtitleProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Subtitles className="h-4 w-4 mr-2" />}
+                  {isSubtitleProcessing ? 'Generating...' : 'Get Subtitles'}
                 </Button>
               )}
-
-              {reel.result_url && (
-                <Button
-                  size="sm"
-                  variant=""
-                  style={{ backgroundColor: '#7b39ed', padding: '0px 10px', color: 'white' }}
-                  onClick={() => handleDownload(reel.result_url, `${reel.id}.mp4`)}
-                >
-                  <Download className="" />
-
-                </Button>
-              )}
+              {reel.result_url && <Button className="bg-[#bc9bf5] hover:bg-[#a97bf0] text-white" size="sm" variant="secondary" onClick={() => handleDownload(reel.result_url, `${reel.id}.mp4`)}><Download className="h-4 w-4 mr-2" /> Video</Button>}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-      <div className="flex items-center bg-white rounded-b-lg w-100 justify-center">
-        <button
-          onClick={() => setShowOverlay(prev => !prev)}
-          className="text-grey hover:text-gray-300"
-        >
-          {showOverlay ? <ChevronUp className="w-6 h-6" style={{ color: '7b39ed' }} /> : <ChevronDown className="w-6 h-6" style={{ color: '7b39ed' }} />}
-        </button>
-      </div>
+      <button onClick={() => setShowOverlay(prev => !prev)} className="w-full bg-card hover:bg-muted py-1 flex justify-center items-center text-muted-foreground hover:text-foreground transition-colors" style={{zIndex:'10',position:'relative'}}>
+        {showOverlay ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+      </button>
     </Card>
   );
 };
@@ -223,40 +142,38 @@ const ReelGenerator = () => {
   const [editingReel, setEditingReel] = useState(null);
   const [deletingReel, setDeletingReel] = useState(null);
   const [newTitle, setNewTitle] = useState("");
+  
+  const [videoPickerPage, setVideoPickerPage] = useState(1);
+  const [audioPickerPage, setAudioPickerPage] = useState(1);
+  const [reelsListPage, setReelsListPage] = useState(1);
 
   const queryClient = useQueryClient();
   const { fetchUserProfile } = useAuth();
   const navigate = useNavigate();
-  const reelsCache = useRef([]);
-  const { data: videoCreations, isLoading: isLoadingVideos } = useQuery({ queryKey: ['videoCreations'], queryFn: () => api.get('/videos/').then(res => res.data) });
-  const { data: audioCreations, isLoading: isLoadingAudios } = useQuery({ queryKey: ['audioCreations'], queryFn: () => api.get('/audios/').then(res => res.data) });
+
+  const { data: videoData, isLoading: isLoadingVideos } = useQuery({
+    queryKey: ['videoCreationsPicker', videoPickerPage],
+    queryFn: () => api.get(`/videos/?page=${videoPickerPage}`).then(res => res.data),
+    keepPreviousData: true,
+  });
+
+  const { data: audioData, isLoading: isLoadingAudios } = useQuery({
+    queryKey: ['audioCreationsPicker', audioPickerPage],
+    queryFn: () => api.get(`/audios/?page=${audioPickerPage}`).then(res => res.data),
+    keepPreviousData: true,
+  });
+
   const { data: reels, isLoading: isLoadingReels, isFetching: isFetchingReels } = useQuery({
-    queryKey: ['reels'],
-    queryFn: () => api.get('/reels/').then(res => res.data),
-    refetchInterval: (data) => 
-      Array.isArray(data) && data.some(
-        c => (
-          ['pending', 'processing'].includes(c.status) ||
-          !['completed', 'failed'].includes(c.status) ||
-          c.subtitle_status === 'pending'
-        )
-      ) ? 5000 : false,
-    onSuccess: (newData) => {
-      newData.forEach(newReel => {
-        const oldReel = reelsCache.current.find(r => r.id === newReel.id);
-        if (oldReel && (oldReel.status === 'processing' || oldReel.status === 'pending') && newReel.status === 'completed') {
-          toast.success(`Reel "${newReel.title}" is ready!`);
-        }
-      });
-      reelsCache.current = newData;
-    },
+    queryKey: ['reels', reelsListPage],
+    queryFn: () => api.get(`/reels/?page=${reelsListPage}`).then(res => res.data),
+    keepPreviousData: true,
   });
 
   const { mutate: createReel, isLoading: isCreating } = useMutation({
     mutationFn: (newReel) => api.post('/reels/', newReel),
     onSuccess: () => {
-      toast.success("Reel assembly started!", { description: "Your new reel is being created. This may take a moment." });
-      queryClient.setQueryData(['reels'], (oldData = []) => [newReelData.data, ...oldData]);
+      toast.success("Reel assembly started!", { description: "Your new reel is being created." });
+      if (reelsListPage !== 1) setReelsListPage(1);
       queryClient.invalidateQueries({ queryKey: ['reels'] });
       setTitle("");
       setSelectedVideo(null);
@@ -269,7 +186,7 @@ const ReelGenerator = () => {
     mutationFn: ({ id, title }) => api.patch(`/reels/${id}/`, { title }),
     onSuccess: () => {
       toast.success("Reel updated successfully!");
-      queryClient.invalidateQueries({ queryKey: ['reels'] });
+      queryClient.invalidateQueries({ queryKey: ['reels', reelsListPage] });
       setEditingReel(null);
     },
     onError: (error) => toast.error("Update Failed", { description: error.response?.data?.detail }),
@@ -288,8 +205,8 @@ const ReelGenerator = () => {
   const { mutate: generateSubtitles } = useMutation({
     mutationFn: (reelId) => api.post(`/reels/${reelId}/generate-subtitles/`),
     onSuccess: () => {
-      toast.success("Subtitle generation started!", { description: "Your .SRT file will be available shortly." });
-      queryClient.invalidateQueries({ queryKey: ['reels'] });
+      toast.info("Subtitle generation started!", { description: "Your .SRT file will be available shortly." });
+      queryClient.invalidateQueries({ queryKey: ['reels', reelsListPage] });
       fetchUserProfile();
     },
     onError: (error) => {
@@ -316,61 +233,63 @@ const ReelGenerator = () => {
     updateReel({ id: editingReel.id, title: newTitle });
   };
 
-  const completedVideos = useMemo(() => videoCreations?.filter(v => v.status === 'completed') || [], [videoCreations]);
-  const completedAudios = useMemo(() => audioCreations?.filter(a => a.status === 'completed') || [], [audioCreations]);
-  const isLoadingAssets = isLoadingVideos || isLoadingAudios;
+  const completedVideos = useMemo(() => videoData?.results?.filter(v => v.status === 'completed') || [], [videoData]);
+  const completedAudios = useMemo(() => audioData?.results?.filter(a => a.status === 'completed') || [], [audioData]);
 
   return (
     <div className="space-y-8">
-      <Card className="bg-transparent shadow-none border border-none" style={{ border: 'none' }}>
+      <Card className="bg-transparent shadow-none border-none">
         <CardHeader className="p-0">
           <CardTitle className="flex items-center text-2xl"><Clapperboard className="h-6 w-6 mr-3 text-primary" />Assemble a New Reel</CardTitle>
           <CardDescription>Combine a video and an audio clip to create your final masterpiece.</CardDescription>
         </CardHeader>
-        <hr style={{ marginTop: '10px', marginBottom: '5px' }} />
-        <CardContent className="space-y-6 p-0 pt-4">
+        <hr className="my-4" />
+        <CardContent className="space-y-6 p-0">
           <div>
             <Label htmlFor="reel-title">Reel Title</Label>
             <Input id="reel-title" placeholder="e.g., My Awesome Panda Adventure" value={title} onChange={(e) => setTitle(e.target.value)} disabled={isCreating} />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+            
+            {/* --- UI FIX: Video Picker --- */}
             <div className="space-y-2">
               <Label>1. Choose a Video</Label>
-              <ScrollArea className="h-64 w-full rounded-md p-2" style={completedVideos.length > 0 ? {border: '2px dashed #e4e7eb'} : {border: '2px dashed #e4e7eb'}}>
-                {isLoadingAssets && <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin" /></div>}
-                {completedVideos.length > 0 ? (
+              <div className="border rounded-md flex flex-col h-[26rem]">
+                <ScrollArea className="flex-grow p-3">
+                  {isLoadingVideos && <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin" /></div>}
                   <div className="space-y-3">
-                    {completedVideos.map(v => {
-
-                      return (
-                        <AssetCard
-                          key={v.id}
-                          asset={v}
-                          type="video"
-                          onSelect={setSelectedVideo}
-                          isSelected={selectedVideo === v.id}
-                        />
-                      );
-                    })}
+                    {completedVideos.map(v => <AssetCard key={v.id} asset={v} type="video" onSelect={setSelectedVideo} isSelected={selectedVideo === v.id} />)}
                   </div>
-                ) : !isLoadingAssets && <p className="text-sm text-center text-muted-foreground pt-4 p-4">No completed videos available.</p>}
-              </ScrollArea>
+                  {!isLoadingVideos && completedVideos.length === 0 && <p className="text-sm text-center text-muted-foreground pt-4">No completed videos found.</p>}
+                </ScrollArea>
+                <div className="p-1 border-t">
+                    <PaginationControls currentPage={videoPickerPage} totalPages={videoData?.total_pages || 1} onPageChange={setVideoPickerPage} hasNext={!!videoData?.next} hasPrev={!!videoData?.previous}/>
+                </div>
+              </div>
             </div>
+
+            {/* --- UI FIX: Audio Picker --- */}
             <div className="space-y-2">
               <Label>2. Choose an Audio Track</Label>
-              <ScrollArea className="h-64 w-full rounded-md p-2" style={completedAudios.length > 0 ? {border: '2px dashed #e4e7eb'} : {border: '2px dashed #e4e7eb'}}>
-                {isLoadingAssets && <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin" /></div>}
-                {completedAudios.length > 0 ? (
-                  <div className="space-y-3">{completedAudios.map(a => <AssetCard key={a.id} asset={a} type="audio" onSelect={setSelectedAudio} isSelected={selectedAudio === a.id} />)}</div>
-                ) : !isLoadingAssets && <p className="text-sm text-center text-muted-foreground pt-4 p-4">No completed audios available.</p>}
-              </ScrollArea>
+              <div className="border rounded-md flex flex-col h-[26rem]">
+                <ScrollArea className="flex-grow p-3">
+                  {isLoadingAudios && <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin" /></div>}
+                  <div className="space-y-3">
+                    {completedAudios.map(a => <AssetCard key={a.id} asset={a} type="audio" onSelect={setSelectedAudio} isSelected={selectedAudio === a.id} />)}
+                  </div>
+                  {!isLoadingAudios && completedAudios.length === 0 && <p className="text-sm text-center text-muted-foreground pt-4">No completed audios found.</p>}
+                </ScrollArea>
+                <div className="p-1 border-t">
+                    <PaginationControls currentPage={audioPickerPage} totalPages={audioData?.total_pages || 1} onPageChange={setAudioPickerPage} hasNext={!!audioData?.next} hasPrev={!!audioData?.previous}/>
+                </div>
+              </div>
             </div>
+
           </div>
         </CardContent>
-        <br />
-        <CardFooter className="bg-muted/50 p-0 rounded-b-lg">
-          <Button onClick={handleCreateReel} disabled={isCreating || !selectedVideo || !selectedAudio} size="lg" className="w-full" style={{ width: 'fit-content' }}>
-            {isCreating ? <Loader2 className="mr-2 h-4 animate-spin" /> : null}
+        <CardFooter className="p-0 pt-6">
+          <Button onClick={handleCreateReel} disabled={isCreating || !selectedVideo || !selectedAudio} size="lg">
+            {isCreating ? <Loader2 className="mr-2 h-4 animate-spin" /> : <Clapperboard className="mr-2 h-4 w-4" />}
             Assemble Reel
           </Button>
         </CardFooter>
@@ -379,8 +298,11 @@ const ReelGenerator = () => {
 
       <div>
         <div className="flex justify-between items-center mb-4"><h2 className="text-2xl font-bold">Reels Library</h2><Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ['reels'] })} disabled={isFetchingReels}><RefreshCw className={`h-4 w-4 mr-2 ${isFetchingReels ? 'animate-spin' : ''}`} /> Refresh</Button></div>
-        {isLoadingReels ? <div className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : reels?.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">{reels.map(r => <ReelCard key={r.id} reel={r} onEdit={(reel) => { setEditingReel(reel); setNewTitle(reel.title); }} onDelete={setDeletingReel} onGenerateSubtitles={generateSubtitles} />)}</div>
+        {isLoadingReels ? <div className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : reels?.results?.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{reels.results.map(r => <ReelCard key={r.id} reel={r} onEdit={(reel) => { setEditingReel(reel); setNewTitle(reel.title); }} onDelete={setDeletingReel} onGenerateSubtitles={generateSubtitles} />)}</div>
+            <PaginationControls currentPage={reelsListPage} totalPages={reels.total_pages} onPageChange={setReelsListPage} hasNext={!!reels.next} hasPrev={!!reels.previous}/>
+          </>
         ) : <div className="text-center py-16 border-2 border-dashed rounded-xl p-4"><h3 className="text-xl font-semibold">Your library is empty</h3><p className="text-muted-foreground mt-2">Assembled reels will appear here.</p></div>}
       </div>
 

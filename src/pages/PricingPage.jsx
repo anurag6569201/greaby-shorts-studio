@@ -62,7 +62,7 @@ const PricingPage = () => {
     const navigate = useNavigate();
     const [isLoadingCheckout, setIsLoadingCheckout] = useState(null);
 
-    const { data: packs, isLoading: isLoadingPacks } = useQuery({
+    const { data: packsData, isLoading: isLoadingPacks } = useQuery({
         queryKey: ['creditPacks'],
         queryFn: () => api.get('/billing/credit-packs/').then(res => res.data),
     });
@@ -115,7 +115,8 @@ const PricingPage = () => {
         }
     };
     
-    const processedPacks = packs?.map((p, index) => ({...p, isPopular: index === 1 })) || [];
+    // --- FIX: Access the .results property from the paginated response ---
+    const processedPacks = packsData?.results?.map((p, index) => ({...p, isPopular: index === 1 })) || [];
     
     return (
         <>
@@ -136,6 +137,7 @@ const PricingPage = () => {
                 {isLoadingPacks ? (
                     <div className="text-center mt-12"><Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" /></div>
                 ) : (
+                    // --- FIX: Use the length of the processedPacks array for grid layout ---
                     <div className={`mt-16 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-${Math.min(processedPacks.length, 3)} gap-8 container items-stretch`}>
                         {processedPacks.map(pack => 
                             <CreditPackCard 

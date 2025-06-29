@@ -1,4 +1,3 @@
-# reels/views.py
 from django.db import transaction
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -11,10 +10,9 @@ from .serializers import ReelCreateSerializer, ReelResponseSerializer, ReelUpdat
 from .tasks import combine_video_and_audio, generate_subtitles_for_reel
 
 class ReelViewSet(viewsets.ModelViewSet):
-    """A ViewSet for listing, creating, retrieving, updating, and deleting Reels."""
     
     def get_queryset(self):
-        return Reel.objects.filter(user=self.request.user).select_related(
+        return Reel.objects.filter(user=self.request.user,status=Reel.Status.COMPLETED).select_related(
             'video_creation', 'audio_creation'
         )
 
@@ -32,13 +30,9 @@ class ReelViewSet(viewsets.ModelViewSet):
         video_id = serializer.validated_data.get('video_creation_id')
         audio_id = serializer.validated_data.get('audio_creation_id')
         
-        # --- Validation: Ensure source assets exist, are completed, and belong to the user ---
         try:
-            # Step 1: Check DB status and ownership
             video = VideoCreation.objects.get(id=video_id, user=request.user, status=VideoCreation.Status.COMPLETED)
             audio = AudioCreation.objects.get(id=audio_id, user=request.user, status=AudioCreation.Status.COMPLETED)
-
-            # Step 2: Check if the file field actually has a file assigned to it.
             if not video.result_file or not audio.result_file:
                 raise ValueError("Source asset is marked as complete but is missing the result file.")
 
@@ -54,8 +48,6 @@ class ReelViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-
-        # --- Create Reel object and dispatch combination task (0 credit cost) ---
         reel = Reel.objects.create(
             user=request.user,
             title=serializer.validated_data.get('title'),
@@ -64,10 +56,9 @@ class ReelViewSet(viewsets.ModelViewSet):
         )
         combine_video_and_audio.delay(str(reel.id))
 
-        response_serializer = self.get_serializer(reel)
+        response_serializer = ReelResponseSerializer(reel)
         return Response(response_serializer.data, status=status.HTTP_202_ACCEPTED)
 
-    # --- NEW ACTION for subtitles ---
     @action(detail=True, methods=['post'], url_path='generate-subtitles')
     def generate_subtitles(self, request, pk=None):
         reel = self.get_object()
@@ -79,7 +70,7 @@ class ReelViewSet(viewsets.ModelViewSet):
         if not reel.audio_creation or not reel.audio_creation.text_input:
             return Response({"detail": "Source audio or its text script is missing."}, status=status.HTTP_400_BAD_REQUEST)
             
-        subtitle_cost = 1.0 # A small fee for the processing
+        subtitle_cost = 1.0
         user = request.user
         if user.credit_balance < subtitle_cost:
             return Response({"detail": f"Insufficient credits. This action costs {subtitle_cost} credits."}, status=status.HTTP_402_PAYMENT_REQUIRED)
@@ -89,14 +80,12 @@ class ReelViewSet(viewsets.ModelViewSet):
             user.save(update_fields=['credit_balance'])
             reel.subtitle_status = Reel.SubtitleStatus.PENDING
             reel.save(update_fields=['subtitle_status'])
-            # We can log this credit usage in a future 'CreditUsage' model if needed.
 
         generate_subtitles_for_reel.delay(str(reel.id))
         
-        return Response(self.get_serializer(reel).data, status=status.HTTP_202_ACCEPTED)
+        return Response(ReelResponseSerializer(reel).data, status=status.HTTP_202_ACCEPTED)
         
     def perform_destroy(self, instance):
-        # Delete associated files from cloud storage
         if instance.result_file: instance.result_file.delete(save=False)
         if instance.subtitle_file: instance.subtitle_file.delete(save=False)
         instance.delete()

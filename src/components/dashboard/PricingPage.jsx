@@ -61,7 +61,7 @@ const PricingPage = () => {
     const navigate = useNavigate();
     const [isLoadingCheckout, setIsLoadingCheckout] = useState(null);
 
-    const { data: packs, isLoading: isLoadingPacks } = useQuery({
+    const { data: packsData, isLoading: isLoadingPacks } = useQuery({
         queryKey: ['creditPacks'],
         queryFn: () => api.get('/billing/credit-packs/').then(res => res.data),
     });
@@ -114,7 +114,10 @@ const PricingPage = () => {
         }
     };
     
-    const processedPacks = packs?.map((p, index) => ({...p, isPopular: index === 1 })) || [];
+    // --- FIX IS HERE ---
+    // The API returns a paginated object, so we need to access the 'results' array.
+    const packs = packsData?.results || [];
+    const processedPacks = packs.map((p, index) => ({...p, isPopular: index === 1 }));
     
     return (
         <>

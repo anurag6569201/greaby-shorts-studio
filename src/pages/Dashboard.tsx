@@ -99,7 +99,15 @@ const Dashboard = () => {
             }`}
           >
             <item.icon className="h-5 w-5" />
-            <span>{item.label}</span>
+<span>
+  {item.label}{' '}
+  {item.label === 'Reels' && (
+    <span className="ml-2 inline-block rounded-full px-2 py-0.5 text-xs font-semibold bg-primary/10 text-primary border-primary/20">
+      Beta
+    </span>
+  )}
+</span>
+
           </button>
         ))}
       </nav>

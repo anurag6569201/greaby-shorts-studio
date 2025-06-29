@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CreditPack, Purchase
+from .models import CreditPack, Purchase, CreditUsage
 
 class CreditPackSerializer(serializers.ModelSerializer):
     """
@@ -43,3 +43,16 @@ class PurchaseHistorySerializer(serializers.ModelSerializer):
             'created_at',
         )
         read_only_fields = fields
+        
+        
+class UnifiedHistorySerializer(serializers.Serializer):
+    """
+    A generic serializer for displaying both purchases (credits) and usages (debits).
+    This is not tied to a model but defines the structure of our combined data.
+    """
+    id = serializers.CharField(read_only=True)
+    type = serializers.CharField(read_only=True) # 'credit' or 'debit'
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    description = serializers.CharField(read_only=True)
+    details = serializers.CharField(read_only=True)
+    date = serializers.DateTimeField(read_only=True)

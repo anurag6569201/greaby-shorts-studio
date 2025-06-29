@@ -14,8 +14,8 @@ const ContactPage = () => {
       <p className="text-lg text-muted-foreground mb-4">
         Have questions or feedback? We'd love to hear from you.
       </p>
-      <a href="mailto:support@greaby.com" className="text-xl font-semibold text-primary hover:underline mb-8">
-        support@greaby.com
+      <a href="mailto:anurag@greaby.cloud" className="text-xl font-semibold text-primary hover:underline mb-8">
+        anurag@greaby.cloud
       </a>
       <Link to="/" className="inline-block px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-lg shadow-md hover:bg-primary/90 transition-colors">
         Return to Home

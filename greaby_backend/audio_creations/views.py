@@ -14,12 +14,11 @@ from .services import calculate_audio_cost
 from .voices import VOICE_CHOICES
 from .costs import VOICE_MULTIPLIERS, DEFAULT_VOICE_MULTIPLIER
 
-
 class AudioCreationViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'head', 'options']
     
     def get_queryset(self):
-        return AudioCreation.objects.filter(user=self.request.user)
+        return AudioCreation.objects.filter(user=self.request.user,status=AudioCreation.Status.COMPLETED)
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -56,6 +55,14 @@ class AudioCreationViewSet(viewsets.ModelViewSet):
                     user=user,
                     credit_cost=cost,
                     **validated_data
+                )
+
+                # --- NEW: Log this transaction ---
+                CreditUsage.objects.create(
+                    user=user,
+                    usage_type=CreditUsage.UsageType.AUDIO,
+                    credits_spent=cost,
+                    description=f"Title: {creation.title[:100]}"
                 )
         except Exception as e:
             return Response({"detail": "An unexpected error occurred. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -44,10 +44,10 @@
   filter: blur(var(--blur));
 background-color: #f7f7f8;
 background-image: 
-  radial-gradient(at 33% 82%, hsla(254, 71%, 69%, 0.6) 0px, transparent 50%),
-  radial-gradient(at 28% 4%, hsla(262, 83%, 58%, 0.6) 0px, transparent 50%),
-  radial-gradient(at 69% 49%, hsla(262, 79%, 66%, 0.6) 0px, transparent 50%),
-  radial-gradient(at 94% 14%, hsla(232, 66%, 62%, 0.6) 0px, transparent 50%);
+  radial-gradient(at 33% 82%, hsla(254, 71%, 69%, 1) 0px, transparent 50%),
+  radial-gradient(at 28% 4%, hsla(262, 83%, 58%, 1) 0px, transparent 50%),
+  radial-gradient(at 69% 49%, hsla(262, 79%, 66%, 1) 0px, transparent 50%),
+  radial-gradient(at 94% 14%, hsla(232, 66%, 62%, 1) 0px, transparent 50%);
 }
 /* Add other .variant-N::before rules here if you need them... */
 
@@ -135,4 +135,52 @@ position: absolute;
     transform: translate(-50%, -50%) scale(1.2);
     opacity: 1;
   }
+}
+
+
+
+
+/* --- Base Card --- */
+.audio-card-fancy,
+.fancy-card-reel {
+  --rounded: 20px;
+  width: auto;
+  border-radius: var(--rounded);
+  background: #fff;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+/* --- Blurred Gradient Background --- */
+.audio-card-fancy::before,
+.fancy-card-reel::before {
+  --size: 100%;
+  --blur: 20px;
+  content: "";
+  position: absolute;
+  width: var(--size);
+  height: var(--size);
+  filter: blur(var(--blur));
+  background-color: #fafbfb;
+  background-image: radial-gradient(at 33% 82%, hsla(254,71%,69%,1) 0px, transparent 50%),
+  radial-gradient(at 28% 4%, hsl(262, 83%, 58%) 0px, transparent 50%),
+  radial-gradient(at 69% 49%, hsl(262, 79%, 66%) 0px, transparent 50%),
+  radial-gradient(at 94% 14%, hsla(232,66%,62%,1) 0px, transparent 50%),
+  radial-gradient(at 19% 93%, hsla(51,98%,74%,1) 0px, transparent 50%),
+  radial-gradient(at 15% 80%, hsla(194,87%,63%,1) 0px, transparent 50%),
+  radial-gradient(at 56% 52%, hsla(109,71%,61%,1) 0px, transparent 50%);
+  opacity: 0.6;
+}
+.audio-card-fancy::before{
+  opacity: 1;
+}
+.audio-card-fancy::after,
+.fancy-card-reel::after {
+  --size: 100%;
+  content: "";
+  position: absolute;
+  width: var(--size);
+  height: var(--size);
+  background: rgba(255, 255, 255, 0.5);
 }

@@ -50,9 +50,9 @@ const DashboardHome = ({ setActiveTab }) => {
         api.get('/reels/'),
       ]);
       return {
-        videos: videoRes.data.length,
+        videos: videoRes.data.count,
         audios: audioRes.data.count,
-        reels: reelRes.data.length,
+        reels: reelRes.data.count,
       };
     },
     enabled: !!user,

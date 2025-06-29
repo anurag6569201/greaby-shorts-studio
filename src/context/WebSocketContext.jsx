@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 const WebSocketContext = createContext(null);
 
@@ -29,8 +30,8 @@ export const WebSocketProvider = ({ children }) => {
         return;
     }
 
-    if (socketRef.current) {
-        socketRef.current.close();
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+        return; // Connection is already open and healthy
     }
 
     const wsUrl = getWebSocketURL(tokens.access);
@@ -45,24 +46,42 @@ export const WebSocketProvider = ({ children }) => {
       try {
           const data = JSON.parse(event.data);
           
-          // --- THE FIX IS HERE ---
-          // Destructure directly from 'data' instead of 'data.message'
+          // --- FIX: Destructure directly from 'data' ---
+          // The backend sends the payload directly, not nested under a 'message' key.
           const { event: eventType, creation_type, creation_id, status_message } = data;
           
-          if (!eventType) return; // Ignore messages without an event type
+          if (!eventType || !creation_type) return;
 
-          const queryKey = [`${creation_type}Creations`];
+          const queryKeyMap = {
+            'video': ['videoCreations'],
+            'audio': ['audioCreations'],
+            'reel': ['reels'],
+          };
+          const queryKey = queryKeyMap[creation_type];
+          if (!queryKey) return;
           
           if (eventType === 'creation_progress') {
-              queryClient.setQueryData(queryKey, (oldData = []) => 
-                  oldData.map(item => 
-                      item.id === creation_id 
-                          ? { ...item, status: status_message }
-                          : item
-                  )
-              );
-          } else if (eventType === 'creation_completed' || eventType === 'creation_failed') {
+              queryClient.setQueryData(queryKey, (oldData) => {
+                  if (!oldData || !oldData.results) return oldData;
+                  return {
+                      ...oldData,
+                      results: oldData.results.map(item => 
+                          item.id === creation_id 
+                              ? { ...item, status: status_message || item.status } // Use status_message if available
+                              : item
+                      )
+                  };
+              });
+          } else if (eventType === 'creation_completed') {
+              toast.success(`Your ${creation_type} is ready!`, {
+                description: "The item in your library has been updated."
+              });
               queryClient.invalidateQueries({ queryKey });
+          } else if (eventType === 'creation_failed') {
+            toast.error(`Your ${creation_type} generation failed.`, {
+                description: "Please check the item in your library for details. Credits have been refunded."
+            });
+            queryClient.invalidateQueries({ queryKey });
           }
       } catch (error) {
           console.error("Failed to process WebSocket message:", error);
@@ -74,7 +93,7 @@ export const WebSocketProvider = ({ children }) => {
     };
 
     socket.onclose = (event) => {
-      console.log(`WebSocket disconnected: Code ${event.code}, Reason: ${event.reason}`);
+      console.log(`WebSocket disconnected: Code ${event.code}`);
     };
 
     return () => {

@@ -57,7 +57,7 @@ const TermsPage = () => {
     },
     {
       title: "Contact Us",
-      content: "If you have any questions about these Terms, please contact us at support@greaby.com."
+      content: "If you have any questions about these Terms, please contact us at anurag@greaby.cloud."
     }
   ];
 

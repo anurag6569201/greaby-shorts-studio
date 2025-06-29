@@ -7,11 +7,13 @@ from rest_framework import generics, status, views
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from .models import CreditPack, Purchase
-from .serializers import CreditPackSerializer, PurchaseRequestSerializer, PurchaseHistorySerializer
+from .models import CreditPack, Purchase, CreditUsage
+from .serializers import CreditPackSerializer, PurchaseRequestSerializer, PurchaseHistorySerializer, UnifiedHistorySerializer
 from users.models import User
 import time
 from greaby_project.email_utils import send_template_email
+from itertools import chain
+from rest_framework.pagination import PageNumberPagination
 
 # Initialize Razorpay client
 client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
@@ -23,7 +25,7 @@ class CreditPackListView(generics.ListAPIView):
     queryset = CreditPack.objects.filter(is_active=True)
     permission_classes = [AllowAny]
     serializer_class = CreditPackSerializer
-
+    
 class CreatePurchaseOrderView(views.APIView):
     """
     Creates a Razorpay order when a user wants to buy a credit pack.
@@ -176,3 +178,59 @@ class PurchaseHistoryListView(generics.ListAPIView):
             user=self.request.user, 
             status=Purchase.Status.COMPLETED
         ).order_by('-created_at')
+        
+        
+class UnifiedHistoryView(generics.ListAPIView):
+    """
+    Provides a unified, paginated history of all credit and debit transactions
+    for the authenticated user.
+    """
+    serializer_class = UnifiedHistorySerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = PageNumberPagination # Use DRF's standard pagination
+
+    def get_queryset(self):
+        user = self.request.user
+        
+        # Get all credit purchases
+        credits = Purchase.objects.filter(user=user, status=Purchase.Status.COMPLETED).values(
+            'id', 'created_at', 'credits_purchased', 'credit_pack__name'
+        )
+        # Format them into the unified structure
+        credit_list = [
+            {
+                'id': f"p-{c['id']}",
+                'type': 'credit',
+                'amount': c['credits_purchased'],
+                'description': 'Credit Purchase',
+                'details': c['credit_pack__name'],
+                'date': c['created_at'],
+            }
+            for c in credits
+        ]
+
+        # Get all debit usages
+        debits = CreditUsage.objects.filter(user=user).values(
+            'id', 'created_at', 'credits_spent', 'usage_type', 'description'
+        )
+        # Format them into the unified structure
+        debit_list = [
+            {
+                'id': f"u-{d['id']}",
+                'type': 'debit',
+                'amount': d['credits_spent'],
+                'description': d['usage_type'].replace('_', ' ').title(),
+                'details': d['description'],
+                'date': d['created_at'],
+            }
+            for d in debits
+        ]
+
+        # Combine, sort, and return the final list
+        combined_list = sorted(
+            chain(credit_list, debit_list), 
+            key=lambda x: x['date'], 
+            reverse=True
+        )
+        
+        return combined_list

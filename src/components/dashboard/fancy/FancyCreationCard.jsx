@@ -49,7 +49,7 @@ export const FancyCreationCard = ({ creation, cardVariants, variant = 1 }) => {
         />
       ) : (
         <div
-          className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 cursor-pointer group"
+          className="absolute inset-0 z-10 flex items-center justify-center cursor-pointer group"
           onClick={() => {
             setShouldLoadVideo(true);
             setShowContent(false);

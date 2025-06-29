@@ -88,37 +88,14 @@ const PrivacyPage = () => {
     },
     {
       title: "Contact Us",
-      content: "If you have any questions or concerns about this Privacy Policy, please contact us at: support@greaby.com."
+      content: "If you have any questions or concerns about this Privacy Policy, please contact us at: anurag@greaby.cloud."
     }
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-indigo-50 relative overflow-hidden">
       <Navbar/>
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(15)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute rounded-full bg-indigo-100"
-            style={{
-              width: Math.random() * 100 + 20,
-              height: Math.random() * 100 + 20,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              x: [0, (Math.random() - 0.5) * 10],
-              y: [0, (Math.random() - 0.5) * 10],
-            }}
-            transition={{
-              duration: 15 + Math.random() * 20,
-              repeat: Infinity,
-              repeatType: "reverse",
-              ease: "easeInOut"
-            }}
-          />
-        ))}
-      </div>
+
       
       {/* Subtle cursor effect */}
       <div className="fixed top-0 left-0 pointer-events-none z-50">
@@ -140,31 +117,7 @@ const PrivacyPage = () => {
         />
       </div>
       
-      {/* Floating particles */}
-      <div className="absolute inset-0 pointer-events-none">
-        {[...Array(30)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-indigo-300 rounded-full"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, 10, 0],
-              opacity: [0.3, 1, 0.3],
-            }}
-            transition={{
-              duration: 2 + Math.random() * 3,
-              delay: Math.random() * 2,
-              repeat: Infinity,
-              repeatType: "reverse",
-              ease: "easeInOut"
-            }}
-          />
-        ))}
-      </div>
-      
+
       <div className="max-w-4xl mx-auto py-16 px-4 relative z-10">
         <motion.div 
           className="text-center mb-16"
