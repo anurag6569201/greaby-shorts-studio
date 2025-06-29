@@ -109,7 +109,7 @@ class UserProfileView(APIView):
     """
     Handles retrieving (GET) and updating (PATCH) the logged-in user's profile.
     """
-    permission_classes = (IsAuthenticated)
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request):
         """Returns the current user's profile data, including their credit balance."""
