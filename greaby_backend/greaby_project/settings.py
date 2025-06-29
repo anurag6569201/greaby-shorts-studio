@@ -112,6 +112,15 @@ CORS_ALLOWED_ORIGINS = [
     "https://greaby.vercel.app",
 ]
 CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://greaby.cloud",
+    "https://greaby.vercel.app",
+]
+
+CSRF_COOKIE_SECURE = True  # Only for HTTPS
+CSRF_COOKIE_SAMESITE = 'None'  # Needed for cross-site frontend/backend
 
 CELERY_BROKER_URL = config('CELERY_BROKER_URL')
 CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND')
