@@ -3,6 +3,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 
 from .models import VideoCreation
+from billing.models import CreditUsage
 from .serializers import VideoCreationRequestSerializer, VideoCreationResponseSerializer
 from .tasks import generate_video_from_prompt
 from .services import calculate_video_cost

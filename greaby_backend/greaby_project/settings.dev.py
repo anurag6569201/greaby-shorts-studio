@@ -1,42 +1,48 @@
-# greaby_project/settings.py
-
 import os
 from pathlib import Path
-from decouple import config, Csv
+from decouple import config
 import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = ['*']
 
-# Application definition
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
-    # Third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
     'storages',
-
-    # Local apps
     'users.apps.UsersConfig',
-    'subscriptions.apps.SubscriptionsConfig',
-    'creations.apps.CreationsConfig',         
+    'billing.apps.BillingConfig',
+    'creations.apps.CreationsConfig',
     'audio_creations.apps.AudioCreationsConfig',
     'reels.apps.ReelsConfig',
+    'channels',
+    'notifications.apps.NotificationsConfig',
 ]
+
+ASGI_APPLICATION = 'greaby_project.asgi.application'
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [config('CELERY_BROKER_URL', default='redis://localhost:6379/1')],
+        },
+    },
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    "whitenoise.middleware.WhiteNoiseMiddleware", # For serving static files in production
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -51,7 +57,7 @@ ROOT_URLCONF = 'greaby_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -66,7 +72,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'greaby_project.wsgi.application'
 
-# Database
 DATABASES = {
     'default': dj_database_url.config(
         default=config('DATABASE_URL'),
@@ -75,15 +80,15 @@ DATABASES = {
     )
 }
 
-# Authentication
 AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication',),
-    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated']
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
+    'DEFAULT_PAGINATION_CLASS': 'greaby_project.pagination.StandardResultsSetPagination',
+    'PAGE_SIZE': 10
 }
 
-# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -91,39 +96,70 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# CORS
-# --- CORS (Allow All in Dev) ---
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Celery
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://greaby.cloud",
+    "https://greaby.vercel.app",
+]
+CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://greaby.cloud",
+    "https://greaby.vercel.app",
+    'https://greaby.azurewebsites.net',
+]
+
+CSRF_COOKIE_SECURE = True  # Only for HTTPS
+CSRF_COOKIE_SAMESITE = 'None'  # Needed for cross-site frontend/backend
+
 CELERY_BROKER_URL = config('CELERY_BROKER_URL')
 CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+CELERY_ACKS_LATE = True
+CELERY_TASK_TRACK_STARTED = True
 
-# --- Azure AI Settings ---
-AZURE_SORA_ENDPOINT_URL = config('AZURE_SORA_ENDPOINT_URL')
-AZURE_SORA_DEPLOYMENT_NAME = config('AZURE_SORA_DEPLOYMENT_NAME')
+AZURE_OPENAI_ENDPOINT_URL = config('AZURE_OPENAI_ENDPOINT_URL')
+AZURE_SORA_DEPLOYMENT_NAME = config('AZURE_SORA_DEPLOYMENT_NAME', default='sora')
 AZURE_OPENAI_API_KEY = config('AZURE_OPENAI_API_KEY')
-AZURE_TTS_DEPLOYMENT_NAME = config('AZURE_TTS_DEPLOYMENT_NAME', default='gpt-4o-mini-tts')
+AZURE_SPEECH_KEY = config('AZURE_SPEECH_KEY')
+AZURE_SPEECH_ENDPOINT = config('AZURE_SPEECH_ENDPOINT')
 
 RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID')
 RAZORPAY_KEY_SECRET = config('RAZORPAY_KEY_SECRET')
-RAZORPAY_WEBHOOK_SECRET = config('RAZORPAY_WEBHOOK_SECRET', default='')
+RAZORPAY_WEBHOOK_SECRET = config('RAZORPAY_WEBHOOK_SECRET')
 
-# Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
 
-# Default primary key field type
+DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
+AZURE_ACCOUNT_NAME = config('AZURE_ACCOUNT_NAME')
+AZURE_ACCOUNT_KEY = config('AZURE_ACCOUNT_KEY')
+AZURE_URL_EXPIRATION_SECS = 3600
+AZURE_OVERWRITE_FILES = True
+AZURE_CONNECTION_TIMEOUT_SECS = 600
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')
+
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='anurag6569201@gmail.com')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='ihasreqxxrrtzmrc')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Greaby AI <noreply@example.com>')
