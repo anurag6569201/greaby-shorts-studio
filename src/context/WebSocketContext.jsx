@@ -8,12 +8,13 @@ const WebSocketContext = createContext(null);
 export const useWebSocket = () => useContext(WebSocketContext);
 
 const getWebSocketURL = (token) => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const hostname = window.location.hostname;
-    const host = (hostname === 'localhost' || hostname === '127.0.0.1')
-        ? `${hostname}:8000`
-        : window.location.host;
-    return `${protocol}//${host}/ws/notifications/?token=${token}`;
+    const wsBaseUrl = import.meta.env.VITE_APP_WS_URL;
+    if (!wsBaseUrl) {
+        console.error("FATAL: VITE_APP_WS_URL environment variable is not set!");
+        return null;
+    }
+    
+    return `${wsBaseUrl}/ws/notifications/?token=${token}`;
 };
 
 export const WebSocketProvider = ({ children }) => {
