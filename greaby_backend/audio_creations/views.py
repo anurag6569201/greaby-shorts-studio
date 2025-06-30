@@ -2,6 +2,7 @@ from django.db import transaction
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from .models import AudioCreation
 from billing.models import CreditUsage
@@ -16,7 +17,7 @@ from .voices import VOICE_CHOICES
 from .costs import VOICE_MULTIPLIERS, DEFAULT_VOICE_MULTIPLIER
 
 class AudioCreationViewSet(viewsets.ModelViewSet):
-    http_method_names = ['get', 'post', 'patch', 'head', 'options']
+    http_method_names = ['get', 'post', 'patch', 'head','delete', 'options']
     
     def get_queryset(self):
         return AudioCreation.objects.filter(user=self.request.user,status=AudioCreation.Status.COMPLETED)
@@ -73,6 +74,15 @@ class AudioCreationViewSet(viewsets.ModelViewSet):
         response_serializer = AudioCreationResponseSerializer(creation, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_202_ACCEPTED)
 
+    def perform_destroy(self, instance):
+        """
+        Overrides the default destroy method.
+        This ensures the associated file in Azure Blob Storage is deleted
+        BEFORE the database record is removed.
+        """
+        instance.result_file.delete(save=False)
+        super().perform_destroy(instance)
+
     @action(detail=False, methods=['get'], url_path='voice-options')
     def voice_options(self, request, *args, **kwargs):
         data = []
@@ -86,3 +96,20 @@ class AudioCreationViewSet(viewsets.ModelViewSet):
             })
             
         return Response(data)
+    
+    
+class FailedAudioCreationViewSet(ReadOnlyModelViewSet):
+    """
+    This endpoint provides a list of audio creations that have failed.
+    It is read-only.
+    """
+    serializer_class = AudioCreationResponseSerializer
+
+    def get_queryset(self):
+        """
+        This queryset ONLY returns creations with a 'failed' status for the current user.
+        """
+        return AudioCreation.objects.filter(
+            user=self.request.user, 
+            status=AudioCreation.Status.FAILED
+        ).order_by('-created_at')
