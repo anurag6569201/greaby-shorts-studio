@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clapperboard, Loader2, RefreshCw, Video, Mic, CheckCircle2, Download, Trash2, MoreHorizontal, Edit, Subtitles, AlertCircle, Play, ChevronDown, ChevronUp } from "lucide-react";
+import { Clapperboard, Loader2, RefreshCw, Video, Mic, CheckCircle2, Download, Trash2, MoreHorizontal, Edit, Subtitles, AlertCircle, Play, ChevronDown, ChevronUp, Pointer } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from "@/services/api";
@@ -96,7 +96,7 @@ const ReelCard = ({ reel, onEdit, onDelete, onGenerateSubtitles }) => {
 
         <div className="absolute top-0 left-0 w-full z-20 bg-gradient-to-b to-transparent p-3 flex items-start justify-between">
             <div className="text-white overflow-hidden">
-              <h3 className="text-sm text-gray-800 font-semibold truncate">{reel.title}</h3>
+              <h3 className="text-sm text-gray-800 font-semibold truncate">{reel.title.substring(0, 30)}</h3>
               <p className="text-xs text-gray-500">{new Date(reel.created_at).toLocaleString()}</p>
             </div>
             <DropdownMenu>
@@ -115,11 +115,11 @@ const ReelCard = ({ reel, onEdit, onDelete, onGenerateSubtitles }) => {
         <AnimatePresence>
           {showOverlay && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
-              className="absolute bottom-0 left-0 w-full z-20 bg-gradient-to-t from-black/60 to-transparent p-3 flex items-center gap-2">
+              className="absolute bottom-0 left-0 w-full z-20 bg-gradient-to-t from-black/60 to-transparent p-3 flex items-center gap-2" style={{PointerEvent:'none'}}>
               {isSubtitleReady ? (
                 <Button size="sm" variant="secondary" onClick={() => handleDownload(reel.subtitle_url, `${reel.id}.srt`)}><Download className="h-4 w-4 mr-2" /> Download .SRT</Button>
               ) : (
-                <Button size="sm" variant="secondary" onClick={() => onGenerateSubtitles(reel.id)} disabled={isSubtitleProcessing || reel.status !== 'completed'} className="bg-[#bc9bf5] hover:bg-[#a97bf0] text-white">
+                <Button size="sm" variant="secondary" onClick={() => onGenerateSubtitles(reel.id)} disabled={isSubtitleProcessing || reel.status !== 'completed'} className="bg-[#bc9bf5] hover:bg-[#a97bf0] text-white" style={{display:'none'}}>
                   {isSubtitleProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Subtitles className="h-4 w-4 mr-2" />}
                   {isSubtitleProcessing ? 'Generating...' : 'Get Subtitles'}
                 </Button>

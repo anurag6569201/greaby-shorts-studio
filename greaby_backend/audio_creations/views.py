@@ -17,10 +17,13 @@ from .voices import VOICE_CHOICES
 from .costs import VOICE_MULTIPLIERS, DEFAULT_VOICE_MULTIPLIER
 
 class AudioCreationViewSet(viewsets.ModelViewSet):
-    http_method_names = ['get', 'post', 'patch', 'head','delete', 'options']
+    http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
     
     def get_queryset(self):
-        return AudioCreation.objects.filter(user=self.request.user,status=AudioCreation.Status.COMPLETED)
+        base_queryset = AudioCreation.objects.filter(user=self.request.user)
+        if self.action == 'list':
+            return base_queryset.exclude(status=AudioCreation.Status.FAILED).order_by('-created_at')
+        return base_queryset
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -59,7 +62,6 @@ class AudioCreationViewSet(viewsets.ModelViewSet):
                     **validated_data
                 )
 
-                # --- NEW: Log this transaction ---
                 CreditUsage.objects.create(
                     user=user,
                     usage_type=CreditUsage.UsageType.AUDIO,
@@ -75,11 +77,6 @@ class AudioCreationViewSet(viewsets.ModelViewSet):
         return Response(response_serializer.data, status=status.HTTP_202_ACCEPTED)
 
     def perform_destroy(self, instance):
-        """
-        Overrides the default destroy method.
-        This ensures the associated file in Azure Blob Storage is deleted
-        BEFORE the database record is removed.
-        """
         instance.result_file.delete(save=False)
         super().perform_destroy(instance)
 
@@ -89,26 +86,14 @@ class AudioCreationViewSet(viewsets.ModelViewSet):
         for voice_id, display_name in VOICE_CHOICES:
             multiplier = VOICE_MULTIPLIERS.get(voice_id, DEFAULT_VOICE_MULTIPLIER)
             
-            data.append({
-                'id': voice_id,
-                'name': display_name,
-                'multiplier': float(multiplier)
-            })
+            data.append({ 'id': voice_id, 'name': display_name, 'multiplier': float(multiplier) })
             
         return Response(data)
-    
-    
+
 class FailedAudioCreationViewSet(ReadOnlyModelViewSet):
-    """
-    This endpoint provides a list of audio creations that have failed.
-    It is read-only.
-    """
     serializer_class = AudioCreationResponseSerializer
 
     def get_queryset(self):
-        """
-        This queryset ONLY returns creations with a 'failed' status for the current user.
-        """
         return AudioCreation.objects.filter(
             user=self.request.user, 
             status=AudioCreation.Status.FAILED
