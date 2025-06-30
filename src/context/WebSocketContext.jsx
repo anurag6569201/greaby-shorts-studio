@@ -8,12 +8,13 @@ const WebSocketContext = createContext(null);
 export const useWebSocket = () => useContext(WebSocketContext);
 
 const getWebSocketURL = (token) => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const hostname = window.location.hostname;
-    const host = (hostname === 'localhost' || hostname === '127.0.0.1')
-        ? `${hostname}:8000`
-        : window.location.host;
-    return `${protocol}//${host}/ws/notifications/?token=${token}`;
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = import.meta.env.VITE_APP_WS_URL || (
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'localhost:8000'
+      : window.location.host
+  );
+  return `${protocol}//${host}/ws/notifications/?token=${token}`;
 };
 
 export const WebSocketProvider = ({ children }) => {
