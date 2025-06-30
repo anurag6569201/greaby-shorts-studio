@@ -19,12 +19,13 @@ const Footer = () => (
         <div><h3 className="text-sm font-semibold text-slate-200 tracking-wider uppercase">Company</h3><ul className="mt-4 space-y-3">
           <li><Link to="/about" className="hover:text-primary transition-colors">About Us</Link></li>
           <li><Link to="/blog" className="hover:text-primary transition-colors">Blog</Link></li>
-          <li><Link to="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
         </ul></div>
         <div><h3 className="text-sm font-semibold text-slate-200 tracking-wider uppercase">Legal</h3><ul className="mt-4 space-y-3">
           <li><Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
           <li><Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
           <li><Link to="/refund" className="hover:text-primary transition-colors">Refund Policy</Link></li>
+          <li><Link to="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
+          <li><Link to="/shipping" className="hover:text-primary transition-colors">Shipping and delivery</Link></li>
         </ul></div>
       </div>
       <div className="mt-8 py-8 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center">
