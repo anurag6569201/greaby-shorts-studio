@@ -1,3 +1,4 @@
+// src/pages/PrivacyPage.js
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -75,29 +76,14 @@ const PrivacyPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-indigo-50 relative overflow-hidden">
       <Navbar/>
-
-      
-      {/* Subtle cursor effect */}
       <div className="fixed top-0 left-0 pointer-events-none z-50">
         <motion.div
           className="w-8 h-8 rounded-full border border-indigo-300 absolute"
-          style={{
-            x: cursorPosition.x - 16,
-            y: cursorPosition.y - 16,
-          }}
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3]
-          }}
-          transition={{ 
-            duration: 2, 
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
+          style={{ x: cursorPosition.x - 16, y: cursorPosition.y - 16, }}
+          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+          transition={{  duration: 2,  repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
-      
-
       <div className="max-w-4xl mx-auto py-16 px-4 relative z-10">
         <motion.div 
           className="text-center mb-16"
@@ -106,19 +92,9 @@ const PrivacyPage = () => {
           transition={{ duration: 0.8 }}
         >
           <motion.h1 
-                            className="text-4xl md:text-5xl font-bold tracking-tight mb-4"
-                animate={{
-                textShadow: [
-                    "0 0 0px rgba(99, 102, 241, 0)",
-                    "0 0 10px rgba(99, 102, 241, 0.3)",
-                    "0 0 0px rgba(99, 102, 241, 0)"
-                ]
-                }}
-                transition={{ 
-                duration: 4, 
-                repeat: Infinity,
-                ease: "easeInOut"
-                }}
+            className="text-4xl md:text-5xl font-bold tracking-tight mb-4"
+            animate={{ textShadow: ["0 0 0px rgba(99, 102, 241, 0)", "0 0 10px rgba(99, 102, 241, 0.3)", "0 0 0px rgba(99, 102, 241, 0)"] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           >
             Privacy Policy
           </motion.h1>
@@ -131,16 +107,12 @@ const PrivacyPage = () => {
             Last Updated: {effectiveDate}
           </motion.p>
         </motion.div>
-
         <motion.div 
           className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 md:p-10 border border-indigo-100 mb-16"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.8 }}
-          whileHover={{ 
-            boxShadow: "0 25px 50px -12px rgba(79, 70, 229, 0.1)",
-            y: -5
-          }}
+          whileHover={{ boxShadow: "0 25px 50px -12px rgba(79, 70, 229, 0.1)", y: -5 }}
         >
           <motion.p 
             className="text-lg mb-8 text-center text-slate-700"
@@ -150,7 +122,6 @@ const PrivacyPage = () => {
           >
             Your privacy is important to us. This Privacy Policy explains how Greaby ("we," "us," or "our") collects, uses, and discloses information about you when you access or use our website and services.
           </motion.p>
-          
           <div className="space-y-16">
             {sections.map((section, index) => (
               <motion.div 
@@ -163,98 +134,44 @@ const PrivacyPage = () => {
                 onMouseLeave={() => setActiveSection(null)}
               >
                 <motion.div 
-                  className={`absolute -left-8 top-0 w-1 h-full bg-indigo-100 rounded-full ${
-                    activeSection === index ? 'opacity-100' : 'opacity-30'
-                  }`}
-                  animate={{
-                    height: activeSection === index ? '100%' : '30%',
-                  }}
+                  className={`absolute -left-8 top-0 w-1 h-full bg-indigo-100 rounded-full ${ activeSection === index ? 'opacity-100' : 'opacity-30' }`}
+                  animate={{ height: activeSection === index ? '100%' : '30%', }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
                 />
-                
                 <motion.h3 
                   className="text-xl font-bold mb-4 flex items-center"
-                  animate={{ 
-                    color: activeSection === index ? '#4f46e5' : '#1e293b',
-                    x: activeSection === index ? 5 : 0
-                  }}
+                  animate={{ color: activeSection === index ? '#4f46e5' : '#1e293b', x: activeSection === index ? 5 : 0 }}
                 >
-                  <motion.span
-                    className="mr-2"
-                    animate={{ 
-                      scale: activeSection === index ? 1.2 : 1,
-                      rotate: activeSection === index ? 10 : 0
-                    }}
-                  >
+                  <motion.span className="mr-2" animate={{ scale: activeSection === index ? 1.2 : 1, rotate: activeSection === index ? 10 : 0 }}>
                     {index + 1}.
                   </motion.span>
                   {section.title}
                 </motion.h3>
-                
                 {section.content && (
                   <motion.p 
                     className="pl-8 border-l border-indigo-100 text-slate-700 mb-4"
-                    animate={{ 
-                      paddingLeft: activeSection === index ? '3rem' : '2rem',
-                      borderLeftWidth: activeSection === index ? '2px' : '1px'
-                    }}
+                    animate={{ paddingLeft: activeSection === index ? '3rem' : '2rem', borderLeftWidth: activeSection === index ? '2px' : '1px' }}
                   >
                     {section.content}
                   </motion.p>
                 )}
-                
-                {section.subsections && (
-                  <div className="pl-8 space-y-6">
-                    {section.subsections.map((subsection, subIndex) => (
-                      <div key={subIndex} className="mb-4">
-                        <motion.h4 
-                          className="font-semibold text-indigo-700 mb-2"
-                          animate={{ 
-                            x: activeSection === index ? 5 : 0
-                          }}
-                        >
-                          {subsection.title}
-                        </motion.h4>
-                        <ul className="space-y-2 pl-5">
-                          {subsection.items.map((item, itemIndex) => (
-                            <motion.li 
-                              key={itemIndex}
-                              className="relative pl-4 before:content-['•'] before:absolute before:left-0 before:text-indigo-400"
-                              animate={{ 
-                                x: activeSection === index ? 5 : 0
-                              }}
-                            >
-                              {item}
-                            </motion.li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
                 {section.items && (
                   <ul className="pl-8 space-y-2 mb-4">
                     {section.items.map((item, itemIndex) => (
                       <motion.li 
                         key={itemIndex} 
                         className="relative pl-4 before:content-['•'] before:absolute before:left-0 before:text-indigo-400"
-                        animate={{ 
-                          x: activeSection === index ? 5 : 0
-                        }}
+                        animate={{ x: activeSection === index ? 5 : 0 }}
                       >
                         {item}
                       </motion.li>
                     ))}
                   </ul>
                 )}
-                
                 {section.note && (
                   <motion.div 
                     className="pl-8 mt-4 p-4 bg-indigo-50 rounded-lg border border-indigo-100"
-                    animate={{ 
-                      x: activeSection === index ? 5 : 0
-                    }}
+                    animate={{ x: activeSection === index ? 5 : 0 }}
                   >
                     <p className="text-indigo-700 font-medium">{section.note}</p>
                   </motion.div>
@@ -263,28 +180,18 @@ const PrivacyPage = () => {
             ))}
           </div>
         </motion.div>
-        
         <motion.div 
           className="text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.2, duration: 0.8 }}
         >
-          <Link 
-            to="/" 
-            className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 group"
-          >
-            <motion.span 
-              className="inline-block group-hover:-translate-x-1 transition-transform"
-            >
-              ←
-            </motion.span>
+          <Link to="/" className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 group">
+            <motion.span className="inline-block group-hover:-translate-x-1 transition-transform">←</motion.span>
             <span className="group-hover:underline">Back to Home</span>
           </Link>
         </motion.div>
       </div>
-      
-      {/* Floating action button */}
       <motion.div
         className="fixed bottom-8 right-8 z-20"
         initial={{ opacity: 0, y: 20 }}
@@ -297,13 +204,10 @@ const PrivacyPage = () => {
             whileHover={{ scale: 1.1, rotate: 10 }}
             whileTap={{ scale: 0.9 }}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
           </motion.div>
         </Link>
       </motion.div>
-      
       <Footer/>
     </div>
   );
