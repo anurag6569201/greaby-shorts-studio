@@ -30,6 +30,7 @@ jobs:
       - name: Zip artifact for deployment
         run: |
           cd greaby_backend
+          chmod +x startup.sh
           zip -r ../release.zip . -x "venv/*"
 
       - name: Upload artifact for deployment jobs
