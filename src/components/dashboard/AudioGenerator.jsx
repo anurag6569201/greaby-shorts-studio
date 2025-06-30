@@ -386,7 +386,9 @@ const AudioGenerator = () => {
     [formData.text_input, formData.response_format, formData.voice, voiceOptionsData]
   );
   
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    const action_btn = document.querySelector(".action-button");
+    action_btn?.classList.add("freeze-btn");
     if (submissionLock.current) {
         return;
     }
@@ -398,7 +400,12 @@ const AudioGenerator = () => {
     if (!payload.title.trim()) {
         payload.title = `Audio for: "${payload.text_input.substring(0, 30)}..."`;
     }
-    generateAudio(payload);
+    try {
+      await generateAudio(payload); // assuming this is async
+    } finally {
+      action_btn?.classList.remove("freeze-btn"); // ✅ Remove class
+      submissionLock.current = false;
+    }
   };
   
   const handleUpdateTitle = () => {
@@ -459,6 +466,7 @@ const AudioGenerator = () => {
             onClick={handleSubmit} 
             disabled={isGenerating || !formData.text_input.trim()} 
             size="lg"
+            className="action-button"
           >
             {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}{" "}Generate Audio
           </Button>

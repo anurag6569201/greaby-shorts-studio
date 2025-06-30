@@ -1,5 +1,8 @@
+// src/services/api.js
+
 import axios from "axios";
 import { toast } from "sonner";
+import eventService from "./eventService"; // <-- IMPORTED
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
@@ -41,12 +44,19 @@ api.interceptors.response.use(
           const { access } = rs.data;
           localStorage.setItem("accessToken", access);
           api.defaults.headers.common["Authorization"] = "Bearer " + access;
+          
+          // --- THIS IS THE CHANGE ---
+          // Announce that the token has been refreshed
+          eventService.dispatchEvent('tokenRefreshed', { access });
 
           return api(originalConfig);
         } catch (_error) {
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
-          window.location.href = "/login";
+          
+          // Use event service to notify app to logout
+          eventService.dispatchEvent('logout'); 
+
           toast.error("Session expired. Please log in again.");
           return Promise.reject(_error);
         }

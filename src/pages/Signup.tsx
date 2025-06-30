@@ -1,3 +1,5 @@
+// src/pages/Signup.jsx
+
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,10 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sparkles, Loader2 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-import api from "@/services/api";
 
 const OtpInput = ({ otp, setOtp, disabled }) => {
     const inputRefs = useRef([]);
@@ -54,9 +55,11 @@ const OtpInput = ({ otp, setOtp, disabled }) => {
 
 
 const Signup = () => {
-    const { loginUser } = useAuth();
-    const [authLoading, setAuthLoading] = useState(false);
-    const [otpLoading, setOtpLoading] = useState(false);
+    // --- START OF THE FIX ---
+    // Use the new functions from the AuthContext
+    const { registerUser, verifyOtpAndLogin, authLoading } = useAuth();
+    // --- END OF THE FIX ---
+
     const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
     const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", password: "", confirmPassword: "" });
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -70,21 +73,16 @@ const Signup = () => {
         if (formData.password !== formData.confirmPassword) {
             return toast.error("Passwords do not match!");
         }
-        setAuthLoading(true);
-        try {
-            await api.post("/auth/register/", { 
-                first_name: formData.firstName, 
-                last_name: formData.lastName, 
-                email: formData.email, 
-                password: formData.password 
-            });
-            toast.success("Registration successful!", { description: "Please check your email for the verification code." });
+
+        // --- START OF THE FIX ---
+        // Call the new registerUser function
+        const result = await registerUser(formData.firstName, formData.lastName, formData.email, formData.password);
+
+        if (result.success) {
+            // Only open the OTP modal if registration was successful
             setIsOtpModalOpen(true);
-        } catch (error) {
-            toast.error(error.response?.data?.detail || "Signup failed. This email may already be in use.");
-        } finally {
-            setAuthLoading(false);
         }
+        // --- END OF THE FIX ---
     };
 
     const handleOtpSubmit = async () => {
@@ -93,18 +91,19 @@ const Signup = () => {
             return toast.error("Please enter the full 6-digit code.");
         }
         
-        setOtpLoading(true);
-        try {
-            await api.post('/auth/verify-otp/', { email: formData.email, otp: fullOtp });
-            toast.success("Account verified successfully! Logging you in...");
+        // --- START OF THE FIX ---
+        // Call the new verifyOtpAndLogin function
+        const result = await verifyOtpAndLogin(formData.email, fullOtp, formData.password);
+
+        if (result.success) {
+            // On success, the context will handle navigation to the dashboard.
+            // We can close the modal.
             setIsOtpModalOpen(false);
-            await loginUser(formData.email, formData.password);
-        } catch (error) {
-            toast.error(error.response?.data?.detail || "Verification failed.");
-            setOtp(['', '', '', '', '', '']); // Clear OTP input on failure
-        } finally {
-            setOtpLoading(false);
+        } else {
+            // On failure, clear the OTP input for another try
+            setOtp(['', '', '', '', '', '']); 
         }
+        // --- END OF THE FIX ---
     };
 
     return (
@@ -150,11 +149,11 @@ const Signup = () => {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-6">
-                        <OtpInput otp={otp} setOtp={setOtp} disabled={otpLoading} />
+                        <OtpInput otp={otp} setOtp={setOtp} disabled={authLoading} />
                     </div>
-                    <Button type="button" onClick={handleOtpSubmit} className="w-full" disabled={otpLoading}>
-                        {otpLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Verify & Continue
+                    <Button type="button" onClick={handleOtpSubmit} className="w-full" disabled={authLoading}>
+                        {authLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Verify & Create Account
                     </Button>
                 </DialogContent>
             </Dialog>

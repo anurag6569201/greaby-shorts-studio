@@ -27,6 +27,10 @@
   }
 }
 
+.freeze-btn{
+  pointer-events: none;
+  opacity: 0.6;
+}
 .glass_card{
     backdrop-filter: blur(2px) saturate(100%);
     -webkit-backdrop-filter: blur(2px) saturate(100%);
