@@ -5,18 +5,16 @@ import { Sparkles, ArrowLeft } from 'lucide-react';
 
 const ComingSoonPage = ({ featureName, featureDescription, onBack }) => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] text-center">
-      <Card className="max-w-md w-full p-4 sm:p-6">
-        <CardHeader>
-          <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit">
-            <Sparkles className="h-8 w-8 text-primary" />
-          </div>
-          <CardTitle className="mt-4 text-2xl sm:text-3xl font-bold">Coming Soon!</CardTitle>
-          <CardDescription className="text-base text-muted-foreground">
+    <div className="flex flex-col space-y-8">
+      <Card className="bg-transparent shadow-none border-none">
+        <CardHeader className="p-0">
+          <CardTitle className="flex items-center text-2xl"><Sparkles className="h-6 w-6 mr-3 text-primary" />Coming Soon!</CardTitle>
+          <CardDescription>
             We're putting the final touches on the <strong>{featureName}</strong> feature.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <hr className="my-4" />
+        <CardContent className="space-y-6 p-0">
           <p className="text-muted-foreground">
             {featureDescription}
           </p>

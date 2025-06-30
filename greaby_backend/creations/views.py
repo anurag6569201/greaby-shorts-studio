@@ -1,6 +1,7 @@
 from django.db import transaction
 from rest_framework import viewsets, status
 from rest_framework.response import Response
+from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from .models import VideoCreation
 from billing.models import CreditUsage
@@ -9,10 +10,13 @@ from .tasks import generate_video_from_prompt
 from .services import calculate_video_cost
 
 class VideoCreationViewSet(viewsets.ModelViewSet):
-    http_method_names = ['get', 'post', 'head', 'options']
+    http_method_names = ['get', 'post', 'delete', 'head', 'options']
 
     def get_queryset(self):
-        return VideoCreation.objects.filter(user=self.request.user,status=VideoCreation.Status.COMPLETED)
+        base_queryset = VideoCreation.objects.filter(user=self.request.user)
+        if self.action == 'list':
+            return base_queryset.exclude(status=VideoCreation.Status.FAILED).order_by('-created_at')
+        return base_queryset
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -40,18 +44,15 @@ class VideoCreationViewSet(viewsets.ModelViewSet):
             
         try:
             with transaction.atomic():
-                # Deduct credits from the user's balance
                 user.credit_balance -= cost
                 user.save(update_fields=['credit_balance'])
                 
-                # Create the VideoCreation object, saving the cost
                 creation = VideoCreation.objects.create(
                     user=user,
                     credit_cost=cost,
                     **validated_data
                 )
                 
-                # --- NEW: Log this transaction ---
                 CreditUsage.objects.create(
                     user=user,
                     usage_type=CreditUsage.UsageType.VIDEO,
@@ -60,10 +61,22 @@ class VideoCreationViewSet(viewsets.ModelViewSet):
                 )
 
         except Exception as e:
-            print(f"ERROR: Transaction failed during video creation for user {user.email}: {e}")
             return Response({"detail": "An unexpected error occurred. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         generate_video_from_prompt.delay(str(creation.id))
         
         response_serializer = VideoCreationResponseSerializer(creation, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_202_ACCEPTED)
+    
+    def perform_destroy(self, instance):
+        instance.result_file.delete(save=False)
+        super().perform_destroy(instance)
+        
+class FailedVideoCreationViewSet(ReadOnlyModelViewSet):
+    serializer_class = VideoCreationResponseSerializer
+
+    def get_queryset(self):
+        return VideoCreation.objects.filter(
+            user=self.request.user, 
+            status=VideoCreation.Status.FAILED
+        ).order_by('-created_at')

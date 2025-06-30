@@ -2,6 +2,7 @@ from django.db import transaction
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from .models import AudioCreation
 from billing.models import CreditUsage
@@ -16,10 +17,13 @@ from .voices import VOICE_CHOICES
 from .costs import VOICE_MULTIPLIERS, DEFAULT_VOICE_MULTIPLIER
 
 class AudioCreationViewSet(viewsets.ModelViewSet):
-    http_method_names = ['get', 'post', 'patch', 'head', 'options']
+    http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
     
     def get_queryset(self):
-        return AudioCreation.objects.filter(user=self.request.user,status=AudioCreation.Status.COMPLETED)
+        base_queryset = AudioCreation.objects.filter(user=self.request.user)
+        if self.action == 'list':
+            return base_queryset.exclude(status=AudioCreation.Status.FAILED).order_by('-created_at')
+        return base_queryset
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -58,7 +62,6 @@ class AudioCreationViewSet(viewsets.ModelViewSet):
                     **validated_data
                 )
 
-                # --- NEW: Log this transaction ---
                 CreditUsage.objects.create(
                     user=user,
                     usage_type=CreditUsage.UsageType.AUDIO,
@@ -73,16 +76,25 @@ class AudioCreationViewSet(viewsets.ModelViewSet):
         response_serializer = AudioCreationResponseSerializer(creation, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_202_ACCEPTED)
 
+    def perform_destroy(self, instance):
+        instance.result_file.delete(save=False)
+        super().perform_destroy(instance)
+
     @action(detail=False, methods=['get'], url_path='voice-options')
     def voice_options(self, request, *args, **kwargs):
         data = []
         for voice_id, display_name in VOICE_CHOICES:
             multiplier = VOICE_MULTIPLIERS.get(voice_id, DEFAULT_VOICE_MULTIPLIER)
             
-            data.append({
-                'id': voice_id,
-                'name': display_name,
-                'multiplier': float(multiplier)
-            })
+            data.append({ 'id': voice_id, 'name': display_name, 'multiplier': float(multiplier) })
             
         return Response(data)
+
+class FailedAudioCreationViewSet(ReadOnlyModelViewSet):
+    serializer_class = AudioCreationResponseSerializer
+
+    def get_queryset(self):
+        return AudioCreation.objects.filter(
+            user=self.request.user, 
+            status=AudioCreation.Status.FAILED
+        ).order_by('-created_at')
