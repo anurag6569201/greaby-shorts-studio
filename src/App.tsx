@@ -20,6 +20,7 @@ import BlogPage from "./pages/intro/BlogPage";
 import ContactPage from "./pages/intro/ContactPage";
 import TermsPage from "./pages/intro/TermsPage";
 import PrivacyPage from "./pages/intro/PrivacyPage";
+import RefundPolicyPage from "./pages/intro/RefundPolicyPage";
 
 import { WebSocketProvider } from "./context/WebSocketContext";
 
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/refund" element={<RefundPolicyPage />} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>

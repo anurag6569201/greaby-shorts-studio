@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Mail } from 'lucide-react';
+import { Sparkles, Mail,Clock,Building } from 'lucide-react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 
@@ -17,9 +17,12 @@ const ContactPage = () => {
       <a href="mailto:anurag@greaby.cloud" className="text-xl font-semibold text-primary hover:underline mb-8">
         anurag@greaby.cloud
       </a>
+      
       <Link to="/" className="inline-block px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-lg shadow-md hover:bg-primary/90 transition-colors">
         Return to Home
       </Link>
+
+
     </div>
     <Footer/>
     </>

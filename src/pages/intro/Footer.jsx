@@ -24,15 +24,16 @@ const Footer = () => (
         <div><h3 className="text-sm font-semibold text-slate-200 tracking-wider uppercase">Legal</h3><ul className="mt-4 space-y-3">
           <li><Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
           <li><Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
+          <li><Link to="/refund" className="hover:text-primary transition-colors">Refund Policy</Link></li>
         </ul></div>
       </div>
       <div className="mt-8 py-8 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center">
         <p className="text-sm text-slate-500">© {new Date().getFullYear()} Greaby. All rights reserved.</p>
-        <div className="flex items-center space-x-4 mt-4 sm:mt-0">
+        {/* <div className="flex items-center space-x-4 mt-4 sm:mt-0">
           <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-primary transition-colors"><Twitter className="h-5 w-5" /></a>
           <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-primary transition-colors"><Youtube className="h-5 w-5" /></a>
           <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-primary transition-colors"><Github className="h-5 w-5" /></a>
-        </div>
+        </div> */}
       </div>
     </div>
   </footer>

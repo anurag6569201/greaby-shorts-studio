@@ -6,6 +6,8 @@ from django.core.files.base import ContentFile
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
+from greaby_project.email_utils import send_template_email
+
 from .models import AudioCreation
 
 def send_progress_update(user_id, creation_id, status_message, creation_type='audio'):
@@ -110,6 +112,13 @@ def generate_audio_from_text(self, creation_id: str):
             f'user_{creation.user.id}',
             {'type': 'send_notification', 'message': {'event': 'creation_completed', 'creation_type': 'audio', 'creation_id': str(creation.id)}}
         )
+        if len(creation.text_input) >= 1000:
+            email_context = {
+                'creation_type': 'Audio', 'prompt': creation.text_input,
+                'dashboard_url': f"{settings.FRONTEND_URL}/dashboard?tab=audio"
+            }
+            send_template_email("Your Audio Generation is Complete!", "emails/generation_complete.html", email_context, [creation.user.email])
+            
         return f"Successfully processed audio creation {creation.id}."
 
     except Exception as e:
@@ -121,4 +130,10 @@ def generate_audio_from_text(self, creation_id: str):
                 f'user_{creation.user.id}',
                 {'type': 'send_notification', 'message': {'event': 'creation_failed', 'creation_type': 'audio', 'creation_id': str(creation.id)}}
             )
+            email_context = {
+                'creation_type': 'Audio', 'prompt': creation.text_input,
+                'dashboard_url': f"{settings.FRONTEND_URL}/dashboard?tab=audio"
+            }
+            send_template_email("Your Audio Generation is Complete!", "emails/generation_complete.html", email_context, [creation.user.email])
+            
         return f"Failed and refunded audio creation {creation_id}."

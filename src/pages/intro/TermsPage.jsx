@@ -21,39 +21,43 @@ const TermsPage = () => {
   const sections = [
     {
       title: "Agreement to Terms",
-      content: "By creating an account or using our Service, you agree to be bound by these Terms and our Privacy Policy. If you do not agree to these Terms, do not use the Service."
+      content: "By creating an account, purchasing Credits, or using our Service in any way, you agree to be bound by these Terms and our Privacy Policy. If you do not agree to these Terms, you must not use the Service."
     },
     {
       title: "The Greaby Service",
-      content: "Greaby provides a platform for users to generate video and audio content (\"Generated Content\") using artificial intelligence models, including but not limited to OpenAI's SORA and TTS models."
+      content: "Greaby provides a platform for users to generate video, audio, and subtitle content (\"Generated Content\") using artificial intelligence models. The Service is accessed via our website and is available on a pay-as-you-go basis."
     },
     {
       title: "User Accounts",
-      content: "You must be at least 13 years old to use the Service. You are responsible for safeguarding your account password and for all activities that occur under your account."
+      content: "You must be at least 13 years old to use the Service. You are responsible for all activities that occur under your account and for keeping your password confidential. You agree to notify us immediately of any unauthorized use of your account."
     },
     {
       title: "Credits and Payments",
-      content: "The Service operates on a pay-as-you-go \"Credit\" system. You may purchase Credits in packs. Credits are used to pay for generating content. The cost of each generation is displayed before you confirm the action."
+      content: "The Service operates on a \"Credit\" system. You can purchase Credits through our payment provider, Razorpay. These Credits are then used to pay for content generation. The cost of each generation in Credits is clearly displayed before you initiate the task. All Credit purchases are final and non-refundable, except as specified in our Refund & Delivery Policy."
     },
     {
-      title: "Content and Conduct",
-      content: "You own the rights to the Generated Content you create using the Service, subject to the terms of the underlying AI models. You are free to use your Generated Content for any personal or commercial purpose."
+      title: "Content and Ownership",
+      content: "You retain ownership of the text prompts and scripts you provide (\"User Input\"). Subject to your compliance with these Terms, you own all rights to the Generated Content you create. You are free to use your Generated Content for any personal or commercial purpose. We do not claim any ownership rights to your User Input or Generated Content."
     },
     {
-      title: "Intellectual Property",
-      content: "The Service itself, including our website, brand, and software, is the exclusive property of Greaby and its licensors."
+      title: "Prohibited Conduct",
+      content: "You agree not to use the Service to generate content that is illegal, defamatory, harassing, hateful, or that infringes on any third party's rights, including intellectual property, privacy, or publicity rights. You may not use the Service for any purpose that violates applicable local, state, national, or international law."
+    },
+    {
+      title: "Service Availability and Disclaimers",
+      content: "The Service is provided on an \"AS IS\" and \"AS AVAILABLE\" basis. We do not warrant that the Service will be uninterrupted, error-free, or completely secure. The quality of Generated Content can vary and may not always meet your expectations. Generation tasks may occasionally fail due to technical issues with our AI providers."
     },
     {
       title: "Termination",
-      content: "We may terminate or suspend your account at any time, without prior notice or liability, for any reason, including if you breach these Terms."
+      content: "We reserve the right to suspend or terminate your account at any time, without prior notice or liability, for any reason, including but not limited to a breach of these Terms. Upon termination, your right to use the Service will immediately cease. Any unused Credits will be forfeited and are non-refundable."
     },
     {
-      title: "Disclaimers",
-      content: "The Service is provided on an \"AS IS\" and \"AS AVAILABLE\" basis. Greaby makes no warranties, express or implied, regarding the operation or availability of the Service."
+        title: "Governing Law",
+        content: "These Terms shall be governed and construed in accordance with the laws of India, without regard to its conflict of law provisions. Any disputes arising from these Terms will be subject to the exclusive jurisdiction of the courts located in Indore, India."
     },
     {
       title: "Changes to Terms",
-      content: "We reserve the right to modify these Terms at any time. Your continued use of the Service after such changes constitutes your acceptance of the new Terms."
+      content: "We may modify these Terms at any time. We will notify you of any material changes by posting the new Terms on this page and updating the 'Last Updated' date. Your continued use of the Service after such changes constitutes your acceptance of the new Terms."
     },
     {
       title: "Contact Us",
@@ -65,31 +69,6 @@ const TermsPage = () => {
     <>
         <Navbar/>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 relative overflow-hidden">
-        {/* Animated background */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {[...Array(15)].map((_, i) => (
-            <motion.div
-                key={i}
-                className="absolute rounded-full bg-indigo-100"
-                style={{
-                width: Math.random() * 100 + 20,
-                height: Math.random() * 100 + 20,
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                }}
-                animate={{
-                x: [0, (Math.random() - 0.5) * 10],
-                y: [0, (Math.random() - 0.5) * 10],
-                }}
-                transition={{
-                duration: 15 + Math.random() * 20,
-                repeat: Infinity,
-                repeatType: "reverse",
-                ease: "easeInOut"
-                }}
-            />
-            ))}
-        </div>
         
         {/* Subtle cursor effect */}
         <div className="fixed top-0 left-0 pointer-events-none z-50">
@@ -111,30 +90,6 @@ const TermsPage = () => {
             />
         </div>
         
-        {/* Floating particles */}
-        <div className="absolute inset-0 pointer-events-none">
-            {[...Array(30)].map((_, i) => (
-            <motion.div
-                key={i}
-                className="absolute w-1 h-1 bg-indigo-300 rounded-full"
-                style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                }}
-                animate={{
-                y: [0, 10, 0],
-                opacity: [0.3, 1, 0.3],
-                }}
-                transition={{
-                duration: 2 + Math.random() * 3,
-                delay: Math.random() * 2,
-                repeat: Infinity,
-                repeatType: "reverse",
-                ease: "easeInOut"
-                }}
-            />
-            ))}
-        </div>
         
         <div className="max-w-4xl mx-auto py-16 px-4 relative z-10">
             <motion.div 

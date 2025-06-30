@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +12,7 @@ import api from "@/services/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { FancyCreationCard } from "./fancy/FancyCreationCard";
-import { PaginationControls } from "@/components/ui/PaginationControls"; // Import the new component
+import { PaginationControls } from "@/components/ui/PaginationControls";
 
 const listVariants = {
   visible: { transition: { staggerChildren: 0.07 } },
@@ -35,26 +35,42 @@ const calculateVideoCost = (resolution, duration, n_variants) => {
 const VideoGenerator = () => {
   const [prompt, setPrompt] = useState("");
   const [settings, setSettings] = useState({ aspectRatio: "1:1", resolution: "480p", duration: 5, n_variants: 1 });
-  const [currentPage, setCurrentPage] = useState(1); // State for pagination
+  const [currentPage, setCurrentPage] = useState(1);
   const queryClient = useQueryClient();
   const { fetchUserProfile } = useAuth();
   const navigate = useNavigate();
+  // Add a ref to prevent duplicate submissions
+  const submissionLock = useRef(false);
 
   const { data: creationsData, isLoading: isLoadingHistory, isFetching } = useQuery({
-    queryKey: ['videoCreations', currentPage], // Include page in queryKey
+    queryKey: ['videoCreations', currentPage],
     queryFn: () => api.get(`/videos/?page=${currentPage}`).then(res => res.data),
-    keepPreviousData: true, // Prevents flickering when changing pages
+    keepPreviousData: true,
   });
 
   const { mutate: generateVideo, isLoading: isGenerating } = useMutation({
     mutationFn: (newCreation) => api.post('/videos/', newCreation),
-    onSuccess: () => {
+    // Restored the superior onSuccess logic from the older version
+    onSuccess: (response) => {
+      const newCreation = response.data;
       toast.success("Video generation started!", { description: "Your new creation will appear in your library shortly." });
-      // Go back to the first page to see the new item
+
+      // If on a different page, navigate to page 1 to see the new creation
       if (currentPage !== 1) {
         setCurrentPage(1);
       }
-      queryClient.invalidateQueries({ queryKey: ['videoCreations'] });
+      
+      // Manually and instantly update the cache for page 1
+      const queryKey = ['videoCreations', 1];
+      queryClient.setQueryData(queryKey, (oldData) => {
+        const oldResults = oldData?.results ?? [];
+        return {
+          ...oldData,
+          count: (oldData?.count ?? 0) + 1,
+          results: [newCreation, ...oldResults]
+        };
+      });
+      
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       fetchUserProfile();
       setPrompt("");
@@ -69,6 +85,10 @@ const VideoGenerator = () => {
         toast.error("Generation Failed", { description: error.response?.data?.detail || "An unexpected error occurred." });
       }
     },
+    // Release the submission lock after the mutation is complete
+    onSettled: () => {
+      submissionLock.current = false;
+    }
   });
 
   const estimatedCost = useMemo(() => {
@@ -76,7 +96,15 @@ const VideoGenerator = () => {
   }, [settings]);
 
   const handleSubmit = () => {
-    if (!prompt.trim()) return toast.warning("Please enter a prompt to begin.");
+    // Check if a submission is already in progress
+    if (submissionLock.current) {
+      return;
+    }
+    if (!prompt.trim()) {
+      return toast.warning("Please enter a prompt to begin.");
+    }
+    // Lock submission to prevent duplicates
+    submissionLock.current = true;
     generateVideo({ prompt, ...settings });
   };
 
@@ -123,12 +151,12 @@ const VideoGenerator = () => {
             <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} /> Refresh
           </Button>
         </div>
-        {isLoadingHistory ? (
+        {isLoadingHistory && !creationsData ? (
           <div className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div>
         ) : (
           <AnimatePresence mode="wait">
             {creationsData?.results?.length > 0 ? (
-              <motion.div key={currentPage}>
+              <motion.div key={currentPage} className="space-y-4">
                 <motion.div
                   className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
                   variants={listVariants}

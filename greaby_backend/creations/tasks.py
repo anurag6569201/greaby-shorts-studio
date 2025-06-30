@@ -129,11 +129,12 @@ def generate_video_from_prompt(self, creation_id: str):
             f'user_{creation.user.id}',
             {'type': 'send_notification', 'message': {'event': 'creation_completed', 'creation_type': 'video', 'creation_id': str(creation.id)}}
         )
-        email_context = {
-            'creation_type': 'Video', 'prompt': creation.prompt,
-            'dashboard_url': f"{settings.FRONTEND_URL}/dashboard?tab=video"
-        }
-        send_template_email("Your Video Generation is Complete!", "emails/generation_complete.html", email_context, [creation.user.email])
+        if creation.duration >= 10:
+            email_context = {
+                'creation_type': 'Video', 'prompt': creation.prompt,
+                'dashboard_url': f"{settings.FRONTEND_URL}/dashboard?tab=video"
+            }
+            send_template_email("Your Video Generation is Complete!", "emails/generation_complete.html", email_context, [creation.user.email])
         
         return f"Successfully processed video creation {creation.id}."
 

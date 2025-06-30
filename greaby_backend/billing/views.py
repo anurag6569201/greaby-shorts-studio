@@ -179,7 +179,25 @@ class PurchaseHistoryListView(generics.ListAPIView):
             status=Purchase.Status.COMPLETED
         ).order_by('-created_at')
         
-        
+    
+class StandardResultsSetPagination(PageNumberPagination):
+    """
+    Custom pagination class to add 'total_pages' to the response.
+    """
+    page_size = 15  # Or any default you prefer
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+    def get_paginated_response(self, data):
+        return Response({
+            'next': self.get_next_link(),
+            'previous': self.get_previous_link(),
+            'count': self.page.paginator.count,
+            'total_pages': self.page.paginator.num_pages, # This is the key addition
+            'results': data
+        })
+
+    
 class UnifiedHistoryView(generics.ListAPIView):
     """
     Provides a unified, paginated history of all credit and debit transactions
@@ -187,16 +205,20 @@ class UnifiedHistoryView(generics.ListAPIView):
     """
     serializer_class = UnifiedHistorySerializer
     permission_classes = [IsAuthenticated]
-    pagination_class = PageNumberPagination # Use DRF's standard pagination
+    # Use our new custom pagination class
+    pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
+        """
+        This method will now just generate the full, combined, and sorted list.
+        The pagination will be handled in the list() method.
+        """
         user = self.request.user
         
         # Get all credit purchases
         credits = Purchase.objects.filter(user=user, status=Purchase.Status.COMPLETED).values(
             'id', 'created_at', 'credits_purchased', 'credit_pack__name'
         )
-        # Format them into the unified structure
         credit_list = [
             {
                 'id': f"p-{c['id']}",
@@ -213,7 +235,6 @@ class UnifiedHistoryView(generics.ListAPIView):
         debits = CreditUsage.objects.filter(user=user).values(
             'id', 'created_at', 'credits_spent', 'usage_type', 'description'
         )
-        # Format them into the unified structure
         debit_list = [
             {
                 'id': f"u-{d['id']}",
@@ -226,7 +247,7 @@ class UnifiedHistoryView(generics.ListAPIView):
             for d in debits
         ]
 
-        # Combine, sort, and return the final list
+        # Combine and sort the final list
         combined_list = sorted(
             chain(credit_list, debit_list), 
             key=lambda x: x['date'], 
@@ -234,3 +255,21 @@ class UnifiedHistoryView(generics.ListAPIView):
         )
         
         return combined_list
+
+    def list(self, request, *args, **kwargs):
+        """
+        Override the default list method to handle pagination of a list object.
+        """
+        queryset = self.get_queryset() # This gets the full sorted list
+        page = self.paginate_queryset(queryset) # This slices the list for the current page
+
+        if page is not None:
+            # When paginating, the serializer needs to be run on the sliced page,
+            # not the full queryset.
+            serializer = self.get_serializer(page, many=True)
+            # The paginator's get_paginated_response method builds the final JSON structure.
+            return self.get_paginated_response(serializer.data)
+
+        # This part is executed if pagination is not enabled for the request
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)

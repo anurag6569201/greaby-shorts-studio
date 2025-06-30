@@ -21,70 +21,50 @@ const PrivacyPage = () => {
   const sections = [
     {
       title: "Information We Collect",
-      content: "We collect information in the following ways:",
-      subsections: [
-        {
-          title: "Information You Provide to Us:",
-          items: [
-            "Account Information: When you register for an account, we collect your name, email address, and password.",
-            "User Content: We collect the text prompts, scripts, and other data you provide when you use our generation services.",
-            "Communications: If you contact us directly, we may receive additional information about you."
-          ]
-        },
-        {
-          title: "Information We Collect Automatically:",
-          items: [
-            "Generated Content: We collect and store the AI-generated videos, audio files, and subtitles that you create.",
-            "Usage Information: We collect information about your activity on our Service.",
-            "Log Data and Device Information: Like most websites, we collect log data."
-          ]
-        },
-        {
-          title: "Information From Third Parties:",
-          items: [
-            "Payment Information: When you purchase Credits, you provide your payment information directly to our payment processor, Razorpay."
-          ]
-        }
+      items: [
+        "Account Information: When you register, we collect your name, email address, and hashed password.",
+        "User Input: We collect the text prompts, scripts, and other data you provide to generate content.",
+        "Generated Content: We store the AI-generated videos, audio files, and subtitles you create so you can access them in your library.",
+        "Transaction Data: We collect details of your Credit purchases and a history of your Credit usage for different generation tasks.",
+        "Payment Information: When you purchase Credits, your payment details are provided directly to our payment processor, Razorpay. We do not store your full credit card information on our servers.",
+        "Usage Information: We automatically collect information about your activity on our Service, such as which features you use and when."
       ]
     },
     {
       title: "How We Use Your Information",
-      content: "We use the information we collect for various purposes, including to:",
       items: [
-        "Provide, operate, and maintain our Service.",
-        "Process and fulfill your requests for content generation.",
-        "Improve, personalize, and expand our Service.",
-        "Understand and analyze how you use our Service.",
-        "Process your transactions and manage your Credit balance.",
-        "Communicate with you, including for customer service.",
-        "Prevent fraud and secure our platform."
+        "To provide, operate, and maintain our Service.",
+        "To process your content generation requests by sending your User Input to our AI service providers .",
+        "To manage your account, including processing your transactions and maintaining your Credit balance.",
+        "To improve and personalize the Service.",
+        "To communicate with you for customer service, to provide you with updates, and for marketing purposes.",
+        "To prevent fraud and ensure the security of our platform."
       ],
-      note: "Your User Input is sent to our third-party AI providers to generate content. We do not use your User Input or Generated Content to train our own AI models without your explicit consent."
+      note: "We do not use your User Input or your Generated Content to train our own AI models."
     },
     {
       title: "How We Share Your Information",
-      content: "We do not share your personal information except in the following circumstances:",
       items: [
-        "With Service Providers: We share information with third-party vendors and service providers.",
-        "For Legal Reasons: We may disclose your information if required by law.",
-        "To Protect Rights: We may disclose information to protect the rights, property, or safety of Greaby, our users, or the public."
+        "With AI Service Providers: We share your User Input with third-party AI providers to fulfill your generation requests.",
+        "With Payment Processors: We share transaction information with Razorpay to process your payments.",
+        "For Legal Reasons: We may disclose your information if required by law or to protect the rights, property, or safety of Greaby, our users, or the public."
       ]
     },
     {
       title: "Data Storage and Security",
-      content: "We take the security of your data seriously. Your information, including Generated Content, is stored on secure servers provided by Microsoft Azure. We use industry-standard security measures to reduce risks. However, no security system is impenetrable."
+      content: "Your information, including User Input and Generated Content, is stored on secure servers provided by Microsoft Azure. We implement industry-standard security measures to protect your data. However, no system is 100% secure, and we cannot guarantee absolute security."
     },
     {
       title: "Your Data Rights and Choices",
-      content: "You have certain rights regarding your personal information. You can access, review, and update your account information by logging into your account settings. You can also delete your Generated Content from your library. If you wish to delete your entire account, please contact us."
+      content: "You can access and update your account information through your profile settings. You have the right to delete your Generated Content from your account library at any time. If you wish to delete your entire account and associated personal data, please contact us at anurag@greaby.cloud."
     },
     {
       title: "Children's Privacy",
-      content: "Our Service is not intended for children under the age of 13. We do not knowingly collect personal information from children under 13. If we become aware that we have collected personal information from a child under 13, we will take steps to delete such information."
+      content: "Our Service is not directed to individuals under 13. We do not knowingly collect personal information from children under 13. If we become aware that a child under 13 has provided us with personal information, we will take steps to delete such information."
     },
     {
       title: "Changes to This Privacy Policy",
-      content: "We may update this Privacy Policy from time to time. If we make material changes, we will notify you by posting the new policy on this page and updating the 'Last Updated' date."
+      content: "We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new policy on this page and updating the 'Last Updated' date."
     },
     {
       title: "Contact Us",

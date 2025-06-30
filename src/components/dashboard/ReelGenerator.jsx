@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardFooter, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,8 +27,8 @@ const AssetCard = ({ asset, type, onSelect, isSelected }) => {
   const isVideo = type === 'video';
   return (
     <div
-      className={`p-3 border rounded-lg cursor-pointer transition-all ${isSelected 
-        ? 'ring-2 ring-inset ring-primary bg-primary/5' 
+      className={`p-3 border rounded-lg cursor-pointer transition-all ${isSelected
+        ? 'ring-2 ring-inset ring-primary bg-primary/5'
         : 'border-muted hover:bg-muted/50'}`}
       onClick={() => onSelect(asset.id)}
     >
@@ -46,6 +46,7 @@ const AssetCard = ({ asset, type, onSelect, isSelected }) => {
   );
 };
 
+// IMPROVED ReelCard: Merged visual best practices from both versions
 const ReelCard = ({ reel, onEdit, onDelete, onGenerateSubtitles }) => {
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
   const isSubtitleProcessing = reel.subtitle_status === 'pending';
@@ -135,6 +136,7 @@ const ReelCard = ({ reel, onEdit, onDelete, onGenerateSubtitles }) => {
   );
 };
 
+
 const ReelGenerator = () => {
   const [title, setTitle] = useState("");
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -142,7 +144,7 @@ const ReelGenerator = () => {
   const [editingReel, setEditingReel] = useState(null);
   const [deletingReel, setDeletingReel] = useState(null);
   const [newTitle, setNewTitle] = useState("");
-  
+
   const [videoPickerPage, setVideoPickerPage] = useState(1);
   const [audioPickerPage, setAudioPickerPage] = useState(1);
   const [reelsListPage, setReelsListPage] = useState(1);
@@ -150,6 +152,8 @@ const ReelGenerator = () => {
   const queryClient = useQueryClient();
   const { fetchUserProfile } = useAuth();
   const navigate = useNavigate();
+  // UX FEATURE: Add back the cache reference for smart notifications
+  const reelsCache = useRef([]);
 
   const { data: videoData, isLoading: isLoadingVideos } = useQuery({
     queryKey: ['videoCreationsPicker', videoPickerPage],
@@ -163,17 +167,43 @@ const ReelGenerator = () => {
     keepPreviousData: true,
   });
 
+  // UX FEATURE: Re-introduce automatic polling and smart notifications
   const { data: reels, isLoading: isLoadingReels, isFetching: isFetchingReels } = useQuery({
     queryKey: ['reels', reelsListPage],
     queryFn: () => api.get(`/reels/?page=${reelsListPage}`).then(res => res.data),
     keepPreviousData: true,
+    // This function checks the fetched data. If any item is still processing,
+    // it tells React Query to refetch again in 5 seconds.
+    refetchInterval: (data) =>
+      data?.results?.some(
+        c => ['pending', 'processing'].includes(c.status) || c.subtitle_status === 'pending'
+      ) ? 5000 : false,
+    // This function runs every time the query successfully fetches data.
+    // It compares new data with the cached old data to find completed jobs.
+    onSuccess: (newData) => {
+      newData?.results?.forEach(newReel => {
+        const oldReel = reelsCache.current.find(r => r.id === newReel.id);
+        if (oldReel && (oldReel.status !== 'completed' && newReel.status === 'completed')) {
+          toast.success(`Reel "${newReel.title}" is ready!`);
+        }
+        if (oldReel && (oldReel.subtitle_status !== 'completed' && newReel.subtitle_status === 'completed')) {
+          toast.success(`Subtitles for "${newReel.title}" are ready!`);
+        }
+      });
+      // Update the cache with the latest data
+      if(newData?.results) {
+         reelsCache.current = newData.results;
+      }
+    },
   });
 
   const { mutate: createReel, isLoading: isCreating } = useMutation({
     mutationFn: (newReel) => api.post('/reels/', newReel),
     onSuccess: () => {
       toast.success("Reel assembly started!", { description: "Your new reel is being created." });
+      // Go back to the first page to see the new reel being created
       if (reelsListPage !== 1) setReelsListPage(1);
+      // Invalidate query to refetch and show the new pending item
       queryClient.invalidateQueries({ queryKey: ['reels'] });
       setTitle("");
       setSelectedVideo(null);
@@ -196,6 +226,7 @@ const ReelGenerator = () => {
     mutationFn: (id) => api.delete(`/reels/${id}/`),
     onSuccess: () => {
       toast.success("Reel deleted successfully!");
+      // We invalidate the whole 'reels' key to ensure pagination is recalculated correctly
       queryClient.invalidateQueries({ queryKey: ['reels'] });
       setDeletingReel(null);
     },
@@ -206,6 +237,7 @@ const ReelGenerator = () => {
     mutationFn: (reelId) => api.post(`/reels/${reelId}/generate-subtitles/`),
     onSuccess: () => {
       toast.info("Subtitle generation started!", { description: "Your .SRT file will be available shortly." });
+      // Invalidate to trigger the polling mechanism
       queryClient.invalidateQueries({ queryKey: ['reels', reelsListPage] });
       fetchUserProfile();
     },
@@ -250,8 +282,6 @@ const ReelGenerator = () => {
             <Input id="reel-title" placeholder="e.g., My Awesome Panda Adventure" value={title} onChange={(e) => setTitle(e.target.value)} disabled={isCreating} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-            
-            {/* --- UI FIX: Video Picker --- */}
             <div className="space-y-2">
               <Label>1. Choose a Video</Label>
               <div className="border rounded-md flex flex-col h-[26rem]">
@@ -268,7 +298,6 @@ const ReelGenerator = () => {
               </div>
             </div>
 
-            {/* --- UI FIX: Audio Picker --- */}
             <div className="space-y-2">
               <Label>2. Choose an Audio Track</Label>
               <div className="border rounded-md flex flex-col h-[26rem]">
@@ -297,11 +326,17 @@ const ReelGenerator = () => {
       <hr />
 
       <div>
-        <div className="flex justify-between items-center mb-4"><h2 className="text-2xl font-bold">Reels Library</h2><Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ['reels'] })} disabled={isFetchingReels}><RefreshCw className={`h-4 w-4 mr-2 ${isFetchingReels ? 'animate-spin' : ''}`} /> Refresh</Button></div>
-        {isLoadingReels ? <div className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : reels?.results?.length > 0 ? (
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold">Reels Library</h2>
+          {/* Note: The refresh button is still useful for manual triggers, even with polling */}
+          <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ['reels'] })} disabled={isFetchingReels}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isFetchingReels && !isLoadingReels ? 'animate-spin' : ''}`} /> Refresh
+          </Button>
+        </div>
+        {isLoadingReels && !reels ? <div className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : reels?.results?.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{reels.results.map(r => <ReelCard key={r.id} reel={r} onEdit={(reel) => { setEditingReel(reel); setNewTitle(reel.title); }} onDelete={setDeletingReel} onGenerateSubtitles={generateSubtitles} />)}</div>
-            <PaginationControls currentPage={reelsListPage} totalPages={reels.total_pages} onPageChange={setReelsListPage} hasNext={!!reels.next} hasPrev={!!reels.previous}/>
+            <PaginationControls className="mt-6" currentPage={reelsListPage} totalPages={reels.total_pages} onPageChange={setReelsListPage} hasNext={!!reels.next} hasPrev={!!reels.previous}/>
           </>
         ) : <div className="text-center py-16 border-2 border-dashed rounded-xl p-4"><h3 className="text-xl font-semibold">Your library is empty</h3><p className="text-muted-foreground mt-2">Assembled reels will appear here.</p></div>}
       </div>

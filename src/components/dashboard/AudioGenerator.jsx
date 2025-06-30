@@ -53,7 +53,7 @@ import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
@@ -69,8 +69,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { PaginationControls } from "@/components/ui/PaginationControls"; // Import the new component
+import { PaginationControls } from "@/components/ui/PaginationControls";
 
+// --- Helper Components (Unchanged) ---
 const GENDER_OPTIONS = [
   { value: "all", label: "All Genders" },
   { value: "Female", label: "Female" },
@@ -83,8 +84,6 @@ const LANGUAGE_GROUPS = [
     (group) => ({ value: group, label: group })
   ),
 ];
-
-// ... (VoiceCard, VoiceSelector, AudioCard, and calculateAudioCostBreakdown components remain the same)
 const getTierFromMultiplier = (multiplier) => {
     if (multiplier <= 0.0) return { name: "Free", label: "Free", icon: <Star className="h-3 w-3 mr-1" />, multiplier: "0x", };
     if (multiplier <= 1.0) return { name: "Local Pro", label: "Local Pro", icon: <IndianRupee className="h-3 w-3 mr-1" />, multiplier: "1x", };
@@ -92,7 +91,6 @@ const getTierFromMultiplier = (multiplier) => {
     if (multiplier < 4.0) return { name: "Premium AI", label: "Premium AI", icon: <Sparkles className="h-3 w-3 mr-1" />, multiplier: `${multiplier}x`, };
     return { name: "Ultra HD", label: "Ultra HD", icon: <Zap className="h-3 w-3 mr-1" />, multiplier: `${multiplier}x`, };
 };
-  
 const VoiceCard = ({ voice, isSelected, onSelect, onPreview, isPreviewing }) => {
     const tier = getTierFromMultiplier(voice.multiplier);
     return (
@@ -130,7 +128,6 @@ const VoiceCard = ({ voice, isSelected, onSelect, onPreview, isPreviewing }) => 
       </motion.div>
     );
 };
-  
 const VoiceSelector = ({ value, onChange, disabled, voiceOptions, isLoading }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState("");
@@ -139,14 +136,12 @@ const VoiceSelector = ({ value, onChange, disabled, voiceOptions, isLoading }) =
     const [groupFilter, setGroupFilter] = useState("all");
     const [tierFilter, setTierFilter] = useState("all");
     const audioRef = useRef(null);
-  
     const TIER_OPTIONS = useMemo(() => {
       if (!voiceOptions) return [{ value: "all", label: "All Tiers" }];
       const tierNames = { 0: "Free", 1: "Local Pro", 1.5: "Global", 2.5: "Premium AI", 4: "Ultra HD" };
       const multipliers = [...new Set(voiceOptions.map((v) => v.multiplier))].sort((a, b) => a - b);
       return [{ value: "all", label: "All Tiers" }, ...multipliers.map((m) => ({ value: m, label: tierNames[m] || `${m}x` }))];
     }, [voiceOptions]);
-  
     const stopPreview = () => { if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; } setPreviewingVoice(null); };
     const handlePreview = (voice) => {
       if (!voice.audio) { toast.info("Preview not available for this voice."); return; }
@@ -162,7 +157,6 @@ const VoiceSelector = ({ value, onChange, disabled, voiceOptions, isLoading }) =
       } catch { stopPreview(); }
     };
     useEffect(() => { return () => stopPreview(); }, []);
-  
     const filteredVoices = useMemo(() => {
       if (!voiceOptions) return [];
       let result = voiceOptions;
@@ -172,10 +166,8 @@ const VoiceSelector = ({ value, onChange, disabled, voiceOptions, isLoading }) =
       if (tierFilter !== "all") { result = result.filter((v) => v.multiplier === Number(tierFilter)); }
       return result;
     }, [search, genderFilter, groupFilter, tierFilter, voiceOptions]);
-  
     const activeFilterCount = [groupFilter, genderFilter, tierFilter].filter((f) => f !== "all").length;
     const selectedVoice = voiceOptions.find((v) => v.value === value);
-  
     return (
       <div>
         <Label>Voice</Label>
@@ -218,11 +210,19 @@ const VoiceSelector = ({ value, onChange, disabled, voiceOptions, isLoading }) =
       </div>
     );
 };
-  
 const AudioCard = ({ audio, onEdit }) => {
     const [shouldLoadAudio, setShouldLoadAudio] = useState(false);
     const audioRef = React.useRef(null);
     useEffect(() => { if (shouldLoadAudio && audioRef.current) { audioRef.current.play(); } }, [shouldLoadAudio]);
+    const isProcessing = !['completed', 'failed'].includes(audio.status);
+    
+    let statusText = audio.status;
+    if (isProcessing && typeof audio.status === "string" && audio.status && !['pending', 'processing'].includes(audio.status.toLowerCase())) {
+        statusText = `Processing (${audio.status})...`;
+    } else if (isProcessing) {
+        statusText = `${audio.status}...`
+    }
+
     return (
       <Card className="overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-shadow audio-card-fancy">
         <CardHeader className="flex-row items-start justify-between" style={{zIndex: 1}}>
@@ -231,31 +231,59 @@ const AudioCard = ({ audio, onEdit }) => {
             <CardDescription className="text-xs">{new Date(audio.created_at).toLocaleString()}</CardDescription>
           </div>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="flex-shrink-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="flex-shrink-0" disabled={isProcessing}><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end"><DropdownMenuItem onClick={() => onEdit(audio)}><Edit className="mr-2 h-4 w-4" /> Edit Title</DropdownMenuItem></DropdownMenuContent>
           </DropdownMenu>
         </CardHeader>
-        <CardContent className="flex-grow flex items-center justify-center p-4 pt-0  mt-0" style={{zIndex: 1,color:'#8a8aa4'}}>
-          {audio.status === 'completed' && audio.result_url ? (shouldLoadAudio ? (<audio ref={audioRef} controls src={audio.result_url} className="w-full h-10" />) : (<Button variant="outline" className="w-full h-10 bg-white/30" onClick={() => setShouldLoadAudio(true)}><Play className="h-4 w-4 mr-2" />Preview</Button>)) : (<div className="text-center">{['pending', 'processing'].includes(audio.status) ? (<><Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" /><p className="text-xs text-muted-foreground mt-2 capitalize">{audio.status}...</p></>) : (<><AlertCircle className="h-6 w-6 text-destructive mx-auto" /><p className="text-xs text-destructive mt-2 font-semibold">Failed</p></>)}</div>)}
+        <CardContent className="flex-grow flex items-center justify-center p-4 pt-0 mt-0" style={{zIndex: 1,color:'#8a8aa4'}}>
+          {audio.status === 'completed' && audio.result_url ? (shouldLoadAudio ? (<audio ref={audioRef} controls src={audio.result_url} className="w-full h-10" />) : (<Button variant="outline" className="w-full h-10 bg-white/30" onClick={() => setShouldLoadAudio(true)}><Play className="h-4 w-4 mr-2" />Preview</Button>)) : (isProcessing ? (<div className="text-center"><Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" /><p className="text-xs text-muted-foreground mt-2 capitalize">{statusText}</p></div>) : (<div className="text-center"><AlertCircle className="h-6 w-6 text-destructive mx-auto" /><p className="text-xs text-destructive mt-2 font-semibold">Failed</p></div>))}
         </CardContent>
       </Card>
     );
 };
-  
+
+// --- CORRECTED COST CALCULATION FUNCTION ---
 const calculateAudioCostBreakdown = (text_input, response_format, voiceId, voiceOptions) => {
-    const PLATFORM_FEE = 0.5; const DEFAULT_MULTIPLIER = 1.5;
-    if (!voiceOptions || !text_input) { return { total: PLATFORM_FEE.toFixed(2), breakdown: { platformFee: PLATFORM_FEE, baseCharacterCost: 0, premiumVoiceCost: 0, formatSurcharge: 0, }, }; }
+    const PLATFORM_FEE = 0.5;
+    const DEFAULT_MULTIPLIER = 1.5;
+
+    if (!voiceOptions || !text_input) {
+      return {
+        total: PLATFORM_FEE.toFixed(2),
+        breakdown: { platformFee: PLATFORM_FEE, baseCharacterCost: 0, premiumVoiceCost: 0, formatSurcharge: 0 },
+      };
+    }
     const selectedVoice = voiceOptions.find((v) => v.id === voiceId);
     const voiceMultiplier = selectedVoice ? selectedVoice.multiplier : DEFAULT_MULTIPLIER;
+    
+    // NEW: Base character cost applies to ALL generations
     const baseCharacterCost = text_input.length / 1000.0;
+    
+    // NEW: Premium cost is an *additional* cost for non-free voices
     const premiumVoiceCost = baseCharacterCost * voiceMultiplier;
+    
     const formatCosts = { flac: 0.2, wav: 0.2 };
     const formatSurcharge = formatCosts[response_format] || 0.0;
+    
+    // NEW: The formula now matches the backend logic exactly
     const totalCost = PLATFORM_FEE + baseCharacterCost + premiumVoiceCost + formatSurcharge;
+    
     const finalCost = Math.max(Math.round(totalCost * 100) / 100, PLATFORM_FEE);
-    return { total: finalCost.toFixed(2), breakdown: { platformFee: PLATFORM_FEE, baseCharacterCost: baseCharacterCost, premiumVoiceCost: premiumVoiceCost, formatSurcharge: formatSurcharge, }, };
+
+    return {
+      total: finalCost.toFixed(2),
+      // NEW: The breakdown object is updated for the new formula
+      breakdown: { 
+          platformFee: PLATFORM_FEE, 
+          baseCharacterCost: baseCharacterCost,
+          premiumVoiceCost: premiumVoiceCost, 
+          formatSurcharge: formatSurcharge 
+      },
+    };
 };
 
+
+// --- Main Generator Component ---
 const AudioGenerator = () => {
   const [formData, setFormData] = useState({
     title: "", text_input: "", voice: "hi-IN-SwaraNeural", response_format: "mp3", speed: 1.0,
@@ -266,6 +294,7 @@ const AudioGenerator = () => {
   const queryClient = useQueryClient();
   const { fetchUserProfile } = useAuth();
   const navigate = useNavigate();
+  const submissionLock = useRef(false);
 
   const { data: audiosData, isLoading: isLoadingHistory, isFetching } = useQuery({
     queryKey: ["audioCreations", currentPage],
@@ -290,35 +319,61 @@ const AudioGenerator = () => {
 
   const { mutate: generateAudio, isLoading: isGenerating } = useMutation({
     mutationFn: (newAudio) => api.post("/audios/", newAudio),
-    onSuccess: () => {
-      toast.success("Audio generation started!");
-      if (currentPage !== 1) {
-          setCurrentPage(1);
-      }
-      queryClient.invalidateQueries({ queryKey: ["audioCreations"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboardStats"] });
-      fetchUserProfile();
-      setFormData((prev) => ({ ...prev, title: "", text_input: "" }));
+    onSuccess: (response) => {
+        const newlyCreatedAudio = response.data;
+        toast.info("Your audio is being created!", {
+          description: "It will update in your library in real-time.",
+        });
+        
+        if (currentPage !== 1) {
+            setCurrentPage(1);
+        }
+        
+        const queryKey = ["audioCreations", 1];
+        
+        queryClient.setQueryData(queryKey, (oldData) => {
+            const oldResults = oldData?.results ?? [];
+            return {
+                ...oldData,
+                count: (oldData?.count ?? 0) + 1,
+                results: [newlyCreatedAudio, ...oldResults]
+            };
+        });
+        
+        setFormData((prev) => ({ ...prev, title: "", text_input: "" }));
+        fetchUserProfile();
+        queryClient.invalidateQueries({ queryKey: ["dashboardStats"] });
     },
     onError: (error) => {
-      if (error.response?.status === 402) {
-        toast.error("Insufficient Credits", {
-          description: error.response?.data?.detail,
-          action: { label: "Buy Credits", onClick: () => navigate("/pricing") },
-        });
-      } else {
-        toast.error("Generation Failed", {
-          description: error.response?.data?.detail || "An unexpected error occurred.",
-        });
-      }
+        if (error.response?.status === 402) {
+            toast.error("Insufficient Credits", {
+                description: error.response?.data?.detail,
+                action: { label: "Buy Credits", onClick: () => navigate("/pricing") },
+            });
+        } else {
+            toast.error("Generation Failed", {
+                description: error.response?.data?.detail || "An unexpected error occurred.",
+            });
+        }
+    },
+    onSettled: () => {
+        submissionLock.current = false;
     },
   });
 
   const { mutate: updateAudio, isLoading: isUpdating } = useMutation({
     mutationFn: ({ id, title }) => api.patch(`/audios/${id}/`, { title }),
-    onSuccess: () => {
+    onSuccess: (response, variables) => {
+      const updatedAudio = response.data;
       toast.success("Audio updated successfully!");
-      queryClient.invalidateQueries({ queryKey: ["audioCreations", currentPage] });
+      const queryKey = ["audioCreations", currentPage];
+      queryClient.setQueryData(queryKey, (oldData) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            results: oldData.results.map(a => a.id === variables.id ? updatedAudio : a),
+          };
+      });
       setEditingAudio(null);
     },
     onError: (error) => toast.error("Update Failed", { description: error.response?.data?.detail }),
@@ -332,8 +387,18 @@ const AudioGenerator = () => {
   );
   
   const handleSubmit = () => {
-    if (!formData.text_input.trim()) return toast.warning("Please enter some text.");
-    generateAudio(formData);
+    if (submissionLock.current) {
+        return;
+    }
+    if (!formData.text_input.trim()) {
+        return toast.warning("Please enter some text to generate audio.");
+    }
+    submissionLock.current = true;
+    const payload = {...formData};
+    if (!payload.title.trim()) {
+        payload.title = `Audio for: "${payload.text_input.substring(0, 30)}..."`;
+    }
+    generateAudio(payload);
   };
   
   const handleUpdateTitle = () => {
@@ -355,14 +420,18 @@ const AudioGenerator = () => {
         <hr className="my-4" />
         <CardContent className="space-y-6 p-0">
           <div className="space-y-2"><Label>Title (Optional)</Label><Input placeholder="e.g., Intro Voiceover" value={formData.title} onChange={(e) => handleChange("title", e.target.value)} disabled={isGenerating}/></div>
-          <div className="space-y-2 mt-4"><Label htmlFor="prompt-area" className="text-base font-semibold">Script</Label><Textarea id="prompt-area" placeholder="Enter the text for your voiceover..." value={formData.text_input} onChange={(e) => handleChange("text_input", e.target.value)} className="min-h-[200px]" disabled={isGenerating}/></div>
+          <div className="space-y-2 mt-4">
+            <Label htmlFor="prompt-area" className="text-base font-semibold">Script</Label>
+            <Textarea id="prompt-area" placeholder="Enter the text for your voiceover..." value={formData.text_input} onChange={(e) => handleChange("text_input", e.target.value)} className="min-h-[200px]" disabled={isGenerating}/>
+            <div className="text-right text-xs text-muted-foreground tabular-nums">{formData.text_input.length} / 5000 characters</div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <div className="md:col-span-2"><VoiceSelector value={formData.voice} onChange={(v) => handleChange("voice", v)} disabled={isGenerating} voiceOptions={enrichedVoiceOptions} isLoading={isLoadingVoices}/></div>
             <div><Label>Format</Label><Select value={formData.response_format} onValueChange={(v) => handleChange("response_format", v)} disabled={isGenerating}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="mp3">MP3</SelectItem><SelectItem value="opus">Opus</SelectItem><SelectItem value="aac">AAC</SelectItem><SelectItem value="flac">FLAC (Costs More)</SelectItem></SelectContent></Select></div>
             <div className="md:col-span-3">
               <Label>Speed</Label>
               <div className="border border-input bg-background rounded-md px-3 py-2 flex flex-col gap-2">
-                <div className="flex justify-between items-center"><span className="text-muted-foreground text-xs">Slower</span><span className="text-primary w-12 text-center font-semibold">{formData.speed.toFixed(2)}x</span><span className="text-muted-foreground text-xs">Faster</span></div>
+                <div className="flex justify-between items-center"><span className="text-muted-foreground text-xs">Slower</span><span className="text-primary w-12 text-center font-semibold tabular-nums">{formData.speed.toFixed(2)}x</span><span className="text-muted-foreground text-xs">Faster</span></div>
                 <Slider value={[formData.speed]} onValueChange={(v) => handleChange("speed", v[0])} min={0.25} max={4.0} step={0.05} disabled={isGenerating}/>
               </div>
             </div>
@@ -372,19 +441,25 @@ const AudioGenerator = () => {
           <div className="text-sm flex items-center gap-2">
             <span className="text-muted-foreground">Est. Cost: </span><span className="font-bold text-primary">{cost.total} Credits</span>
             <TooltipProvider><Tooltip><TooltipTrigger><Info className="h-4 w-4 text-muted-foreground cursor-pointer" /></TooltipTrigger>
+                {/* --- CORRECTED TOOLTIP --- */}
                 <TooltipContent className="text-xs">
                   <div className="space-y-1 p-1 font-medium"><p>Breakdown:</p>
                     <div className="pl-2 font-normal text-muted-foreground">
-                      <div>Platform Fee: {cost.breakdown.platformFee?.toFixed(2)}</div>
-                      <div>Usage Cost: {cost.breakdown.baseCharacterCost?.toFixed(2)}</div>
-                      {cost.breakdown.premiumVoiceCost > 0 && <div>Voice Premium: {cost.breakdown.premiumVoiceCost?.toFixed(2)}</div>}
-                      {cost.breakdown.formatSurcharge > 0 && <div>Format Fee: {cost.breakdown.formatSurcharge?.toFixed(2)}</div>}
+                        <div>Platform Fee: {cost.breakdown.platformFee?.toFixed(2)}</div>
+                        <div>Base Usage: {cost.breakdown.baseCharacterCost?.toFixed(2)}</div>
+                        {cost.breakdown.premiumVoiceCost > 0 && <div>Voice Premium: {cost.breakdown.premiumVoiceCost?.toFixed(2)}</div>}
+                        {cost.breakdown.formatSurcharge > 0 && <div>Format Fee: {cost.breakdown.formatSurcharge?.toFixed(2)}</div>}
                     </div><hr className="my-1" /><p>Total: {cost.total}</p>
                   </div>
-                </TooltipContent></Tooltip>
+                </TooltipContent>
+              </Tooltip>
             </TooltipProvider>
           </div>
-          <Button onClick={handleSubmit} disabled={isGenerating || !formData.text_input.trim()} size="lg">
+          <Button 
+            onClick={handleSubmit} 
+            disabled={isGenerating || !formData.text_input.trim()} 
+            size="lg"
+          >
             {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}{" "}Generate Audio
           </Button>
         </CardFooter>
@@ -397,15 +472,26 @@ const AudioGenerator = () => {
             <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? "animate-spin" : ""}`}/>Refresh
           </Button>
         </div>
-        {isLoadingHistory ? (
+        {isLoadingHistory && !audiosData ? (
           <div className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div>
         ) : audiosData?.results?.length > 0 ? (
           <>
-            <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {audiosData.results.map((a) => (
-                <AudioCard key={a.id} audio={a} onEdit={(audio) => { setEditingAudio(audio); setNewTitle(audio.title); }}/>
-              ))}
-            </motion.div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <AnimatePresence>
+                {audiosData.results.map((a) => (
+                  <motion.div
+                    key={a.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.4, type: "spring" }}
+                  >
+                    <AudioCard audio={a} onEdit={(audio) => { setEditingAudio(audio); setNewTitle(audio.title); }}/>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
             <PaginationControls
               currentPage={currentPage}
               totalPages={audiosData.total_pages}

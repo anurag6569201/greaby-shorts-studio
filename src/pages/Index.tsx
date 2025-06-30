@@ -10,6 +10,11 @@ import { cn } from "@/lib/utils";
 import Navbar from "./intro/Navbar";
 import Footer from "./intro/Footer";
 
+const placeholder_audio = '/intro/audio.svg';
+const placeholder_video = '/intro/video.svg';
+const placeholder_dub = '/intro/dub.svg';
+const placeholder_trans = '/intro/trans.svg';
+
 const InteractiveCursor = () => {
   const [isClient, setIsClient] = useState(false);
   useEffect(() => { setIsClient(true); }, []);
@@ -97,12 +102,13 @@ const Hero = () => {
   const gridRef = useRef(null);
   const mouseX = useMotionValue(Infinity);
 
-  const videoCards = [
-    { src: "/placeholder.svg", rotate: -15, y: 25, x: -90 },
-    { src: "/placeholder.svg", rotate: -5,  y: 0,  x: -30 },
-    { src: "/placeholder.svg", rotate: 5,   y: 0,  x: 30 },
-    { src: "/placeholder.svg", rotate: 15,  y: 25, x: 90 },
-  ];
+const videoCards = [
+  { src: placeholder_audio, rotate: -15, y: 25, x: -90 },
+  { src: placeholder_video, rotate: -5,  y: 0,  x: -30 },
+  { src: placeholder_dub, rotate: 5,   y: 0,  x: 30 },
+  { src: placeholder_trans, rotate: 15,  y: 25, x: 90 },
+];
+
 
   return (
     <section className="relative overflow-hidden">
@@ -112,14 +118,14 @@ const Hero = () => {
             <motion.div variants={fadeIn}>
               <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 font-medium py-1 px-3">
                 <Sparkles className="h-4 w-4 mr-2 text-primary animate-pulse" />
-                SORA & GPT-4o POWERED CREATION
+                SORA & OpenAI POWERED CREATION
               </Badge>
             </motion.div>
             <motion.h1 variants={fadeIn} className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-slate-900">
               Idea to <GradientText>Viral Video</GradientText> — Instantly.
             </motion.h1>
             <motion.p variants={fadeIn} className="text-lg md:text-xl text-slate-600 mb-10 max-w-xl mx-auto md:mx-0">
-              Stop wasting hours editing. Generate stunning AI videos, voiceovers, and subtitled reels from a single prompt.
+              Stop wasting hours editing. Generate stunning AI videos, voiceovers, and many other things from a single prompt.
             </motion.p>
             <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
               <MagneticButton size="lg" className="bg-primary text-primary-foreground text-lg px-8 py-6 shadow-primary/30" onClick={() => navigate('/signup')}>
@@ -160,18 +166,19 @@ const Hero = () => {
             return (
               <motion.div
                 key={i}
-                className="absolute w-48 h-80 top-1/2 left-1/2 origin-bottom"
+                className="absolute w-48 h-80 top-1/2 left-1/2 origin-bottom bg-white/90  rounded-2xl shadow-2xl"
                 style={{
                     x: `calc(-50% + ${card.x}px)`,
                     y: `calc(-50% + ${card.y}px)`,
                     translateX: motionX,
                     translateY: motionY,
+                    padding:'50px',
                 }}
                 initial={{ opacity: 0, rotate: card.rotate > 0 ? card.rotate + 10 : card.rotate - 10, scale: 0.9 }}
                 animate={{ opacity: 1, rotate: card.rotate, scale: 1 }}
                 transition={{ delay: 0.3 + i * 0.1, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
               >
-                <img src={card.src} alt="Sample short video" className="w-full h-full object-cover rounded-2xl shadow-2xl" />
+                <img src={card.src} alt="Sample short video" className="w-full h-full object-contain" />
               </motion.div>
             )
           })}
@@ -184,7 +191,7 @@ const Hero = () => {
 const BentoGridFeatures = () => {
   const features = [
     { title: "AI Video Generation", description: "Turn any text prompt into a stunning, high-quality video with our SORA-powered engine.", icon: <Film className="h-8 w-8 text-primary" />, className: "md:col-span-2", },
-    { title: "Realistic AI Voiceovers", description: "Choose from a dozen ultra-realistic voices to narrate your script perfectly using GPT-4o.", icon: <Mic className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
+    { title: "Realistic AI Voiceovers", description: "Choose from a 98 ultra-realistic voices to narrate your script perfectly using GPT-4o.", icon: <Mic className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
     { title: "One-Click Reel Assembly", description: "Combine your generated video and audio into a final, shareable reel in seconds.", icon: <Clapperboard className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
     { title: "Automatic Subtitles", description: "Generate accurate SRT subtitles from your audio script with a single click. Boost your reach!", icon: <Zap className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
     { title: "Flexible Controls", description: "Fine-tune your creations with controls for aspect ratio, resolution, duration, and voice speed.", icon: <Bot className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
