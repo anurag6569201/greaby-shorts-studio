@@ -9,7 +9,6 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = ['*']
 
-# --- INSTALLED APPS ---
 INSTALLED_APPS = [
     'daphne',
     'django.contrib.admin',
@@ -31,7 +30,16 @@ INSTALLED_APPS = [
     'notifications.apps.NotificationsConfig',
 ]
 
-# --- MIDDLEWARE ---
+ASGI_APPLICATION = 'greaby_project.asgi.application'
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [config('CELERY_BROKER_URL', default='redis://localhost:6379/1')],
+        },
+    },
+}
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -45,10 +53,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'greaby_project.urls'
-WSGI_APPLICATION = 'greaby_project.wsgi.application'
-ASGI_APPLICATION = 'greaby_project.asgi.application'
 
-# --- TEMPLATES ---
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -65,7 +70,8 @@ TEMPLATES = [
     },
 ]
 
-# --- DATABASES ---
+WSGI_APPLICATION = 'greaby_project.wsgi.application'
+
 DATABASES = {
     'default': dj_database_url.config(
         default=config('DATABASE_URL'),
@@ -74,8 +80,15 @@ DATABASES = {
     )
 }
 
-# --- AUTHENTICATION ---
 AUTH_USER_MODEL = 'users.User'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication',),
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
+    'DEFAULT_PAGINATION_CLASS': 'greaby_project.pagination.StandardResultsSetPagination',
+    'PAGE_SIZE': 10
+}
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -83,14 +96,15 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# --- INTERNATIONALIZATION ---
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- CORS & CSRF ---
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -105,56 +119,31 @@ CSRF_TRUSTED_ORIGINS = [
     "https://greaby.vercel.app",
     'https://greaby.azurewebsites.net',
 ]
-CSRF_COOKIE_SECURE = True
-CSRF_COOKIE_SAMESITE = 'None'
 
-# --- REST FRAMEWORK ---
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication',),
-    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
-    'DEFAULT_PAGINATION_CLASS': 'greaby_project.pagination.StandardResultsSetPagination',
-    'PAGE_SIZE': 10
-}
+CSRF_COOKIE_SECURE = True  # Only for HTTPS
+CSRF_COOKIE_SAMESITE = 'None'  # Needed for cross-site frontend/backend
 
-# 1. Get the base URLs from your environment
-broker_url = config('CELERY_BROKER_URL')
-result_backend_url = config('CELERY_RESULT_BACKEND')
-channel_layer_redis_url = config('CHANNEL_LAYER_REDIS_URL', default=broker_url)
-
-# 2. Programmatically add the required SSL option if using rediss://
-if broker_url.startswith('rediss'):
-    broker_url = f"{broker_url}?ssl_cert_reqs=CERT_NONE"
-
-if result_backend_url.startswith('rediss'):
-    result_backend_url = f"{result_backend_url}?ssl_cert_reqs=CERT_NONE"
-
-if channel_layer_redis_url.startswith('rediss'):
-    channel_layer_redis_url = f"{channel_layer_redis_url}?ssl_cert_reqs=CERT_NONE"
-
-# 3. Assign the processed URLs to the final settings
-CELERY_BROKER_URL = broker_url
-CELERY_RESULT_BACKEND = result_backend_url
-
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [channel_layer_redis_url],
-        },
-    },
-}
-
-# --- CELERY SETTINGS ---
+CELERY_BROKER_URL = config('CELERY_BROKER_URL')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND')
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_ACKS_LATE = True
 CELERY_TASK_TRACK_STARTED = True
-CELERY_TIMEZONE = 'Asia/Kolkata'
+CELERY_TIMEZONE = 'Asia/Kolkata'  # or UTC based on your app
 CELERY_ENABLE_UTC = True
-CELERY_TASK_DEFAULT_RETRY_DELAY = 60
+CELERY_TASK_DEFAULT_RETRY_DELAY = 60  # seconds
 CELERY_TASK_MAX_RETRIES = 3
 
-# --- STATIC & MEDIA FILES ---
+AZURE_OPENAI_ENDPOINT_URL = config('AZURE_OPENAI_ENDPOINT_URL')
+AZURE_SORA_DEPLOYMENT_NAME = config('AZURE_SORA_DEPLOYMENT_NAME', default='sora')
+AZURE_OPENAI_API_KEY = config('AZURE_OPENAI_API_KEY')
+AZURE_SPEECH_KEY = config('AZURE_SPEECH_KEY')
+AZURE_SPEECH_ENDPOINT = config('AZURE_SPEECH_ENDPOINT')
+
+RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID')
+RAZORPAY_KEY_SECRET = config('RAZORPAY_KEY_SECRET')
+RAZORPAY_WEBHOOK_SECRET = config('RAZORPAY_WEBHOOK_SECRET')
+
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
@@ -166,20 +155,10 @@ AZURE_URL_EXPIRATION_SECS = 3600
 AZURE_OVERWRITE_FILES = True
 AZURE_CONNECTION_TIMEOUT_SECS = 600
 
-# --- EXTERNAL SERVICES & API KEYS ---
-AZURE_OPENAI_ENDPOINT_URL = config('AZURE_OPENAI_ENDPOINT_URL')
-AZURE_SORA_DEPLOYMENT_NAME = config('AZURE_SORA_DEPLOYMENT_NAME', default='sora')
-AZURE_OPENAI_API_KEY = config('AZURE_OPENAI_API_KEY')
-AZURE_SPEECH_KEY = config('AZURE_SPEECH_KEY')
-AZURE_SPEECH_ENDPOINT = config('AZURE_SPEECH_ENDPOINT')
-
-RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID')
-RAZORPAY_KEY_SECRET = config('RAZORPAY_KEY_SECRET')
-RAZORPAY_WEBHOOK_SECRET = config('RAZORPAY_WEBHOOK_SECRET')
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')
 
-# --- EMAIL SETTINGS ---
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
