@@ -26,6 +26,8 @@ INSTALLED_APPS = [
     'creations.apps.CreationsConfig',
     'audio_creations.apps.AudioCreationsConfig',
     'reels.apps.ReelsConfig',
+    'transcriptions.apps.TranscriptionsConfig',
+    
     'channels',
     'notifications.apps.NotificationsConfig',
 ]

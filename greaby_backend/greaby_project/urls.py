@@ -14,4 +14,6 @@ urlpatterns = [
     path('api/v1/audios/', include('audio_creations.urls')),
     
     path('api/v1/reels/', include('reels.urls')),
+    
+    path('api/v1/transcriptions/', include('transcriptions.urls')),
 ]

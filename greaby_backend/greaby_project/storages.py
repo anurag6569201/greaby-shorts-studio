@@ -15,3 +15,11 @@ class ReelStorage(AzureStorage):
 # This storage class points to your 'greaby-subtitles' container.
 class SubtitleStorage(AzureStorage):
     azure_container = 'greaby-subtitles'
+    
+# --- NEW: For user-uploaded audio/video files to be transcribed ---
+class SourceMediaStorage(AzureStorage):
+    azure_container = 'greaby-source-media'
+    
+# --- NEW: For the JSON transcription results from Azure ---
+class TranscriptionResultStorage(AzureStorage):
+    azure_container = 'greaby-transcription-results'
