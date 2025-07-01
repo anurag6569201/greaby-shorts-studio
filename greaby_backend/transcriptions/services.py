@@ -13,10 +13,7 @@ COST_PER_MINUTE = Decimal('0.25')
 # 3. Surcharge for enabling speaker separation (diarization).
 SPEAKER_SEPARATION_SURCHARGE = Decimal('0.50')
 
-# 4. Surcharge for the premium AI Insights feature.
-AI_INSIGHTS_SURCHARGE = Decimal('1.50')
-
-def calculate_transcription_cost(duration_minutes: int, enable_speaker_separation: bool, generate_insights: bool) -> Decimal:
+def calculate_transcription_cost(duration_minutes: int, enable_speaker_separation: bool) -> Decimal:
     """
     Calculates the credit cost for a transcription job, including optional features.
     """
@@ -29,8 +26,5 @@ def calculate_transcription_cost(duration_minutes: int, enable_speaker_separatio
     
     if enable_speaker_separation:
         total_cost += SPEAKER_SEPARATION_SURCHARGE
-        
-    if generate_insights:
-        total_cost += AI_INSIGHTS_SURCHARGE
         
     return round(total_cost, 2)

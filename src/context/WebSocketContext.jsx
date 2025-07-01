@@ -44,8 +44,8 @@ export const WebSocketProvider = ({ children }) => {
 
     socket.onmessage = (event) => {
       try {
-          console.log("➡️ WebSocket message received:", event.data);
-          const data = JSON.parse(event.data);
+          const data = JSON.parse(event.data).message;
+          console.log("➡️ WebSocket message received:", data);
           
           const { event: eventType, creation_type, creation_id, status_message } = data;
           
@@ -58,15 +58,17 @@ export const WebSocketProvider = ({ children }) => {
             'video': ['videoCreations'],
             'audio': ['audioCreations'],
             'reel': ['reels'],
+            'transcription': ['transcriptions'],
           };
           
           const baseQueryKey = queryKeyMap[creation_type];
-          if (!baseQueryKey) return;
+          if (!baseQueryKey) {
+            console.log(`No query key map for creation_type: ${creation_type}`);
+            return;
+          }
 
           if (eventType === 'creation_progress') {
               console.log(`🔄 Updating progress for ${creation_type} ID ${creation_id}: ${status_message}`);
-              // **THE ROBUST FIX IS HERE**
-              // Find all existing pages for this query type and update the item in each one.
               queryClient.getQueryCache().findAll(baseQueryKey).forEach(({ queryKey }) => {
                   queryClient.setQueryData(queryKey, (oldData) => {
                       if (!oldData || !oldData.results) return oldData;
@@ -75,23 +77,17 @@ export const WebSocketProvider = ({ children }) => {
                       const newResults = oldData.results.map(item => {
                           if (item.id === creation_id) {
                               itemFound = true;
-                              return { ...item, status: status_message || 'processing' };
+                              return { ...item, live_status: status_message || 'Processing...' };
                           }
                           return item;
                       });
 
-                      if (itemFound) {
-                        return {
-                            ...oldData,
-                            results: newResults,
-                        };
-                      }
-                      return oldData; // Return old data if item not found on this page
+                      if (itemFound) return { ...oldData, results: newResults };
+                      return oldData;
                   });
               });
           } else if (eventType === 'creation_completed' || eventType === 'creation_failed') {
               console.log(`🏁 Final status for ${creation_type} ID ${creation_id}: ${eventType}`);
-              // The job is done. Invalidate all pages for this query type to fetch fresh data.
               queryClient.invalidateQueries({ queryKey: baseQueryKey });
 
               if (eventType === 'creation_completed') {
@@ -99,7 +95,7 @@ export const WebSocketProvider = ({ children }) => {
                     description: "The item in your library has been updated."
                   });
               } else {
-                  toast.error(`Your ${creation_type} generation failed.`, {
+                  toast.error(`Your ${creation_type} has failed.`, {
                       description: "Please check the item for details. Credits have been refunded."
                   });
               }
