@@ -17,6 +17,7 @@ import PricingPage from "@/components/dashboard/PricingPage";
 import HistoryPage from "@/components/dashboard/HistoryPage";
 import ComingSoonPage from "@/components/dashboard/ComingSoonPage"; // Import the new component
 import TranscriptionGenerator from "@/components/dashboard/TranscriptionGenerator"; // Import the new component
+import VideoTranslation from "@/components/dashboard/VideoTranslation"; // Import the new component
 
 const sidebarItems = [
   { id: "home", label: "Home", icon: Home },
@@ -24,7 +25,8 @@ const sidebarItems = [
   { id: "audio", label: "Audio", icon: Mic },
   { id: "reels", label: "Reels", icon: Clapperboard, beta: true },
   { id: "transcription", label: "Transcription", icon: MicVocalIcon },
-  { id: "Video Dub", label: "Video Dub", icon: LanguagesIcon, soon: true },
+  // { id: "Video Dub", label: "Video Dub", icon: LanguagesIcon, soon: true },
+  { id: "Video Dub", label: "Video Dub", icon: LanguagesIcon },
   { id: "history", label: "Usage History", icon: History },
 ];
 
@@ -59,13 +61,8 @@ const Dashboard = () => {
       case "settings": return <SettingsPage />;
       case "history": return <HistoryPage />;
       case "transcription": return <TranscriptionGenerator />;
-      case "Video Dub": return (
-        <ComingSoonPage 
-            featureName="Video Dub"
-            featureDescription="Translate and dub your videos into multiple languages using realistic AI voices, while maintaining lip-sync."
-            onBack={() => handleSetTab('home')}
-        />
-      );
+      case "translations": return <VideoTranslation />;
+      case "Video Dub": return <VideoTranslation/>
       default: return <DashboardHome setActiveTab={handleSetTab} />;
     }
   };

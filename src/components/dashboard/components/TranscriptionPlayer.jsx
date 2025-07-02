@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { 
   Loader2, AlertCircle, Play, Pause, AlertTriangle, Search, Edit, Download, 
   ChevronLeft, ChevronRight, FileText, Languages as LanguagesIcon, Mic, MicOff,
-  UserPlus, History, Undo2, Redo2, Replace, ChevronsUpDown
+  UserPlus, History, Undo2, Redo2, Replace, ChevronsUpDown, Volume2, VolumeX,
+  Maximize2, Minimize2, Speaker, RefreshCw, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,10 +13,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 import { useDebounce } from 'use-debounce';
+import { cn } from '@/lib/utils';
 
 const TICKS_PER_SECOND = 10_000_000;
 const SPEAKER_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
 const formatTime = (seconds) => {
   if (isNaN(seconds) || seconds < 0) return "00:00.0";
@@ -43,7 +47,7 @@ const WordItem = React.memo(({
             style={{ backgroundColor: speakerColor }}
           />
           {isEditing ? (
-            <>
+            <div className="flex items-center gap-1">
               <Input
                 value={speakerMap[word.speaker] || ''}
                 onChange={(e) => handleSpeakerNameChange(word.speaker, e.target.value)}
@@ -65,13 +69,33 @@ const WordItem = React.memo(({
                       Assign to {speakerMap[speakerId]}
                     </DropdownMenuItem>
                   ))}
+                  <DropdownMenuItem onSelect={() => {
+                    const newSpeakerId = Math.max(...availableSpeakers.map(Number), 0) + 1;
+                    handleSpeakerNameChange(newSpeakerId, `Speaker ${newSpeakerId}`);
+                    handleReassignSpeakerForPhrase(word.phraseId, newSpeakerId);
+                  }}>
+                    <UserPlus className="h-4 w-4 mr-2" /> Create New Speaker
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </>
+            </div>
           ) : (
-            <strong className="text-primary" style={{ color: speakerColor }}>
-              {speakerMap[word.speaker] || `Speaker ${word.speaker}`}
-            </strong>
+            <div className="flex items-center">
+              <strong className="text-primary" style={{ color: speakerColor }}>
+                {speakerMap[word.speaker] || `Speaker ${word.speaker}`}
+              </strong>
+              {isEditing && (
+                <Button variant="ghost" size="icon" className="h-5 w-5 ml-1 opacity-0 group-hover:opacity-100" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const newSpeakerId = Math.max(...availableSpeakers.map(Number), 0) + 1;
+                    handleSpeakerNameChange(newSpeakerId, `Speaker ${newSpeakerId}`);
+                    handleReassignSpeakerForPhrase(word.phraseId, newSpeakerId);
+                  }}>
+                  <UserPlus className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -89,12 +113,13 @@ const WordItem = React.memo(({
             style={{ width: `${progress}%` }}
           />
         )}
-        <span className={`relative z-10 transition-colors ${isActive ? 'text-blue-600 dark:text-blue-300' : ''}`}>
+        <span className={`relative z-10 transition-colors ${isActive ? 'text-blue-600 dark:text-blue-300 font-medium' : ''}`}>
           {isEditing ? (
             <Input
               value={word.word}
               onChange={(e) => handleWordChange(index, e.target.value)}
               className="h-6 inline-flex w-auto p-1 relative z-10 bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-blue-500"
+              onKeyDown={(e) => e.stopPropagation()}
             />
           ) : (
             word.word
@@ -118,6 +143,8 @@ const TranscriptionPlayer = ({ item, transcriptJson: initialTranscriptJson }) =>
   const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1.0);
   const [volume, setVolume] = useState(0.8);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editableWords, setEditableWords] = useState([]);
@@ -133,6 +160,7 @@ const TranscriptionPlayer = ({ item, transcriptJson: initialTranscriptJson }) =>
   const [currentResultIndex, setCurrentResultIndex] = useState(-1);
   const [caseSensitive, setCaseSensitive] = useState(false);
   const [wholeWord, setWholeWord] = useState(false);
+  const [showSearchPanel, setShowSearchPanel] = useState(false);
 
   const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
   
@@ -144,18 +172,33 @@ const TranscriptionPlayer = ({ item, transcriptJson: initialTranscriptJson }) =>
       if (phrase.nBest?.[0]?.words) {
         allWords.push(...phrase.nBest[0].words.map(word => ({
           ...word,
-          speaker: phrase.speaker,
-          phraseId: phrase.id
+          speaker: phrase.speaker || 1,
+          phraseId: phrase.id || Math.random().toString(36).substr(2, 9)
         })));
       }
     });
     setEditableWords(allWords);
 
+    // Create speaker map from transcript if available
+    const initialSpeakerMap = initialTranscriptJson.speakerMap || {};
+    
+    // Find all unique speakers from words
     const speakers = [...new Set(allWords.map(w => w.speaker).filter(Boolean))].sort((a,b) => a-b);
-    const initialSpeakerMap = speakers.reduce((acc, sp, idx) => ({ ...acc, [sp]: `Speaker ${sp}` }), {});
+    
+    // Fill in missing speakers
+    speakers.forEach(sp => {
+      if (!(sp in initialSpeakerMap)) {
+        initialSpeakerMap[sp] = `Speaker ${sp}`;
+      }
+    });
+    
     setSpeakerMap(initialSpeakerMap);
     
-    const initialSpeakerColors = speakers.reduce((acc, sp, idx) => ({...acc, [sp]: SPEAKER_COLORS[idx % SPEAKER_COLORS.length]}), {});
+    // Assign colors to speakers
+    const initialSpeakerColors = {};
+    speakers.forEach((sp, idx) => {
+      initialSpeakerColors[sp] = SPEAKER_COLORS[idx % SPEAKER_COLORS.length];
+    });
     setSpeakerColors(initialSpeakerColors);
     
     const initialState = { words: allWords, speakerMap: initialSpeakerMap };
@@ -163,6 +206,14 @@ const TranscriptionPlayer = ({ item, transcriptJson: initialTranscriptJson }) =>
     setHistoryIndex(0);
 
   }, [initialTranscriptJson]);
+
+  // Update audio volume and playback rate
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : volume;
+      audioRef.current.playbackRate = playbackRate;
+    }
+  }, [volume, isMuted, playbackRate]);
 
   const saveToHistory = useCallback((newWords, newSpeakerMap) => {
     const newState = { words: newWords, speakerMap: newSpeakerMap };
@@ -239,11 +290,19 @@ const TranscriptionPlayer = ({ item, transcriptJson: initialTranscriptJson }) =>
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); handleUndo(); }
       if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); handleRedo(); }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); searchInputRef.current?.focus(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') { 
+        e.preventDefault(); 
+        searchInputRef.current?.focus();
+        setShowSearchPanel(true);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'h') { 
+        e.preventDefault(); 
+        setShowSearchPanel(!showSearchPanel);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleUndo, handleRedo]);
+  }, [handleUndo, handleRedo, showSearchPanel]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -468,6 +527,15 @@ const TranscriptionPlayer = ({ item, transcriptJson: initialTranscriptJson }) =>
     URL.revokeObjectURL(url);
   };
 
+  const toggleFullscreen = () => {
+    if (!isFullscreen) {
+      transcriptContainerRef.current?.requestFullscreen?.();
+    } else {
+      document.exitFullscreen?.();
+    }
+    setIsFullscreen(!isFullscreen);
+  };
+
   if (!initialTranscriptJson || editableWords.length === 0) {
     return <div className="flex items-center justify-center h-96"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
@@ -481,7 +549,7 @@ const TranscriptionPlayer = ({ item, transcriptJson: initialTranscriptJson }) =>
   let lastSpeaker = null;
 
   return (
-    <div className="flex flex-col gap-4 h-full max-h-[85vh] p-1">
+    <div className={cn("flex flex-col gap-4 h-full max-h-[85vh] p-1", isFullscreen && "fixed inset-0 z-50 bg-background p-4")}>
       <div className="flex items-center gap-2 border-b pb-2 flex-wrap">
         <Button variant={isEditing ? 'secondary' : 'outline'} size="sm" onClick={() => setIsEditing(!isEditing)}>
           <Edit className="w-4 h-4 mr-2" />{isEditing ? 'Finish Editing' : 'Edit Transcript'}
@@ -496,32 +564,75 @@ const TranscriptionPlayer = ({ item, transcriptJson: initialTranscriptJson }) =>
             </TooltipTrigger><TooltipContent>Redo (Ctrl+Y)</TooltipContent></Tooltip></TooltipProvider>
           </div>
         )}
-        <div className="relative flex-grow min-w-[250px]">
-          <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input ref={searchInputRef} placeholder="Search transcript..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-8" />
-          {searchResults.length > 0 && <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{currentResultIndex + 1}/{searchResults.length}</span>}
-        </div>
-         <div className="flex">
-          <TooltipProvider><Tooltip><TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigateSearchResults(-1)} disabled={searchResults.length === 0}><ChevronLeft className="h-4 w-4" /></Button>
-          </TooltipTrigger><TooltipContent>Previous</TooltipContent></Tooltip></TooltipProvider>
-          <TooltipProvider><Tooltip><TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigateSearchResults(1)} disabled={searchResults.length === 0}><ChevronRight className="h-4 w-4" /></Button>
-          </TooltipTrigger><TooltipContent>Next</TooltipContent></Tooltip></TooltipProvider>
+        
+        <div className="flex gap-1 ml-auto">
+          <Button variant="outline" size="sm" onClick={() => setShowSearchPanel(!showSearchPanel)}>
+            <Search className="w-4 h-4 mr-2" /> Search (Ctrl+H)
+          </Button>
+          
+          <Button variant="outline" size="icon" onClick={toggleFullscreen}>
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </Button>
         </div>
       </div>
 
-      {searchTerm && (
+      {showSearchPanel && (
         <div className="p-3 bg-muted/50 rounded-lg flex flex-wrap gap-x-4 gap-y-2 items-center">
-          <div className="flex items-center space-x-2"><Switch id="case-sensitive" checked={caseSensitive} onCheckedChange={setCaseSensitive} /><Label htmlFor="case-sensitive">Case sensitive</Label></div>
-          <div className="flex items-center space-x-2"><Switch id="whole-word" checked={wholeWord} onCheckedChange={setWholeWord} /><Label htmlFor="whole-word">Whole word</Label></div>
+          <div className="relative flex-grow min-w-[250px]">
+            <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input 
+              ref={searchInputRef} 
+              placeholder="Search transcript..." 
+              value={searchTerm} 
+              onChange={(e) => setSearchTerm(e.target.value)} 
+              className="pl-8" 
+            />
+            {searchResults.length > 0 && (
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                {currentResultIndex + 1}/{searchResults.length}
+              </span>
+            )}
+          </div>
+          
+          <div className="flex">
+            <TooltipProvider><Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigateSearchResults(-1)} disabled={searchResults.length === 0}><ChevronLeft className="h-4 w-4" /></Button>
+            </TooltipTrigger><TooltipContent>Previous</TooltipContent></Tooltip></TooltipProvider>
+            <TooltipProvider><Tooltip><TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigateSearchResults(1)} disabled={searchResults.length === 0}><ChevronRight className="h-4 w-4" /></Button>
+            </TooltipTrigger><TooltipContent>Next</TooltipContent></Tooltip></TooltipProvider>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Switch id="case-sensitive" checked={caseSensitive} onCheckedChange={setCaseSensitive} />
+            <Label htmlFor="case-sensitive">Case sensitive</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Switch id="whole-word" checked={wholeWord} onCheckedChange={setWholeWord} />
+            <Label htmlFor="whole-word">Whole word</Label>
+          </div>
+          
           <Input placeholder="Replace with..." value={replaceTerm} onChange={(e) => setReplaceTerm(e.target.value)} className="h-9 max-w-[200px]" />
-          <Button variant="outline" size="sm" onClick={handleReplace} disabled={!replaceTerm || searchResults.length === 0}><Replace className="w-4 h-4 mr-2" />Replace</Button>
-          <Button variant="outline" size="sm" onClick={handleReplaceAll} disabled={!replaceTerm || searchResults.length === 0}><Replace className="w-4 h-4 mr-2" />Replace All</Button>
+          
+          <Button variant="outline" size="sm" onClick={handleReplace} disabled={!replaceTerm || searchResults.length === 0}>
+            <Replace className="w-4 h-4 mr-2" />Replace
+          </Button>
+          
+          <Button variant="outline" size="sm" onClick={handleReplaceAll} disabled={!replaceTerm || searchResults.length === 0}>
+            <RefreshCw className="w-4 h-4 mr-2" />Replace All
+          </Button>
+          
+          <Button variant="ghost" size="icon" onClick={() => setShowSearchPanel(false)}>
+            <ChevronsUpDown className="w-4 h-4" />
+          </Button>
         </div>
       )}
 
-      <div ref={transcriptContainerRef} className="prose prose-sm max-w-none p-4 border rounded-lg overflow-y-auto bg-background flex-grow leading-relaxed">
+      <div 
+        ref={transcriptContainerRef} 
+        className="prose prose-sm max-w-none p-4 border rounded-lg overflow-y-auto bg-background flex-grow leading-relaxed"
+        style={{ height: showSearchPanel ? 'calc(100% - 200px)' : 'calc(100% - 120px)' }}
+      >
         {editableWords.map((word, index) => {
           const currentTicks = currentTime * TICKS_PER_SECOND;
           const isActive = currentTicks >= word.offsetInTicks && 
@@ -556,20 +667,81 @@ const TranscriptionPlayer = ({ item, transcriptJson: initialTranscriptJson }) =>
           <Button onClick={handlePlayPause} size="icon" className="w-10 h-10 flex-shrink-0">
             {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
           </Button>
-          <div className="text-sm font-mono text-muted-foreground">{formatTime(currentTime)} / {formatTime(duration)}</div>
-
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild><Button variant="outline" className="h-9"><Download className="w-4 h-4 mr-2" /> Export</Button></DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handleDownload('txt')}><FileText className="w-4 h-4 mr-2" /> Text (.txt)</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleDownload('srt')}><LanguagesIcon className="w-4 h-4 mr-2" /> Subtitle (.srt)</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleDownload('json')}><FileText className="w-4 h-4 mr-2" /> JSON (.json)</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          
+          <div className="flex-1 flex items-center gap-3">
+            <div className="text-sm font-mono text-muted-foreground min-w-[100px]">
+              {formatTime(currentTime)}
+            </div>
+            
+            <div className="flex-1">
+              <Slider
+                min={0}
+                max={duration}
+                step={0.1}
+                value={[currentTime]}
+                onValueChange={([val]) => handleSeek(val)}
+                className="cursor-pointer"
+              />
+            </div>
+            
+            <div className="text-sm font-mono text-muted-foreground min-w-[100px] text-right">
+              {formatTime(duration)}
+            </div>
           </div>
-                </div>
+          
+          <div className="flex items-center gap-2">
+            <Select value={playbackRate.toString()} onValueChange={(value) => setPlaybackRate(parseFloat(value))}>
+              <SelectTrigger className="w-20">
+                <SelectValue placeholder="Speed" />
+              </SelectTrigger>
+              <SelectContent>
+                {PLAYBACK_RATES.map(rate => (
+                  <SelectItem key={rate} value={rate.toString()}>{rate}x</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={() => setIsMuted(!isMuted)}>
+                    {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isMuted ? "Unmute" : "Mute"}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            {!isMuted && (
+              <div className="w-24">
+                <Slider
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={[volume]}
+                  onValueChange={([val]) => setVolume(val)}
+                />
+              </div>
+            )}
+          </div>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-9">
+                <Download className="w-4 h-4 mr-2" /> Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => handleDownload('txt')}><FileText className="w-4 h-4 mr-2" /> Text (.txt)</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDownload('srt')}><LanguagesIcon className="w-4 h-4 mr-2" /> Subtitle (.srt)</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleDownload('json')}><FileText className="w-4 h-4 mr-2" /> JSON (.json)</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
+      
       <audio ref={audioRef} src={item.source_url} className="hidden" />
     </div>
   );
