@@ -40,3 +40,56 @@
 .read-the-docs {
   color: #888;
 }
+
+
+.dark body {
+  background-color: #111827;
+  color: #f3f4f6;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: #e5e7eb;
+  outline: none;
+}
+
+.dark input[type="range"] {
+  background: #4b5563;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: none;
+}
+
+.prose {
+  color: #374151;
+}
+
+.dark .prose {
+  color: #d1d5db;
+}
+
+.prose span[data-word-index] {
+  position: relative;
+}

@@ -19,6 +19,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import api from "@/services/api";
 import TranscriptionPlayer from "./components/TranscriptionPlayer";
 
+// ... (StagedFileCard, TranscriptionCard, and other helper components remain the same) ...
 const formatFileSize = (bytes) => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -48,8 +49,9 @@ const StagedFileCard = ({ file, onRemove, onConfigChange }) => (
 
 const TranscriptionCard = ({ item, onViewDetails, onDelete }) => {
     const isProcessing = !['completed', 'failed'].includes(item.status);
-    const liveStatus = item.live_status || `${item.status}...`;
-    const progressMatch = liveStatus.match(/Step (\d+)\/(\d+)/);
+    // Use optional chaining for live_status and provide a fallback
+    const liveStatus = item?.live_status || `${item.status}...`;
+    const progressMatch = typeof liveStatus === 'string' ? liveStatus.match(/Step (\d+)\/(\d+)/) : null;
     const progressPercentage = progressMatch ? (parseInt(progressMatch[1]) / parseInt(progressMatch[2])) * 100 : 0;
 
     return (
@@ -94,6 +96,7 @@ const TranscriptionCard = ({ item, onViewDetails, onDelete }) => {
     );
 };
 
+
 const TranscriptionGenerator = () => {
     const [stagedFiles, setStagedFiles] = useState([]);
     const [language, setLanguage] = useState("en-US");
@@ -109,20 +112,47 @@ const TranscriptionGenerator = () => {
         keepPreviousData: true,
     });
 
+    // --- THIS IS THE CORRECTED MUTATION ---
     const createTranscriptionMutation = useMutation({
         mutationFn: (formData) => api.post('/transcriptions/', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["transcriptions"] });
-            if(currentPage !== 1) setCurrentPage(1);
+        onSuccess: (response) => {
+            // Get the newly created item from the API response
+            const newTranscription = response.data;
+            
+            // Immediately add the new item to the cache for the first page.
+            // This is the key step to prevent the race condition.
+            queryClient.setQueryData(["transcriptions", 1], (oldData) => {
+                const oldResults = oldData?.results ?? [];
+                return { 
+                    ...oldData, 
+                    count: (oldData?.count ?? 0) + 1, 
+                    results: [newTranscription, ...oldResults] 
+                };
+            });
+            
+            // If the user is viewing another page, switch them to the first page
+            // to see the new item processing in real-time.
+            if (currentPage !== 1) {
+                setCurrentPage(1);
+            }
+            
+            // Invalidate other pages to ensure they are fresh if navigated to later
+            queryClient.invalidateQueries({ queryKey: ["transcriptions"], exact: false, refetchType: 'none' });
         },
         onError: (err) => toast.error("Submission Failed", { description: err.response?.data?.detail || "An unexpected error occurred." })
     });
+    // --- END OF CORRECTION ---
 
     const { mutate: deleteTranscription, isLoading: isDeleting } = useMutation({
         mutationFn: (id) => api.delete(`/transcriptions/${id}/`),
-        onSuccess: () => {
+        onSuccess: (data, id) => {
             toast.success("Transcription deleted successfully.");
-            queryClient.invalidateQueries({ queryKey: ["transcriptions"] });
+            // Remove item from cache manually for instant UI update
+            queryClient.setQueryData(["transcriptions", currentPage], (oldData) => {
+                 if (!oldData) return oldData;
+                 const newResults = oldData.results.filter(item => item.id !== id);
+                 return { ...oldData, count: oldData.count - 1, results: newResults };
+            });
             setDeletingItem(null);
         },
         onError: (err) => toast.error("Deletion failed.", { description: err.response?.data?.detail || "Could not delete the item." })
@@ -142,6 +172,11 @@ const TranscriptionGenerator = () => {
             config: { title: file.name.split('.').slice(0, -1).join('.') || file.name, enable_speaker_separation: false, duration_minutes: 1 }
         }));
         setStagedFiles(prev => [...prev, ...newStagedFiles]);
+    };
+
+    // Correct the onRemove handler for StagedFileCard
+    const handleRemoveStagedFile = (id) => {
+        setStagedFiles(prev => prev.filter(f => f.id !== id));
     };
 
     const handleConfigChange = (id, key, value) => setStagedFiles(prev => prev.map(f => f.id === id ? { ...f, config: { ...f.config, [key]: value } } : f));
@@ -169,16 +204,28 @@ const TranscriptionGenerator = () => {
 
     const handleSubmit = () => {
         if (stagedFiles.length === 0) return toast.info("Please add at least one file to transcribe.");
+        
+        toast.info(`Submitting ${stagedFiles.length} transcription job(s)...`);
+
         const submissionPromises = stagedFiles.map(sf => {
             const formData = new FormData();
             formData.append('source_file', sf.file);
             formData.append('title', sf.config.title);
             formData.append('source_language', language);
-            formData.append('enable_speaker_separation', sf.config.enable_speaker_separation);
+            formData.append('enable_speaker_separation', sf.config.enable_speaker_separation.toString());
             formData.append('duration_minutes', sf.config.duration_minutes);
             return createTranscriptionMutation.mutateAsync(formData);
         });
-        toast.promise(Promise.all(submissionPromises), { loading: "Submitting jobs...", success: "All jobs submitted successfully!", error: "Some jobs failed to submit." });
+        
+        Promise.all(submissionPromises)
+            .then(() => {
+                toast.success("All jobs submitted successfully!");
+            })
+            .catch(() => {
+                // Individual errors are already handled by the mutation's onError
+                toast.warning("Some jobs may have failed to submit. Please check your library.");
+            });
+
         setStagedFiles([]);
     };
 
@@ -203,7 +250,7 @@ const TranscriptionGenerator = () => {
                     <div onDrop={handleFileDrop} onDragOver={(e) => e.preventDefault()} className="relative border-2 border-dashed rounded-xl p-8 text-center flex flex-col items-center justify-center hover:border-primary hover:bg-primary/5 transition-colors">
                         <UploadCloud className="h-12 w-12 text-muted-foreground" /><h3 className="mt-4 text-lg font-semibold">Drag & Drop Files Here</h3><p className="text-muted-foreground mt-1">or</p><Label htmlFor="file-upload" className="mt-2 inline-block"><div className="bg-primary text-primary-foreground px-4 py-2 rounded-md cursor-pointer hover:bg-primary/90">Browse Files</div></Label><Input id="file-upload" type="file" multiple className="sr-only" onChange={handleFileSelect} accept="audio/*,video/*" />
                     </div>
-                    <AnimatePresence>{stagedFiles.length > 0 && <div className="space-y-4"><h3 className="font-semibold text-lg">Your Files</h3>{stagedFiles.map(file => <StagedFileCard key={file.id} file={file} onRemove={handleFileDrop} onConfigChange={handleConfigChange} />)}</div>}</AnimatePresence>
+                    <AnimatePresence>{stagedFiles.length > 0 && <div className="space-y-4"><h3 className="font-semibold text-lg">Your Files</h3>{stagedFiles.map(file => <StagedFileCard key={file.id} file={file} onRemove={handleRemoveStagedFile} onConfigChange={handleConfigChange} />)}</div>}</AnimatePresence>
                 </CardContent>
                 {stagedFiles.length > 0 && (
                      <CardFooter className="p-0 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
