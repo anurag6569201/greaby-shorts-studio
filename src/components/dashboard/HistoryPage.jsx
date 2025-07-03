@@ -7,7 +7,41 @@ import { Loader2, ArrowUpRight, ArrowDownLeft, History as HistoryIcon } from 'lu
 import api from '@/services/api';
 import { PaginationControls } from '@/components/ui/PaginationControls';
 
-const TransactionRow = ({ item }) => {
+// A dedicated component for the mobile card view.
+const MobileTransactionCard = ({ item }) => {
+    const isCredit = item.type === 'credit';
+    const amount = isCredit ? `+${parseFloat(item.amount).toFixed(2)}` : `-${parseFloat(item.amount).toFixed(2)}`;
+    const Icon = isCredit ? ArrowUpRight : ArrowDownLeft;
+    const colorClass = isCredit ? "text-green-600" : "text-red-600";
+
+    return (
+        <div className="p-4 border rounded-lg bg-card shadow-sm">
+            <div className="flex justify-between items-start gap-4">
+                <div className="flex items-center space-x-3 overflow-hidden">
+                    <div className="p-1.5 rounded-full bg-muted flex-shrink-0">
+                        <Icon className={`h-4 w-4 ${colorClass}`} />
+                    </div>
+                    <div className="overflow-hidden">
+                        <p className="font-medium text-sm truncate">{item.description}                        <Badge variant={isCredit ? "success" : "destructive"} className="mt-1 text-xs">
+                            {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                        </Badge></p>
+                    </div>
+                </div>
+                <div className={`text-right font-semibold ${colorClass} text-base flex-shrink-0`}>{amount}</div>
+            </div>
+<div className="mt-3 pt-3 border-t text-xs text-muted-foreground flex justify-between items-center">
+    <p title={item.details} className="truncate pr-4">
+        {(item.details?.length > 40 ? item.details.slice(0, 40) + '...' : item.details) || 'No additional details'}
+    </p>
+    <p className="flex-shrink-0">{new Date(item.date).toLocaleDateString()}</p>
+</div>
+
+        </div>
+    );
+};
+
+// A dedicated component for the desktop table row view.
+const DesktopTransactionRow = ({ item }) => {
     const isCredit = item.type === 'credit';
     const amount = isCredit ? `+${parseFloat(item.amount).toFixed(2)}` : `-${parseFloat(item.amount).toFixed(2)}`;
     const Icon = isCredit ? ArrowUpRight : ArrowDownLeft;
@@ -37,6 +71,7 @@ const TransactionRow = ({ item }) => {
     );
 };
 
+
 const HistoryPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -62,14 +97,22 @@ const HistoryPage = () => {
                     <CardDescription>A complete log of your credit purchases and expenses.</CardDescription>
                 </CardHeader>
                 <hr className="mt-4 mb-2"/>
-                <CardContent className="space-y-6 p-0">
+                <CardContent className="p-0">
                     {isLoading && !historyData ? (
                          <div className="flex justify-center items-center h-64">
                             <Loader2 className="h-12 w-12 animate-spin text-primary" />
                         </div>
                     ) : historyData?.results && historyData.results.length > 0 ? (
                         <>
-                            <Table>
+                            {/* Mobile View: A list of cards */}
+                            <div className="space-y-3 md:hidden">
+                                {historyData.results.map(item => (
+                                    <MobileTransactionCard key={item.id} item={item} />
+                                ))}
+                            </div>
+
+                            {/* Desktop View: A full table */}
+                            <Table className="hidden md:table">
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead className="w-[50%]">Description</TableHead>
@@ -79,16 +122,21 @@ const HistoryPage = () => {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {historyData.results.map(item => <TransactionRow key={item.id} item={item} />)}
+                                    {historyData.results.map(item => (
+                                        <DesktopTransactionRow key={item.id} item={item} />
+                                    ))}
                                 </TableBody>
                             </Table>
-                            <PaginationControls
-                                currentPage={currentPage}
-                                totalPages={historyData.total_pages}
-                                onPageChange={handlePageChange}
-                                hasNext={!!historyData.next}
-                                hasPrev={!!historyData.previous}
-                            />
+
+                            <div className="mt-6">
+                                <PaginationControls
+                                    currentPage={currentPage}
+                                    totalPages={historyData.total_pages}
+                                    onPageChange={handlePageChange}
+                                    hasNext={!!historyData.next}
+                                    hasPrev={!!historyData.previous}
+                                />
+                            </div>
                         </>
                     ) : (
                         <div className="text-center py-16 border-2 border-dashed rounded-xl p-4 mt-3">

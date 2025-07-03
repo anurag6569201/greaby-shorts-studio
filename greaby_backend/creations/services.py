@@ -8,19 +8,19 @@ def calculate_video_cost(resolution: str, duration: int, n_variants: int) -> Dec
     Calculates the credit cost for generating a video based on its parameters.
     """
     # --- Base Costs ---
-    base_cost = Decimal('2.0') # A flat fee for every video generation
+    base_cost = Decimal('3.0') # A flat fee for every video generation
     
     # --- Resolution Multiplier ---
     resolution_costs = {
         '480p': Decimal('1.0'),
         '720p': Decimal('1.5'),
-        '1080p': Decimal('2.5'),
+        '1080p': Decimal('2.0'),
     }
     resolution_multiplier = resolution_costs.get(resolution, Decimal('1.0'))
     
     # --- Duration Cost ---
-    # Example: 0.5 credits per second
-    duration_cost = Decimal(duration) * Decimal('0.5')
+    # Example: 0.1 credits per second
+    duration_cost = Decimal(duration) * Decimal('0.2')
     
     # --- Total Cost Calculation ---
     single_video_cost = base_cost + (duration_cost * resolution_multiplier)
