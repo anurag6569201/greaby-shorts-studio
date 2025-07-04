@@ -64,7 +64,7 @@ background-image:
 /* --- Media Area (Video/Status) --- */
 /* This now adapts to its content's aspect ratio */
 .fancy-card__view {
-  height: 83%;
+  height: 75%;
   left: 0;
   top: 0;
   right: 0;

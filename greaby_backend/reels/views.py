@@ -8,6 +8,7 @@ from creations.models import VideoCreation
 from audio_creations.models import AudioCreation
 from .serializers import ReelCreateSerializer, ReelResponseSerializer, ReelUpdateSerializer
 from .tasks import combine_video_and_audio, generate_subtitles_for_reel
+from .costs import SUBTITLE_GENERATION_COST
 
 class ReelViewSet(viewsets.ModelViewSet):
     
@@ -70,7 +71,7 @@ class ReelViewSet(viewsets.ModelViewSet):
         if not reel.audio_creation or not reel.audio_creation.text_input:
             return Response({"detail": "Source audio or its text script is missing."}, status=status.HTTP_400_BAD_REQUEST)
             
-        subtitle_cost = 1.0
+        subtitle_cost = SUBTITLE_GENERATION_COST
         user = request.user
         if user.credit_balance < subtitle_cost:
             return Response({"detail": f"Insufficient credits. This action costs {subtitle_cost} credits."}, status=status.HTTP_402_PAYMENT_REQUIRED)

@@ -65,16 +65,21 @@ const VideoGenerator = () => {
     const navigate = useNavigate();
     const submissionLock = useRef(false);
 
+    // FIX: Added staleTime to prevent excessive refetching on window focus
+    const staleTime = 60 * 1000; // 1 minute
+
     const { data: activeVideosData, isLoading: isLoadingActive, isFetching: isFetchingActive } = useQuery({
         queryKey: ['videoCreations', activePage],
         queryFn: () => api.get(`/videos/?page=${activePage}`).then(res => res.data),
         keepPreviousData: true,
+        staleTime,
     });
 
     const { data: failedVideosData, isLoading: isLoadingFailed, isFetching: isFetchingFailed } = useQuery({
         queryKey: ['failedVideoCreations', failedPage],
         queryFn: () => api.get(`/videos/failed/?page=${failedPage}`).then(res => res.data),
         keepPreviousData: true,
+        staleTime,
         enabled: view === 'failed',
     });
 
@@ -83,10 +88,17 @@ const VideoGenerator = () => {
         onSuccess: (response) => {
             const newCreation = response.data;
             toast.success("Video generation started!", { description: "Your new creation will appear in your library shortly." });
+            
+            // This optimistic update ensures the new item appears instantly
             queryClient.setQueryData(['videoCreations', 1], (oldData) => {
                 const oldResults = oldData?.results ?? [];
-                return { ...oldData, count: (oldData?.count ?? 0) + 1, results: [newCreation, ...oldResults] };
+                // Create a deep copy to ensure immutability
+                const newData = JSON.parse(JSON.stringify(oldData ?? { results: [], count: 0 }));
+                newData.results = [newCreation, ...oldResults];
+                newData.count += 1;
+                return newData;
             });
+
             if (activePage !== 1) setActivePage(1);
             if (view !== 'active') setView('active');
             queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
@@ -110,8 +122,11 @@ const VideoGenerator = () => {
             const queryKey = view === 'active' ? ["videoCreations", activePage] : ["failedVideoCreations", failedPage];
             queryClient.setQueryData(queryKey, (oldData) => {
                 if (!oldData) return oldData;
-                const newResults = oldData.results.filter(v => v.id !== videoId);
-                return { ...oldData, count: oldData.count - 1, results: newResults };
+                // Create a deep copy for immutability
+                const newData = JSON.parse(JSON.stringify(oldData));
+                newData.results = newData.results.filter(v => v.id !== videoId);
+                newData.count -=1;
+                return newData;
             });
             setDeletingVideo(null);
         },

@@ -24,6 +24,42 @@ export const FancyCreationCard = ({ creation, cardVariants, variant = 1, onDelet
   
   const cardClassName = `fancy-card variant-${variant}`;
 
+  const renderStatusPlaceholder = () => {
+    if (creation.live_status) {
+      return (
+        <div>
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
+          <p className="text-sm text-slate-600 font-medium">{creation.live_status}</p>
+        </div>
+      );
+    }
+    
+    switch (creation.status) {
+      case 'processing':
+      case 'pending':
+        return (
+          <div>
+            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
+            <p className="text-sm text-slate-600 font-medium capitalize">Processing...</p>
+          </div>
+        );
+      case 'failed':
+        return (
+          <div>
+            <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+            <p className="text-sm text-red-600 font-semibold">Failed</p>
+          </div>
+        );
+      default:
+        return (
+            <div>
+                <AlertCircle className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
+                <p className="text-sm text-yellow-600 font-semibold">Unknown State</p>
+            </div>
+        );
+    }
+  };
+
   const renderMedia = () => {
     if (creation.status === 'completed' && creation.result_url) {
       return shouldLoadVideo ? (
@@ -36,14 +72,10 @@ export const FancyCreationCard = ({ creation, cardVariants, variant = 1, onDelet
         </div>
       );
     }
-    const isProcessing = !['completed', 'failed'].includes(creation.status);
+    
     return (
       <div className="w-full h-full flex items-center justify-center text-center p-4">
-        {isProcessing ? (
-          <div><Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" /><p className="text-sm text-slate-600 font-medium capitalize">{creation.status}...</p></div>
-        ) : (
-          <div><AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" /><p className="text-sm text-red-600 font-semibold">Failed</p></div>
-        )}
+        {renderStatusPlaceholder()}
       </div>
     );
   };
@@ -56,8 +88,8 @@ export const FancyCreationCard = ({ creation, cardVariants, variant = 1, onDelet
           <div className="absolute top-2 right-2 transition-opacity z-20">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button size="icon" className="h-8 w-8 rounded-full bg-transparent hover:bg-transparent focus-visible:ring-offset-0 focus-visible:ring-ring:none">
-                  <MoreHorizontal className="h-4 w-4" />
+                <Button size="icon" className="h-8 w-8 rounded-full bg-black/20 hover:bg-black/40 text-white focus-visible:ring-offset-0 focus-visible:ring-0">
+                  <MoreHorizontal className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -74,11 +106,12 @@ export const FancyCreationCard = ({ creation, cardVariants, variant = 1, onDelet
           </div>
         </div>
         <div className="fancy-card__content">
-          <p className="text-sm font-medium line-clamp-2 text-gray-800" title={creation.prompt}>
-            {creation.prompt.length > 40 ? `${creation.prompt.slice(0, 40)}...` : creation.prompt}
-          </p>
+          {/* FIX: Changed <p> to <div> to prevent nesting errors and for better semantics. */}
+          <div className="text-sm font-medium line-clamp-2 text-gray-800" title={creation.prompt}>
+            {creation.prompt}
+          </div>
           <div className="flex justify-between items-center mt-1">
-            <p className="text-xs text-gray-500">{new Date(creation.created_at).toLocaleString()}</p>
+            <p className="text-xs text-gray-500">{new Date(creation.created_at).toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}</p>
           </div>
         </div>
       </motion.div>

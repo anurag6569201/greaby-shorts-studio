@@ -52,13 +52,6 @@ class VideoCreationViewSet(viewsets.ModelViewSet):
                     credit_cost=cost,
                     **validated_data
                 )
-                
-                CreditUsage.objects.create(
-                    user=user,
-                    usage_type=CreditUsage.UsageType.VIDEO,
-                    credits_spent=cost,
-                    description=f"Prompt: {validated_data['prompt'][:100]}..."
-                )
 
         except Exception as e:
             return Response({"detail": "An unexpected error occurred. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

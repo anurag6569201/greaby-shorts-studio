@@ -21,6 +21,7 @@ import { VOICE_OPTIONS as STATIC_VOICE_DETAILS } from "./components/voices";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PaginationControls } from "@/components/ui/PaginationControls";
 
+// These components are assumed to be correct and are shortened for brevity
 const GENDER_OPTIONS = [{ value: "all", label: "All Genders" }, { value: "Female", label: "Female" }, { value: "Male", label: "Male" }, { value: "Child", label: "Child" }];
 const LANGUAGE_GROUPS = [{ value: "all", label: "All Languages" }, ...Array.from(new Set(STATIC_VOICE_DETAILS.map((v) => v.group))).map((group) => ({ value: group, label: group }))];
 const getTierFromMultiplier = (multiplier) => { if (multiplier <= 0.0) return { name: "Free", label: "Free", icon: <Star className="h-3 w-3 mr-1" />, multiplier: "0x" }; if (multiplier <= 1.0) return { name: "Local Pro", label: "Local Pro", icon: <IndianRupee className="h-3 w-3 mr-1" />, multiplier: "1x" }; if (multiplier <= 1.5) return { name: "Global", label: "Global", icon: null, multiplier: "1.5x" }; if (multiplier < 4.0) return { name: "Premium AI", label: "Premium AI", icon: <Sparkles className="h-3 w-3 mr-1" />, multiplier: `${multiplier}x` }; return { name: "Ultra HD", label: "Ultra HD", icon: <Zap className="h-3 w-3 mr-1" />, multiplier: `${multiplier}x` }; };
@@ -32,14 +33,53 @@ const AudioCard = ({ audio, onEdit, onDelete }) => {
     const [shouldLoadAudio, setShouldLoadAudio] = useState(false);
     const audioRef = React.useRef(null);
     useEffect(() => { if (shouldLoadAudio && audioRef.current) { audioRef.current.play(); } }, [shouldLoadAudio]);
+
+    // FINAL FIX: The definitive logic for rendering the status.
+    const renderStatus = () => {
+        // The `live_status` key is added by the WebSocket context for real-time updates.
+        const liveStatus = audio.live_status || audio.status_message;
+
+        // If the status is NOT 'completed' but there IS a live status, show the live status.
+        if (audio.status !== 'completed' && liveStatus) {
+            return (
+                <div className="text-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
+                    <p className="text-xs text-muted-foreground mt-2">{liveStatus}</p>
+                </div>
+            );
+        }
+
+        // Handle the final, permanent statuses from the database.
+        switch(audio.status) {
+            case 'completed':
+                return shouldLoadAudio ? (
+                    <audio ref={audioRef} controls src={audio.result_url} className="w-full h-10" />
+                ) : (
+                    <Button variant="outline" className="w-full h-10 bg-white/30" onClick={() => setShouldLoadAudio(true)}>
+                        <Play className="h-4 w-4 mr-2" />Preview
+                    </Button>
+                );
+            case 'failed':
+                return (
+                    <div className="text-center">
+                        <AlertCircle className="h-6 w-6 text-destructive mx-auto" />
+                        <p className="text-xs text-destructive mt-2 font-semibold">Failed</p>
+                    </div>
+                );
+            case 'pending':
+            case 'processing':
+            default: // Catches any other in-progress states
+                return (
+                    <div className="text-center">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
+                        <p className="text-xs text-muted-foreground mt-2 capitalize">{audio.status}...</p>
+                    </div>
+                );
+        }
+    };
+
+    // The button should be disabled if the status is anything other than 'completed' or 'failed'.
     const isProcessing = !['completed', 'failed'].includes(audio.status);
-    
-    let statusText = audio.status;
-    if (isProcessing && typeof audio.status === "string" && audio.status && !['pending', 'processing'].includes(audio.status.toLowerCase())) {
-        statusText = `Processing (${audio.status})...`;
-    } else if (isProcessing) {
-        statusText = `${audio.status}...`
-    }
 
     return (
       <Card className="overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-shadow audio-card-fancy">
@@ -49,7 +89,11 @@ const AudioCard = ({ audio, onEdit, onDelete }) => {
             <CardDescription className="text-xs">{new Date(audio.created_at).toLocaleString()}</CardDescription>
           </div>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="flex-shrink-0" disabled={isProcessing && audio.status !== 'failed'}><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="flex-shrink-0" disabled={isProcessing}>
+                    <MoreHorizontal className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => onEdit(audio)} disabled={isProcessing}><Edit className="mr-2 h-4 w-4" /> Edit Title</DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -60,7 +104,7 @@ const AudioCard = ({ audio, onEdit, onDelete }) => {
           </DropdownMenu>
         </CardHeader>
         <CardContent className="flex-grow flex items-center justify-center p-4 pt-0 mt-0" style={{zIndex: 1,color:'#8a8aa4'}}>
-          {audio.status === 'completed' && audio.result_url ? (shouldLoadAudio ? (<audio ref={audioRef} controls src={audio.result_url} className="w-full h-10" />) : (<Button variant="outline" className="w-full h-10 bg-white/30" onClick={() => setShouldLoadAudio(true)}><Play className="h-4 w-4 mr-2" />Preview</Button>)) : (isProcessing ? (<div className="text-center"><Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" /><p className="text-xs text-muted-foreground mt-2 capitalize">{statusText}</p></div>) : (<div className="text-center"><AlertCircle className="h-6 w-6 text-destructive mx-auto" /><p className="text-xs text-destructive mt-2 font-semibold">Failed</p></div>))}
+          {renderStatus()}
         </CardContent>
       </Card>
     );
@@ -94,6 +138,7 @@ const AudioList = ({ data, isLoading, onEdit, onDelete, currentPage, onPageChang
     );
 };
 
+// The main AudioGenerator component is assumed to be correct and is shortened for brevity.
 const AudioGenerator = () => {
     const [formData, setFormData] = useState({ title: "", text_input: "", voice: "hi-IN-SwaraNeural", response_format: "mp3", speed: 1.0 });
     const [editingAudio, setEditingAudio] = useState(null);
@@ -111,12 +156,14 @@ const AudioGenerator = () => {
         queryKey: ["audioCreations", activePage],
         queryFn: () => api.get(`/audios/?page=${activePage}`).then((res) => res.data),
         keepPreviousData: true,
+        staleTime: 60 * 1000,
     });
     
     const { data: failedAudiosData, isLoading: isLoadingFailed, isFetching: isFetchingFailed } = useQuery({
         queryKey: ["failedAudioCreations", failedPage],
         queryFn: () => api.get(`/audios/failed?page=${failedPage}`).then((res) => res.data),
         keepPreviousData: true,
+        staleTime: 60 * 1000,
         enabled: view === 'failed',
     });
 
@@ -150,7 +197,6 @@ const AudioGenerator = () => {
     const { mutate: updateAudio, isLoading: isUpdating } = useMutation({
         mutationFn: ({ id, title }) => api.patch(`/audios/${id}/`, { title }),
         onSuccess: (response) => {
-            const updatedAudio = response.data;
             toast.success("Audio updated successfully!");
             queryClient.invalidateQueries({ queryKey: ["audioCreations"] });
             queryClient.invalidateQueries({ queryKey: ["failedAudioCreations"] });
@@ -176,7 +222,6 @@ const AudioGenerator = () => {
 
     const handleChange = (key, value) => setFormData((prev) => ({ ...prev, [key]: value }));
     const cost = useMemo(() => calculateAudioCostBreakdown(formData.text_input, formData.response_format, formData.voice, voiceOptionsData), [formData.text_input, formData.response_format, formData.voice, voiceOptionsData]);
-
     const handleSubmit = () => { if (submissionLock.current) return; if (!formData.text_input.trim()) return toast.warning("Please enter some text to generate audio."); submissionLock.current = true; const payload = {...formData}; if (!payload.title.trim()) payload.title = `Audio for: "${payload.text_input.substring(0, 30)}..."`; generateAudio(payload); };
     const handleUpdateTitle = () => { if (!newTitle.trim() || !editingAudio) return; updateAudio({ id: editingAudio.id, title: newTitle }); };
     const handleDeleteConfirm = () => { if (!deletingAudio) return; deleteAudio(deletingAudio.id); };
@@ -208,23 +253,18 @@ const AudioGenerator = () => {
                         <RefreshCw className={`h-4 w-4 mr-2 ${(view === 'active' ? isFetchingActive : isFetchingFailed) ? "animate-spin" : ""}`}/>Refresh
                     </Button>
                 </div>
-
                 <div className="flex border-b">
                     <Button variant="ghost" onClick={() => setView('active')} className={`rounded-none border-b-2 ${view === 'active' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'}`}>Active</Button>
                     <Button variant="ghost" onClick={() => setView('failed')} className={`rounded-none border-b-2 ${view === 'failed' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'}`}>Failed & Refunded</Button>
                 </div>
-
                 {view === 'active' && (
                     <AudioList data={activeAudiosData} isLoading={isLoadingActive} onEdit={(audio) => { setEditingAudio(audio); setNewTitle(audio.title); }} onDelete={(audio) => setDeletingAudio(audio)} currentPage={activePage} onPageChange={setActivePage} />
                 )}
-
                 {view === 'failed' && (
                     <AudioList data={failedAudiosData} isLoading={isLoadingFailed} onEdit={(audio) => { setEditingAudio(audio); setNewTitle(audio.title); }} onDelete={(audio) => setDeletingAudio(audio)} currentPage={failedPage} onPageChange={setFailedPage} />
                 )}
             </div>
-
             <Dialog open={!!editingAudio} onOpenChange={() => setEditingAudio(null)}><DialogContent><DialogHeader><DialogTitle>Edit Audio Title</DialogTitle><DialogDescription>Give your audio a new title to easily identify it later.</DialogDescription></DialogHeader><div className="grid gap-4 py-4"><Label htmlFor="title">Title</Label><Input id="title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)}/></div><DialogFooter><Button variant="outline" onClick={() => setEditingAudio(null)}>Cancel</Button><Button onClick={handleUpdateTitle} disabled={isUpdating}>{isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{" "}Save Changes</Button></DialogFooter></DialogContent></Dialog>
-            
             <Dialog open={!!deletingAudio} onOpenChange={() => setDeletingAudio(null)}>
                 <DialogContent>
                     <DialogHeader>

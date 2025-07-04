@@ -1,3 +1,5 @@
+# src/transcriptions/tasks.py
+
 import time
 import requests
 import json
@@ -154,10 +156,13 @@ def process_transcription_job(self, creation_id: str):
             creation.status = Transcription.Status.COMPLETED
             creation.error_message = None
 
-            if creation.source_file:
-                creation.source_file.delete(save=False)
+            # --- FIX: REMOVED THE DELETION OF THE SOURCE FILE ---
+            # if creation.source_file:
+            #     creation.source_file.delete(save=False)
 
-            creation.save(update_fields=['result_file', 'status', 'error_message', 'source_file'])
+            # We are no longer updating `source_file`, so remove it from update_fields
+            creation.save(update_fields=['result_file', 'status', 'error_message'])
+            # --- END FIX ---
             
             CreditUsage.objects.create(
                 user=user,

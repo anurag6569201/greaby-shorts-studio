@@ -22,9 +22,9 @@ const MobileTransactionCard = ({ item }) => {
                         <Icon className={`h-4 w-4 ${colorClass}`} />
                     </div>
                     <div className="overflow-hidden">
-                        <p className="font-medium text-sm truncate">{item.description}                        <Badge variant={isCredit ? "success" : "destructive"} className="mt-1 text-xs">
+                        <div className="font-medium text-sm truncate">{item.description}                        <Badge variant={isCredit ? "success" : "destructive"} className="mt-1 text-xs">
                             {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-                        </Badge></p>
+                        </Badge></div>
                     </div>
                 </div>
                 <div className={`text-right font-semibold ${colorClass} text-base flex-shrink-0`}>{amount}</div>
