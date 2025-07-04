@@ -19,10 +19,10 @@ const listVariants = { visible: { transition: { staggerChildren: 0.07 } } };
 const cardVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
 
 const calculateVideoCost = (resolution, duration, n_variants) => {
-  const base_cost = 2.0;
-  const resolution_costs = { '480p': 1.0, '720p': 1.5, '1080p': 2.5 };
+  const base_cost = 3.0;
+  const resolution_costs = { '480p': 1.0, '720p': 1.5, '1080p': 2.0 };
   const resolution_multiplier = resolution_costs[resolution] || 1.0;
-  const duration_cost = duration * 0.5;
+  const duration_cost = duration * 0.2;
   const total_cost = (base_cost + (duration_cost * resolution_multiplier)) * n_variants;
   return total_cost.toFixed(2);
 };

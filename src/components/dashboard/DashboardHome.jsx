@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useQuery } from "@tanstack/react-query";
-import { Video, Mic, Clapperboard, ArrowRight, Loader2, Coins } from "lucide-react";
+import { Video, Mic, Clapperboard, ArrowRight, Loader2, Coins,FileText,Languages } from "lucide-react";
 import api from "@/services/api";
 import { useNavigate } from "react-router-dom";
 
@@ -44,15 +44,19 @@ const DashboardHome = ({ setActiveTab }) => {
   const { data: stats, isLoading: isLoadingStats } = useQuery({
     queryKey: ['dashboardStats'],
     queryFn: async () => {
-      const [videoRes, audioRes, reelRes] = await Promise.all([
+      const [videoRes, audioRes, reelRes, transcriptionsRes, translationRes] = await Promise.all([
         api.get('/videos/'),
         api.get('/audios/'),
         api.get('/reels/'),
+        api.get('/transcriptions/'),
+        api.get('/translations/'),
       ]);
       return {
         videos: videoRes.data.count,
         audios: audioRes.data.count,
         reels: reelRes.data.count,
+        transcriptions: transcriptionsRes.data.count,
+        translations: translationRes.data.count,
       };
     },
     enabled: !!user,
@@ -64,7 +68,7 @@ const DashboardHome = ({ setActiveTab }) => {
         <h1 className="text-3xl font-bold">Welcome back, {user?.first_name}!</h1>
         <p className="text-muted-foreground">Here's a summary of your creative workspace.</p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Credit Balance</CardTitle>
@@ -78,11 +82,23 @@ const DashboardHome = ({ setActiveTab }) => {
         <StatCard label="Videos Generated" value={stats?.videos ?? 0} icon={Video} isLoading={isLoadingStats} />
         <StatCard label="Audios Generated" value={stats?.audios ?? 0} icon={Mic} isLoading={isLoadingStats} />
         <StatCard label="Reels Assembled" value={stats?.reels ?? 0} icon={Clapperboard} isLoading={isLoadingStats} />
+        <StatCard label="Transcription" value={stats?.transcriptions ?? 0} icon={FileText} isLoading={isLoadingStats} />
+        <StatCard label="Video Dubbing" value={stats?.translations ?? 0} icon={Languages} isLoading={isLoadingStats} />
+      </div>
+      <br />
+      <hr />
+      <div>
+        <h2 className="text-2xl font-semibold tracking-tight">What would you like to create?</h2>
+        <p className="text-sm text-muted-foreground">
+          Choose from one of the options below to get started.
+        </p>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         <ActionCard title="Generate Video" description="Transform your text prompts into stunning short videos." icon={Video} onClick={() => setActiveTab('video')} />
         <ActionCard title="Generate Audio" description="Create professional voiceovers from text with various voices." icon={Mic} onClick={() => setActiveTab('audio')} />
         <ActionCard title="Assemble a Reel" description="Combine your generated videos and audios into a final reel." icon={Clapperboard} onClick={() => setActiveTab('reels')} />
+        <ActionCard title="Transcribe Audio/Video" description="Get a text transcription from an audio or video file." icon={FileText} onClick={() => setActiveTab('transcription')} />
+        <ActionCard title="Translate a Video" description="Translate the audio of an existing video into another language." icon={Languages} onClick={() => setActiveTab('Video Dub')} />
       </div>
     </div>
   );

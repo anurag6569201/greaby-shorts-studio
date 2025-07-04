@@ -26,6 +26,9 @@ INSTALLED_APPS = [
     'creations.apps.CreationsConfig',
     'audio_creations.apps.AudioCreationsConfig',
     'reels.apps.ReelsConfig',
+    'transcriptions.apps.TranscriptionsConfig',
+    'video_translations.apps.VideoTranslationsConfig',
+    
     'channels',
     'notifications.apps.NotificationsConfig',
 ]
@@ -139,6 +142,12 @@ AZURE_SORA_DEPLOYMENT_NAME = config('AZURE_SORA_DEPLOYMENT_NAME', default='sora'
 AZURE_OPENAI_API_KEY = config('AZURE_OPENAI_API_KEY')
 AZURE_SPEECH_KEY = config('AZURE_SPEECH_KEY')
 AZURE_SPEECH_ENDPOINT = config('AZURE_SPEECH_ENDPOINT')
+
+AZURE_VIDEO_TRANSLATION_ENDPOINT = config('AZURE_SPEECH_ENDPOINT')
+AZURE_VIDEO_TRANSLATION_KEY = config('AZURE_SPEECH_KEY')
+
+# --- LINE TO LOAD THE NEW VARIABLE ---
+AZURE_OPENAI_COMPLETIONS_DEPLOYMENT_NAME = config('AZURE_OPENAI_COMPLETIONS_DEPLOYMENT_NAME')
 
 RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID')
 RAZORPAY_KEY_SECRET = config('RAZORPAY_KEY_SECRET')

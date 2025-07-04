@@ -16,14 +16,17 @@ import SettingsPage from "@/components/dashboard/SettingsPage";
 import PricingPage from "@/components/dashboard/PricingPage";
 import HistoryPage from "@/components/dashboard/HistoryPage";
 import ComingSoonPage from "@/components/dashboard/ComingSoonPage"; // Import the new component
+import TranscriptionGenerator from "@/components/dashboard/TranscriptionGenerator"; // Import the new component
+import VideoTranslation from "@/components/dashboard/VideoTranslation"; // Import the new component
 
 const sidebarItems = [
   { id: "home", label: "Home", icon: Home },
   { id: "video", label: "Video", icon: Video },
   { id: "audio", label: "Audio", icon: Mic },
   { id: "reels", label: "Reels", icon: Clapperboard, beta: true },
-  { id: "Transcription", label: "Transcription", icon: MicVocalIcon, soon: true },
-  { id: "Video Dub", label: "Video Dub", icon: LanguagesIcon, soon: true },
+  { id: "transcription", label: "Transcription", icon: MicVocalIcon },
+  // { id: "Video Dub", label: "Video Dub", icon: LanguagesIcon, soon: true },
+  { id: "Video Dub", label: "Video Dub", icon: LanguagesIcon },
   { id: "history", label: "Usage History", icon: History },
 ];
 
@@ -57,20 +60,9 @@ const Dashboard = () => {
       case "pricing": return <PricingPage />;
       case "settings": return <SettingsPage />;
       case "history": return <HistoryPage />;
-      case "Transcription": return (
-        <ComingSoonPage 
-            featureName="AI Transcription"
-            featureDescription="Automatically convert your audio and video files into accurate, time-stamped text with speaker identification."
-            onBack={() => handleSetTab('home')}
-        />
-      );
-      case "Video Dub": return (
-        <ComingSoonPage 
-            featureName="Video Dub"
-            featureDescription="Translate and dub your videos into multiple languages using realistic AI voices, while maintaining lip-sync."
-            onBack={() => handleSetTab('home')}
-        />
-      );
+      case "transcription": return <TranscriptionGenerator />;
+      case "translations": return <VideoTranslation />;
+      case "Video Dub": return <VideoTranslation/>
       default: return <DashboardHome setActiveTab={handleSetTab} />;
     }
   };

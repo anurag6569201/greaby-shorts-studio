@@ -10,6 +10,7 @@ class AbstractBaseCreation(models.Model):
     Reduces code duplication between VideoCreation and AudioCreation.
     """
     class Status(models.TextChoices):
+        UPLOAD_PENDING = 'upload_pending', 'Upload Pending'
         PENDING = 'pending', 'Pending'
         PROCESSING = 'processing', 'Processing'
         COMPLETED = 'completed', 'Completed'

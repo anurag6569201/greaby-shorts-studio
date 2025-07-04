@@ -18,7 +18,7 @@ def calculate_audio_cost(text_input: str, response_format: str, voice: str) -> D
     voice_multiplier = VOICE_MULTIPLIERS.get(voice, DEFAULT_VOICE_MULTIPLIER)
     
     # This is the Base Character Cost, which applies to ALL generations.
-    base_character_cost = Decimal(len(text_input)) / Decimal('1000.0')
+    base_character_cost = Decimal(len(text_input)) / Decimal('3000.0')
 
     # This is the Premium Voice Cost, an additional cost for premium voices.
     # For free voices (multiplier=0.0), this will be zero.
