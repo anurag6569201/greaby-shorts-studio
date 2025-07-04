@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CreditPack, Purchase
+from .models import CreditPack, CreditUsage, Purchase
 
 @admin.register(CreditPack)
 class CreditPackAdmin(admin.ModelAdmin):
@@ -52,3 +52,6 @@ class PurchaseAdmin(admin.ModelAdmin):
     # We should not delete purchase history.
     def has_delete_permission(self, request, obj=None):
         return False
+    
+    
+admin.site.register(CreditUsage)

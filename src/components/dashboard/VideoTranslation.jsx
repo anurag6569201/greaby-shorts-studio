@@ -334,7 +334,7 @@ const VideoTranslation = () => {
                 <hr className="my-4" />
                 <form onSubmit={handleSubmit}>
                     <CardContent className="p-0 space-y-6">
-                        <div {...getRootProps()} className={`relative p-8 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors ${isDragActive ? 'border-primary bg-primary/10' : 'border-input hover:border-primary/50'} ${isUploading ? 'border-primary' : ''}`}>
+                        <div {...getRootProps()} className={`relative p-8 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors ${isDragActive ? 'border-primary bg-primary/10' : 'border-input hover:border-primary/50'} ${isUploading ? 'border-primary' : ''}`} style={{overflowX:'hidden'}}>
                             <input {...getInputProps()} />
                             {isUploading ? (
                                 <div className="space-y-3">

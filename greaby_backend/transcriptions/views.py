@@ -1,5 +1,3 @@
-# transcriptions/views.py
-
 from django.db import transaction
 from django.http import HttpResponse
 from rest_framework import viewsets, status
@@ -58,34 +56,21 @@ class TranscriptionViewSet(viewsets.ModelViewSet):
         
         if user.credit_balance < cost:
             return Response(
-                {"detail": f"Insufficient credits. This action costs {cost}, but you only have {user.credit_balance}."},
+                {"detail": f"Insufficient credits. This action requires {cost}, but you only have {user.credit_balance}."},
                 status=status.HTTP_402_PAYMENT_REQUIRED
             )
             
-        try:
-            with transaction.atomic():
-                user.credit_balance -= cost
-                user.save(update_fields=['credit_balance'])
-                
-                creation = Transcription.objects.create(
-                    user=user,
-                    credit_cost=cost,
-                    **validated_data
-                )
-
-                CreditUsage.objects.create(
-                    user=user,
-                    usage_type=CreditUsage.UsageType.SUBTITLE,
-                    credits_spent=cost,
-                    description=f"Transcription: {creation.title[:100]}"
-                )
-        except Exception as e:
-            return Response({"detail": f"An unexpected error occurred: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        creation = Transcription.objects.create(
+            user=user,
+            credit_cost=cost,
+            status=Transcription.Status.PENDING,
+            **validated_data
+        )
 
         process_transcription_job.delay(str(creation.id))
         
         response_serializer = TranscriptionResponseSerializer(creation, context={'request': request})
-        return Response(response_serializer.data, status=status.HTTP_202_ACCEPTED)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
     def perform_destroy(self, instance):
         if instance.source_file:

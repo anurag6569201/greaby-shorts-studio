@@ -8,11 +8,11 @@ import uuid
 
 from .models import VideoTranslation
 from .serializers import VideoTranslationResponseSerializer
-from .tasks import process_video_translation
+from .tasks import process_video_translation, send_video_translation_update
 from .locales import LOCALE_CHOICES
 from .services import calculate_translation_cost
 from greaby_project.storages import SourceMediaStorage
-from audio_creations.tasks import send_progress_update
+
 
 class VideoTranslationViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'delete', 'head', 'options']
@@ -92,7 +92,7 @@ class VideoTranslationViewSet(viewsets.ModelViewSet):
 
         process_video_translation.delay(str(translation.id))
         
-        send_progress_update(request.user.id, translation.id, "Queued for processing...", 'translation')
+        send_video_translation_update(request.user.id, translation.id, "Queued for processing...", 'pending')
 
         return Response(self.get_serializer(translation).data, status=status.HTTP_200_OK)
 
@@ -119,7 +119,7 @@ class VideoTranslationViewSet(viewsets.ModelViewSet):
 
         process_video_translation.delay(str(translation.id))
 
-        send_progress_update(request.user.id, translation.id, "Re-queued for processing...", 'translation')
+        send_video_translation_update(request.user.id, translation.id, "Re-queued for processing...", 'pending')
 
         serializer = self.get_serializer(translation)
         return Response(serializer.data, status=status.HTTP_200_OK)

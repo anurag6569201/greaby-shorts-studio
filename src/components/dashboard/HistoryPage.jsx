@@ -31,7 +31,7 @@ const MobileTransactionCard = ({ item }) => {
             </div>
 <div className="mt-3 pt-3 border-t text-xs text-muted-foreground flex justify-between items-center">
     <p title={item.details} className="truncate pr-4">
-        {(item.details?.length > 40 ? item.details.slice(0, 40) + '...' : item.details) || 'No additional details'}
+        {(item.details?.length > 30 ? item.details.slice(0, 30) + '...' : item.details) || 'No additional details'}
     </p>
     <p className="flex-shrink-0">{new Date(item.date).toLocaleDateString()}</p>
 </div>
