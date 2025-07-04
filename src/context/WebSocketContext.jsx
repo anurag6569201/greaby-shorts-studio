@@ -1,5 +1,3 @@
-// src/contexts/WebSocketProvider.jsx
-
 import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
@@ -12,10 +10,9 @@ export const useWebSocket = () => useContext(WebSocketContext);
 const getWebSocketURL = (token) => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const hostname = window.location.hostname;
-    // Ensure VITE_APP_WS_URL is set in your .env file for production/staging environments
     const host = (hostname === 'localhost' || hostname === '127.0.0.1')
         ? `${hostname}:8000`
-        : import.meta.env.VITE_APP_WS_URL || window.location.host;
+        : import.meta.env.VITE_APP_WS_URL;
     return `${protocol}//${host}/ws/notifications/?token=${token}`;
 };
 
@@ -37,22 +34,26 @@ export const WebSocketProvider = ({ children }) => {
 
             socket.onopen = () => {
                 console.log("✅ WebSocket connected successfully.");
-                if (reconnectTimeoutId.current) {
-                    clearTimeout(reconnectTimeoutId.current);
-                }
+                clearTimeout(reconnectTimeoutId.current);
             };
 
             socket.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
                     
-                    if (!data) return;
+                    if (!data) {
+                        console.warn("WebSocket message received with empty payload.");
+                        return;
+                    }
 
                     console.log("➡️ WebSocket message received:", data);
 
                     const { event: eventType, creation_type, creation_id, status_message } = data;
 
-                    if (!eventType || !creation_type || !creation_id) return;
+                    if (!eventType || !creation_type || !creation_id) {
+                        console.warn("WebSocket message missing required fields:", data);
+                        return;
+                    }
 
                     const queryKeyMap = {
                         'video': ['videoCreations'],
@@ -63,7 +64,10 @@ export const WebSocketProvider = ({ children }) => {
                     };
 
                     const baseQueryKey = queryKeyMap[creation_type];
-                    if (!baseQueryKey) return;
+                    if (!baseQueryKey) {
+                        console.log(`No query key map for creation_type: ${creation_type}`);
+                        return;
+                    }
 
                     if (eventType.includes('progress')) {
                         queryClient.getQueryCache().findAll({ queryKey: baseQueryKey }).forEach(({ queryKey }) => {
@@ -71,47 +75,30 @@ export const WebSocketProvider = ({ children }) => {
                                 if (!oldData || !oldData.results) return oldData;
                                 
                                 const newData = JSON.parse(JSON.stringify(oldData));
-                                const itemIndex = newData.results.findIndex(item => item.id === creation_id);
                                 
+                                const itemIndex = newData.results.findIndex(item => item.id === creation_id);
                                 if (itemIndex > -1) {
-                                    newData.results[itemIndex].status = data.status || 'processing';
+                                    newData.results[itemIndex].status = data.status || newData.results[itemIndex].status;
+                                    // FIX: Add 'live_status' as an alias for 'status_message' for consistency
                                     newData.results[itemIndex].live_status = status_message;
+                                    newData.results[itemIndex].status_message = status_message;
                                 }
+
                                 return newData;
                             });
                         });
                     } else if (eventType.includes('completed') || eventType.includes('failed')) {
-                        // FIX: Optimistically update the cache with the final status.
-                        queryClient.getQueryCache().findAll({ queryKey: baseQueryKey }).forEach(({ queryKey }) => {
-                            queryClient.setQueryData(queryKey, (oldData) => {
-                               if (!oldData || !oldData.results) return oldData;
-                                
-                                const newData = JSON.parse(JSON.stringify(oldData));
-                                const itemIndex = newData.results.findIndex(item => item.id === creation_id);
-
-                                if (itemIndex > -1) {
-                                    // This is the crucial fix: Set the final status.
-                                    // This immediately updates the UI to show "Completed" or "Failed",
-                                    // which stops the loader and enables the "View Details" button.
-                                    newData.results[itemIndex].status = eventType.includes('completed') ? 'completed' : 'failed';
-                                    
-                                    // Clear the temporary live status message.
-                                    delete newData.results[itemIndex].live_status;
-                                }
-                                return newData;
-                            });
-                        });
-
-                        // Now, invalidate the query to fetch the final, complete data from the server.
-                        // This ensures the local cache is perfectly in sync and has all necessary data,
-                        // like the final audio URL needed for the player.
                         queryClient.invalidateQueries({ queryKey: baseQueryKey });
                         queryClient.invalidateQueries({ queryKey: ['userProfile'] });
 
                         if (eventType.includes('completed')) {
-                            toast.success(`Your ${creation_type} is ready!`, { description: "Click 'View Details' to see the result." });
+                            toast.success(`Your ${creation_type} is ready!`, {
+                                description: "The item in your library has been updated."
+                            });
                         } else {
-                            toast.error(`Your ${creation_type} generation has failed.`, { description: status_message || "An unexpected error occurred." });
+                            toast.error(`Your ${creation_type} generation has failed.`, {
+                                description: "Please check the item for details. Credits (if charged) have been refunded."
+                            });
                         }
                     }
                 } catch (error) {
@@ -125,13 +112,10 @@ export const WebSocketProvider = ({ children }) => {
             };
 
             socket.onclose = (event) => {
-                console.log(`🔌 WebSocket disconnected: Code ${event.code}, Reason: ${event.reason}`);
-                // Don't reconnect for normal closure or auth errors
-                if (event.code === 1000 || event.code === 4003) return; 
-                
-                if (reconnectTimeoutId.current) {
-                    clearTimeout(reconnectTimeoutId.current);
-                }
+                console.log(`🔌 WebSocket disconnected: Code ${event.code}`);
+                if (event.code === 1000) return; 
+
+                clearTimeout(reconnectTimeoutId.current);
                 reconnectTimeoutId.current = setTimeout(() => {
                     console.log("Attempting to reconnect WebSocket...");
                     connect();
@@ -142,11 +126,9 @@ export const WebSocketProvider = ({ children }) => {
         connect();
 
         return () => {
-            if (reconnectTimeoutId.current) {
-                clearTimeout(reconnectTimeoutId.current);
-            }
+            clearTimeout(reconnectTimeoutId.current);
             if (socketRef.current) {
-                socketRef.current.onclose = null; // Prevent onclose from firing on manual close
+                socketRef.current.onclose = null;
                 socketRef.current.close();
                 socketRef.current = null;
             }
