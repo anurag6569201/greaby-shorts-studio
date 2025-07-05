@@ -75,7 +75,7 @@ class TranscriptionViewSet(viewsets.ModelViewSet):
 
                 CreditUsage.objects.create(
                     user=user,
-                    usage_type=CreditUsage.UsageType.SUBTITLE,
+                    usage_type=CreditUsage.UsageType.TRANSCRIPTION,
                     credits_spent=cost,
                     description=f"Transcription: {creation.title[:100]}"
                 )

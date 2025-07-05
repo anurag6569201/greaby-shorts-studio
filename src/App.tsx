@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import PricingPage from "./pages/PricingPage";
+import Demos from "./pages/intro/Demos";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PublicRoute from "./components/auth/PublicRoute";
@@ -51,6 +52,7 @@ const App = () => (
 
               {/* Shared/Marketing Routes */}
               <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/demo" element={<Demos />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/blog" element={<BlogPage />} />
               <Route path="/contact" element={<ContactPage />} />
