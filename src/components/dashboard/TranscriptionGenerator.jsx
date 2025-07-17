@@ -1,15 +1,12 @@
-// src/components/dashboard/TranscriptionGenerator.jsx
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { MicVocalIcon, UploadCloud, FileAudio, Loader2, CheckCircle2, AlertCircle, Trash2, Sparkles, MoreHorizontal, ChevronRight, Eye, Languages as LanguagesIcon, Download, RefreshCw } from "lucide-react";
+import { MicVocalIcon, UploadCloud, FileAudio, Loader2, CheckCircle2, AlertCircle, Trash2, Sparkles, MoreHorizontal, ChevronRight, Eye, Download, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -27,8 +24,8 @@ const formatFileSize = (bytes) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
 
-const StagedFileCard = ({ file, onRemove, onConfigChange }) => (
-    <motion.div layout initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20 }} className="border rounded-lg p-4 flex flex-col md:flex-row items-center gap-4 bg-background relative">
+const StagedFileCard = ({ file, onRemove }) => (
+    <motion.div layout initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20 }} className="border rounded-lg p-4 flex flex-col sm:flex-row items-center gap-4 bg-background relative">
         <div className="flex items-center gap-4 flex-1 w-full">
             <FileAudio className="h-8 w-8 text-primary flex-shrink-0" />
             <div className="flex-1 overflow-hidden">
@@ -36,11 +33,7 @@ const StagedFileCard = ({ file, onRemove, onConfigChange }) => (
                 <p className="text-xs text-muted-foreground">{formatFileSize(file.file.size)}</p>
             </div>
         </div>
-        <div className="flex items-center space-x-3 pt-4 md:pt-0 border-t md:border-none w-full md:w-auto justify-between md:justify-end">
-            <Label htmlFor={`speaker-${file.id}`} className="text-sm flex-shrink-0">Speaker Diarization</Label>
-            <Switch id={`speaker-${file.id}`} checked={file.config.enable_speaker_separation} onCheckedChange={(v) => onConfigChange(file.id, "enable_speaker_separation", v)} />
-        </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8 absolute top-2 right-2 md:relative md:top-auto md:right-auto flex-shrink-0" onClick={() => onRemove(file.id)}>
+        <Button variant="ghost" size="icon" className="h-8 w-8 absolute top-2 right-2 sm:relative sm:top-auto sm:right-auto flex-shrink-0" onClick={() => onRemove(file.id)}>
             <Trash2 className="h-4 w-4" />
         </Button>
     </motion.div>
@@ -56,18 +49,18 @@ const TranscriptionCard = ({ item, onViewDetails, onDelete }) => {
         <motion.div layout>
             <Card className="overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-shadow audio-card-fancy">
                 <CardHeader className="flex-row items-start justify-between pb-2 p-4" style={{zIndex: 1}}>
-                        <div className="flex-1 overflow-hidden">
-                            <CardTitle className="truncate text-base" title={item.title}>{item.title}</CardTitle>
-                            <CardDescription className="text-xs">{new Date(item.created_at).toLocaleString()}</CardDescription>
-                        </div>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" disabled={isProcessing}><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => onViewDetails(item)} disabled={item.status !== 'completed'}><Eye className="mr-2 h-4 w-4" />View Details</DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => onDelete(item)} className="text-red-600 focus:text-red-600 focus:bg-red-50" disabled={isProcessing}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                    <div className="flex-1 overflow-hidden">
+                        <CardTitle className="truncate text-base" title={item.title}>{item.title}</CardTitle>
+                        <CardDescription className="text-xs">{new Date(item.created_at).toLocaleString()}</CardDescription>
+                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" disabled={isProcessing}><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => onViewDetails(item)} disabled={item.status !== 'completed'}><Eye className="mr-2 h-4 w-4" />View Details</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => onDelete(item)} className="text-red-600 focus:text-red-600 focus:bg-red-50" disabled={isProcessing}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </CardHeader>
                 <CardContent className="flex-grow flex items-center justify-left p-4 pt-0 mt-0" style={{zIndex: 1,color:'#8a8aa4'}}>
                     {isProcessing ? (
@@ -100,6 +93,7 @@ const TranscriptionGenerator = () => {
     const [selectedItemJson, setSelectedItemJson] = useState(null);
     const [deletingItem, setDeletingItem] = useState(null);
     const queryClient = useQueryClient();
+    const [playerKey, setPlayerKey] = useState(0);
 
     const { data: transcriptionData, isLoading, isFetching } = useQuery({
         queryKey: ["transcriptions", currentPage],
@@ -137,12 +131,11 @@ const TranscriptionGenerator = () => {
         const newStagedFiles = validFiles.map(file => ({
             id: `${file.name}-${file.size}-${Date.now()}`,
             file,
-            config: { title: file.name.split('.').slice(0, -1).join('.') || file.name, enable_speaker_separation: false, duration_minutes: 1 }
+            config: { title: file.name.split('.').slice(0, -1).join('.') || file.name, duration_minutes: 1 }
         }));
         setStagedFiles(prev => [...prev, ...newStagedFiles]);
     };
 
-    // FIX: Created a dedicated function to remove a file from the staging area.
     const handleRemoveStagedFile = (fileIdToRemove) => {
         setStagedFiles(prev => prev.filter(file => file.id !== fileIdToRemove));
     };
@@ -166,8 +159,9 @@ const TranscriptionGenerator = () => {
     }, [stagedFiles]);
 
     const totalCost = useMemo(() => {
-        const BASE_FEE = 1.0; const COST_PER_MINUTE = 0.25; const SPEAKER_SURCHARGE = 0.50;
-        return stagedFiles.reduce((acc, item) => acc + BASE_FEE + (item.config.duration_minutes * COST_PER_MINUTE) + (item.config.enable_speaker_separation ? SPEAKER_SURCHARGE : 0), 0).toFixed(2);
+        const BASE_FEE = 1.0;
+        const COST_PER_MINUTE = 0.25;
+        return stagedFiles.reduce((acc, item) => acc + BASE_FEE + (item.config.duration_minutes * COST_PER_MINUTE), 0).toFixed(2);
     }, [stagedFiles]);
 
     const handleSubmit = () => {
@@ -177,7 +171,6 @@ const TranscriptionGenerator = () => {
             formData.append('source_file', sf.file);
             formData.append('title', sf.config.title);
             formData.append('source_language', language);
-            formData.append('enable_speaker_separation', sf.config.enable_speaker_separation);
             formData.append('duration_minutes', sf.config.duration_minutes);
             return createTranscriptionMutation.mutateAsync(formData);
         });
@@ -186,6 +179,7 @@ const TranscriptionGenerator = () => {
     };
 
     const handleViewDetails = async (item) => {
+        setPlayerKey(prevKey => prevKey + 1);
         setSelectedItem(item);
         setSelectedItemJson(null);
         try {
@@ -203,7 +197,6 @@ const TranscriptionGenerator = () => {
                 <CardHeader className="p-0"><CardTitle className="flex items-center text-2xl"><MicVocalIcon className="h-6 w-6 mr-3 text-primary" />AI Transcription</CardTitle><CardDescription>Upload audio or video files to generate accurate, time-stamped text.</CardDescription></CardHeader>
                 <hr className="my-4" />
                 <CardContent className="p-0 space-y-6">
-                    {/* RESPONSIVE: Adjusted padding and element sizes for mobile */}
                     <div onDrop={handleFileDrop} onDragOver={(e) => e.preventDefault()} className="relative border-2 border-dashed rounded-xl p-6 text-center flex flex-col items-center justify-center hover:border-primary hover:bg-primary/5 transition-colors md:p-8">
                         <UploadCloud className="h-10 w-10 text-muted-foreground md:h-12 md:w-12" />
                         <h3 className="mt-4 text-base font-semibold md:text-lg">Drag & Drop Files Here</h3>
@@ -213,11 +206,9 @@ const TranscriptionGenerator = () => {
                         </Label>
                         <Input id="file-upload" type="file" multiple className="sr-only" onChange={handleFileSelect} accept="audio/*,video/*" />
                     </div>
-                    {/* FIX: Correctly pass the `handleRemoveStagedFile` function to `onRemove` */}
-                    <AnimatePresence>{stagedFiles.length > 0 && <div className="space-y-4"><h3 className="font-semibold text-lg">Your Files</h3>{stagedFiles.map(file => <StagedFileCard key={file.id} file={file} onRemove={handleRemoveStagedFile} onConfigChange={handleConfigChange} />)}</div>}</AnimatePresence>
+                    <AnimatePresence>{stagedFiles.length > 0 && <div className="space-y-4"><h3 className="font-semibold text-lg">Your Files</h3>{stagedFiles.map(file => <StagedFileCard key={file.id} file={file} onRemove={handleRemoveStagedFile} />)}</div>}</AnimatePresence>
                 </CardContent>
                 {stagedFiles.length > 0 && (
-                     /* RESPONSIVE: The footer now stacks vertically on mobile and has full-width controls */
                      <CardFooter className="p-0 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className='w-full md:w-auto'>
                             <Label>Spoken Language</Label>
@@ -247,7 +238,6 @@ const TranscriptionGenerator = () => {
 
             <hr />
             <div className="space-y-4">
-                 {/* RESPONSIVE: Library header now stacks on small screens */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
                     <h2 className="text-2xl font-bold">Transcription Library</h2>
                     <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ['transcriptions', currentPage] })} disabled={isFetching}>
@@ -260,7 +250,6 @@ const TranscriptionGenerator = () => {
                     </div>
                 ) : transcriptionData?.results?.length > 0 ? (
                     <>
-                        {/* RESPONSIVE: Grid is already responsive with column classes */}
                         <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" layout>
                              <AnimatePresence>
                                 {transcriptionData.results.map(item => <TranscriptionCard key={item.id} item={item} onViewDetails={handleViewDetails} onDelete={setDeletingItem} />)}
@@ -274,12 +263,14 @@ const TranscriptionGenerator = () => {
             </div>
 
             <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
-                <DialogContent className="max-w-4xl w-full">
-                    <DialogHeader>
+                <DialogContent className="max-w-4xl w-full h-[95vh] flex flex-col p-0 sm:p-6">
+                    <DialogHeader className="p-6 pb-2 sm:p-0">
                         <DialogTitle className="truncate">{selectedItem?.title}</DialogTitle>
                         <DialogDescription>Completed on {selectedItem && new Date(selectedItem.created_at).toLocaleString()}</DialogDescription>
                     </DialogHeader>
-                    <TranscriptionPlayer key={selectedItem?.id} item={selectedItem} transcriptJson={selectedItemJson} />
+                    <div className="flex-1 min-h-0 px-2 sm:px-0">
+                        <TranscriptionPlayer key={playerKey} item={selectedItem} transcriptJson={selectedItemJson} />
+                    </div>
                 </DialogContent>
             </Dialog>
             

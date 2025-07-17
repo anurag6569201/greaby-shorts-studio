@@ -64,7 +64,7 @@
     "tailwindcss-animate": "^1.0.7",
     "use-debounce": "^10.0.5",
     "vaul": "^0.9.3",
-    "wavesurfer.js": "^7.9.9",
+    "wavesurfer.js": "^7.10.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
