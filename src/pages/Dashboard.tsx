@@ -9,9 +9,7 @@ import {
 import { Sparkles, Home, Video, Mic, Clapperboard, Settings, LogOut, Menu, CreditCard, Coins, History, MicVocalIcon, Languages as LanguagesIcon, DockIcon } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import DashboardHome from "@/components/dashboard/DashboardHome";
-import VideoGenerator from "@/components/dashboard/VideoGenerator";
 import AudioGenerator from "@/components/dashboard/AudioGenerator";
-import ReelGenerator from "@/components/dashboard/ReelGenerator";
 import SettingsPage from "@/components/dashboard/SettingsPage";
 import PricingPage from "@/components/dashboard/PricingPage";
 import HistoryPage from "@/components/dashboard/HistoryPage";
@@ -22,13 +20,8 @@ import DocumentTranslator from "@/components/dashboard/DocumentTranslator"; // I
 
 const sidebarItems = [
   { id: "home", label: "Home", icon: Home },
-  { id: "video", label: "Video", icon: Video },
   { id: "audio", label: "Audio", icon: Mic },
-  { id: "reels", label: "Reels", icon: Clapperboard, beta: true },
   { id: "transcription", label: "Transcription", icon: MicVocalIcon },
-  // { id: "Video Dub", label: "Video Dub", icon: LanguagesIcon, soon: true },
-  { id: "Video Dub", label: "Video Dub", icon: LanguagesIcon },
-  { id: "docs-translate", label: "Docs-Translate", icon: DockIcon },
   { id: "history", label: "Usage History", icon: History },
 ];
 
@@ -56,16 +49,11 @@ const Dashboard = () => {
   
   const renderContent = () => {
     switch (activeTab) {
-      case "video": return <VideoGenerator />;
       case "audio": return <AudioGenerator />;
-      case "reels": return <ReelGenerator />;
       case "pricing": return <PricingPage />;
       case "settings": return <SettingsPage />;
       case "history": return <HistoryPage />;
       case "transcription": return <TranscriptionGenerator />;
-      case "translations": return <VideoTranslation />;
-      case "Video Dub": return <VideoTranslation/>
-      case "docs-translate": return <DocumentTranslator/>
       default: return <DashboardHome setActiveTab={handleSetTab} />;
     }
   };

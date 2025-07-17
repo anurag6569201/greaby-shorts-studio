@@ -102,12 +102,6 @@ const Hero = () => {
   const gridRef = useRef(null);
   const mouseX = useMotionValue(Infinity);
 
-const videoCards = [
-  { src: placeholder_audio, rotate: -15, y: 25, x: -90 },
-  { src: placeholder_video, rotate: -5,  y: 0,  x: -30 },
-  { src: placeholder_dub, rotate: 5,   y: 0,  x: 30 },
-  { src: placeholder_trans, rotate: 15,  y: 25, x: 90 },
-];
 
 
   return (
@@ -118,7 +112,7 @@ const videoCards = [
             <motion.div variants={fadeIn}>
               <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 font-medium py-1 px-3">
                 <Sparkles className="h-4 w-4 mr-2 text-primary animate-pulse" />
-                SORA & OpenAI POWERED CREATION
+                OpenAI POWERED CREATION
               </Badge>
             </motion.div>
             <motion.h1 variants={fadeIn} className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-slate-900">
@@ -137,52 +131,7 @@ const videoCards = [
             </motion.div>
           </AnimatedInView>
         </div>
-        <div 
-          ref={gridRef}
-          onMouseMove={(e) => mouseX.set(e.pageX)}
-          onMouseLeave={() => mouseX.set(Infinity)}
-          className="relative h-96 w-full hidden md:block"
-        >
-          {videoCards.map((card, i) => {
-            const springConfig = { stiffness: 100, damping: 15, mass: 0.1 };
-            const motionX = useSpring(0, springConfig);
-            const motionY = useSpring(0, springConfig);
-
-            useEffect(() => {
-                const update = mouseX.onChange((v) => {
-                    if (v !== Infinity && gridRef.current) {
-                        const bounds = gridRef.current.getBoundingClientRect();
-                        const newX = (v - bounds.left - bounds.width / 2) / 10;
-                        motionX.set(newX * (i < 2 ? -1 : 1));
-                        motionY.set(Math.abs(newX) * -0.5);
-                    } else {
-                        motionX.set(0);
-                        motionY.set(0);
-                    }
-                });
-                return () => update();
-            }, [mouseX, motionX, motionY, i]);
-
-            return (
-              <motion.div
-                key={i}
-                className="absolute w-48 h-80 top-1/2 left-1/2 origin-bottom bg-white/90  rounded-2xl shadow-2xl"
-                style={{
-                    x: `calc(-50% + ${card.x}px)`,
-                    y: `calc(-50% + ${card.y}px)`,
-                    translateX: motionX,
-                    translateY: motionY,
-                    padding:'50px',
-                }}
-                initial={{ opacity: 0, rotate: card.rotate > 0 ? card.rotate + 10 : card.rotate - 10, scale: 0.9 }}
-                animate={{ opacity: 1, rotate: card.rotate, scale: 1 }}
-                transition={{ delay: 0.3 + i * 0.1, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <img src={card.src} alt="Sample short video" className="w-full h-full object-contain" />
-              </motion.div>
-            )
-          })}
-        </div>
+       
       </div>
     </section>
   );
