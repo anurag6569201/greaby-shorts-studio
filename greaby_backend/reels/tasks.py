@@ -10,14 +10,28 @@ from django.core.files.base import ContentFile
 from mutagen.mp3 import MP3
 
 from .models import Reel
+from billing.models import CreditUsage
 from greaby_project.email_utils import send_template_email
+from .costs import SUBTITLE_GENERATION_COST
+
+def _refund_subtitle_credits(reel: Reel, reason: str):
+    try:
+        with transaction.atomic():
+            reel.refresh_from_db()
+            user = reel.user
+            user.refresh_from_db()
+            
+            user.credit_balance += SUBTITLE_GENERATION_COST
+            user.save(update_fields=['credit_balance'])
+
+            reel.subtitle_status = Reel.SubtitleStatus.FAILED
+            reel.subtitle_error_message = f"Task failed: {reason}"
+            reel.save(update_fields=['subtitle_status', 'subtitle_error_message'])
+    except Exception as e:
+        print(f"CRITICAL: Failed to refund subtitle credits for reel {reel.id}. Error: {e}")
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=120, acks_late=True)
 def combine_video_and_audio(self, reel_id: str):
-    """
-    Combines a video and an audio file using FFmpeg.
-    Downloads source files from cloud storage to a temporary location for processing.
-    """
     try:
         reel = Reel.objects.select_related('video_creation', 'audio_creation').get(id=reel_id)
         reel.status = Reel.Status.PROCESSING
@@ -58,7 +72,6 @@ def combine_video_and_audio(self, reel_id: str):
             reel.error_message = None
             reel.save(update_fields=['result_file', 'status', 'error_message'])
             
-            # --- Send Success Email ---
             email_context = {
                 'creation_type': 'Reel', 'prompt': reel.title,
                 'dashboard_url': f"{settings.FRONTEND_URL}/dashboard?tab=reels"
@@ -74,7 +87,6 @@ def combine_video_and_audio(self, reel_id: str):
             reel.error_message = f"Error: {e}\nOutput: {error_output}"[:1024]
             reel.save(update_fields=['status', 'error_message'])
             
-            # --- Send Failure Email ---
             email_context = {
                 'creation_type': 'Reel', 'prompt': reel.title, 'error': str(e),
                 'dashboard_url': f"{settings.FRONTEND_URL}/dashboard?tab=reels"
@@ -90,14 +102,13 @@ def combine_video_and_audio(self, reel_id: str):
 
 @shared_task(bind=True, max_retries=2)
 def generate_subtitles_for_reel(self, reel_id: str):
-    """Generates an SRT subtitle file from the audio creation's source text."""
+    reel = None
     try:
-        reel = Reel.objects.select_related('audio_creation').get(id=reel_id)
+        reel = Reel.objects.select_related('audio_creation', 'user').get(id=reel_id)
         
         script_text = reel.audio_creation.text_input
         if not script_text: raise ValueError("The source script text is empty.")
         
-        # Download the audio file to a temporary location to read its duration
         with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_audio_file:
             audio_url = reel.audio_creation.result_file.url
             with requests.get(audio_url, stream=True, timeout=60) as r:
@@ -107,7 +118,7 @@ def generate_subtitles_for_reel(self, reel_id: str):
             temp_audio_path = temp_audio_file.name
 
         audio_duration_seconds = MP3(temp_audio_path).info.length
-        os.unlink(temp_audio_path) # Clean up the temp file
+        os.unlink(temp_audio_path)
             
         lines = [line.strip() for line in script_text.split('\n') if line.strip()]
         if not lines: raise ValueError("The source script text is empty after stripping.")
@@ -123,22 +134,25 @@ def generate_subtitles_for_reel(self, reel_id: str):
             start_time = end_time
 
         srt_file = ContentFile(srt_content.encode('utf-8'))
-        reel.subtitle_file.save(f'{reel.id}.srt', srt_file, save=False)
-        reel.subtitle_status = Reel.SubtitleStatus.COMPLETED
-        reel.subtitle_error_message = None
-        reel.save(update_fields=['subtitle_file', 'subtitle_status', 'subtitle_error_message'])
+        
+        with transaction.atomic():
+            reel.subtitle_file.save(f'{reel.id}.srt', srt_file, save=False)
+            reel.subtitle_status = Reel.SubtitleStatus.COMPLETED
+            reel.subtitle_error_message = None
+            reel.save(update_fields=['subtitle_file', 'subtitle_status', 'subtitle_error_message'])
+
+            CreditUsage.objects.create(
+                user=reel.user,
+                usage_type=CreditUsage.UsageType.SUBTITLE,
+                credits_spent=SUBTITLE_GENERATION_COST,
+                description=f"Subtitles for Reel: {reel.title[:100]}"
+            )
         
         return f"Successfully generated subtitles for reel {reel.id}."
 
     except Exception as e:
         error_message = f"Subtitle generation failed: {e}"
         print(error_message)
-        if 'reel' in locals():
-            reel.subtitle_status = Reel.SubtitleStatus.FAILED
-            reel.subtitle_error_message = str(e)[:255]
-            reel.save(update_fields=['subtitle_status', 'subtitle_error_message'])
-            with transaction.atomic():
-                user = reel.user
-                user.credit_balance += 1.0 
-                user.save(update_fields=['credit_balance'])
+        if reel:
+            _refund_subtitle_credits(reel, str(e))
         self.retry(exc=e)

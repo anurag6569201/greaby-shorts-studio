@@ -44,7 +44,8 @@ class CreditUsage(models.Model):
         VIDEO = 'video', 'Video Generation'
         AUDIO = 'audio', 'Audio Generation'
         SUBTITLE = 'subtitle', 'Subtitle Generation'
-        # Add other types here as your app grows
+        VIDEO_TRANSLATION = 'translation', 'Video Translation'
+        TRANSCRIPTION = 'transcription', 'Transcription Generation'
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='credit_usages')

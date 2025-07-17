@@ -25,7 +25,7 @@ class AbstractBaseCreation(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     
     # Cost and Error Logging
-    credit_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    credit_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00,blank=True,null=True)
     error_message = models.TextField(blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)

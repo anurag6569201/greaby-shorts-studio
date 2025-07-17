@@ -21,9 +21,9 @@ const Navbar = () => {
             </div>
             <span className="text-2xl font-bold text-foreground">Greaby</span>
           </Link>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center ">
             <Button variant="ghost" onClick={() => navigate('/pricing')}>Pricing</Button>
-            <Button variant="ghost" onClick={() => navigate('/login')}>Login</Button>
+            <Button variant="ghost" onClick={() => navigate('/demo')}>Demo</Button>
             <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => navigate('/signup')}>Try Free</Button>
           </div>
         </div>

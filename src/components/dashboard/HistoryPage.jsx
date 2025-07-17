@@ -22,16 +22,16 @@ const MobileTransactionCard = ({ item }) => {
                         <Icon className={`h-4 w-4 ${colorClass}`} />
                     </div>
                     <div className="overflow-hidden">
-                        <p className="font-medium text-sm truncate">{item.description}                        <Badge variant={isCredit ? "success" : "destructive"} className="mt-1 text-xs">
+                        <div className="font-medium text-sm truncate">{item.description}                        <Badge variant={isCredit ? "success" : "destructive"} className="mt-1 text-xs">
                             {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-                        </Badge></p>
+                        </Badge></div>
                     </div>
                 </div>
                 <div className={`text-right font-semibold ${colorClass} text-base flex-shrink-0`}>{amount}</div>
             </div>
 <div className="mt-3 pt-3 border-t text-xs text-muted-foreground flex justify-between items-center">
     <p title={item.details} className="truncate pr-4">
-        {(item.details?.length > 40 ? item.details.slice(0, 40) + '...' : item.details) || 'No additional details'}
+        {(item.details?.length > 30 ? item.details.slice(0, 30) + '...' : item.details) || 'No additional details'}
     </p>
     <p className="flex-shrink-0">{new Date(item.date).toLocaleDateString()}</p>
 </div>

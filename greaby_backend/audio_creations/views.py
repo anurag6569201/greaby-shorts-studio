@@ -62,12 +62,6 @@ class AudioCreationViewSet(viewsets.ModelViewSet):
                     **validated_data
                 )
 
-                CreditUsage.objects.create(
-                    user=user,
-                    usage_type=CreditUsage.UsageType.AUDIO,
-                    credits_spent=cost,
-                    description=f"Title: {creation.title[:100]}"
-                )
         except Exception as e:
             return Response({"detail": "An unexpected error occurred. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
