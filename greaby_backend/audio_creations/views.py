@@ -5,7 +5,6 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from .models import AudioCreation
-from billing.models import CreditUsage
 from .serializers import (
     AudioCreationRequestSerializer, 
     AudioCreationResponseSerializer,

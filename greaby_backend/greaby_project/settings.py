@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'reels.apps.ReelsConfig',
     'transcriptions.apps.TranscriptionsConfig',
     'video_translations.apps.VideoTranslationsConfig',
+    'translations.apps.TranslationsConfig',
     
     'channels',
     'notifications.apps.NotificationsConfig',
@@ -145,6 +146,13 @@ AZURE_SPEECH_ENDPOINT = config('AZURE_SPEECH_ENDPOINT')
 
 AZURE_VIDEO_TRANSLATION_ENDPOINT = config('AZURE_SPEECH_ENDPOINT')
 AZURE_VIDEO_TRANSLATION_KEY = config('AZURE_SPEECH_KEY')
+
+AZURE_TRANSLATOR_ENDPOINT = config("AZURE_TRANSLATOR_ENDPOINT")
+AZURE_TRANSLATOR_KEY = config("AZURE_TRANSLATOR_KEY")
+AZURE_TRANSLATOR_API_VERSION = "2023-11-01-preview" 
+
+AZURE_INPUT_DOCUMENT_CONTAINER = "greaby-documents-input"
+AZURE_TRANSLATED_DOCUMENT_CONTAINER = "greaby-documents-output"
 
 # --- LINE TO LOAD THE NEW VARIABLE ---
 AZURE_OPENAI_COMPLETIONS_DEPLOYMENT_NAME = config('AZURE_OPENAI_COMPLETIONS_DEPLOYMENT_NAME')
