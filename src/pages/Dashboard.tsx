@@ -1,38 +1,124 @@
+// src/components/dashboard/Dashboard.js
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sparkles, Home, Video, Mic, Clapperboard, Settings, LogOut, Menu, CreditCard, Coins, History, MicVocalIcon, Languages as LanguagesIcon } from "lucide-react";
+import { Sparkles, Home, Settings, LogOut, Menu, CreditCard, Coins, History, MicVocalIcon, Loader2, AlertCircle, ArrowLeft, Mic } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import DashboardHome from "@/components/dashboard/DashboardHome";
-import VideoGenerator from "@/components/dashboard/VideoGenerator";
 import AudioGenerator from "@/components/dashboard/AudioGenerator";
-import ReelGenerator from "@/components/dashboard/ReelGenerator";
 import SettingsPage from "@/components/dashboard/SettingsPage";
 import PricingPage from "@/components/dashboard/PricingPage";
 import HistoryPage from "@/components/dashboard/HistoryPage";
-import ComingSoonPage from "@/components/dashboard/ComingSoonPage"; // Import the new component
-import TranscriptionGenerator from "@/components/dashboard/TranscriptionGenerator"; // Import the new component
-import VideoTranslation from "@/components/dashboard/VideoTranslation"; // Import the new component
+import TranscriptionGenerator from "@/components/dashboard/TranscriptionGenerator";
+import TranscriptionPlayer from "@/components/dashboard/components/TranscriptionPlayer";
+import api from "@/services/api";
 
 const sidebarItems = [
   { id: "home", label: "Home", icon: Home },
-  { id: "video", label: "Video", icon: Video },
   { id: "audio", label: "Audio", icon: Mic },
-  { id: "reels", label: "Reels", icon: Clapperboard, beta: true },
   { id: "transcription", label: "Transcription", icon: MicVocalIcon },
-  // { id: "Video Dub", label: "Video Dub", icon: LanguagesIcon, soon: true },
-  { id: "Video Dub", label: "Video Dub", icon: LanguagesIcon },
   { id: "history", label: "Usage History", icon: History },
 ];
 
 const getInitials = (firstName = "", lastName = "") => {
   return (firstName[0] || "") + (lastName[0] || "");
 };
+
+const TranscriptionPlayerPage = () => {
+    const [searchParams] = useSearchParams();
+    const transcriptionId = searchParams.get('id');
+  
+     const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsSmallScreen(window.innerWidth < 500);
+    };
+
+    checkScreenSize(); // Check once on mount
+    window.addEventListener("resize", checkScreenSize);
+
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
+
+  const getTrimmedTitle = (title) => {
+    if (isSmallScreen && title.length > 15) {
+      return title.slice(0, 15) + "…";
+    }
+    return title;
+  };
+
+    const { data: item, isLoading: isLoadingItem, isError: isErrorItem, error: itemError } = useQuery({
+        queryKey: ['transcription', transcriptionId],
+        queryFn: () => api.get(`/transcriptions/${transcriptionId}/`).then(res => res.data),
+        enabled: !!transcriptionId,
+        retry: 1,
+    });
+
+    const { data: transcriptJson, isLoading: isLoadingJson, isError: isErrorJson, error: jsonError } = useQuery({
+        queryKey: ['transcriptionJson', transcriptionId],
+        queryFn: () => api.get(`/transcriptions/${transcriptionId}/download?format=json`).then(res => res.data),
+        enabled: !!transcriptionId,
+        retry: 1,
+    });
+
+    if (!transcriptionId) {
+        return (
+            <div className="text-center py-10 bg-background rounded-lg border">
+                <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
+                <h3 className="mt-4 text-lg font-medium">Invalid Request</h3>
+                <p className="mt-1 text-sm text-muted-foreground">No transcription ID was provided.</p>
+                <Button asChild variant="outline" className="mt-6">
+                    <Link to="/dashboard?tab=transcription"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Library</Link>
+                </Button>
+            </div>
+        );
+    }
+    
+    if (isLoadingItem || isLoadingJson) {
+        return <div className="flex justify-center items-center h-full min-h-[50vh]"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
+    }
+
+    if (isErrorItem || isErrorJson) {
+        return (
+             <div className="text-center py-10 bg-background rounded-lg border">
+                <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
+                <h3 className="mt-4 text-lg font-medium">Failed to Load Transcription</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Could not retrieve the requested data. It might be processing or an error occurred.</p>
+                <p className="mt-1 text-xs text-muted-foreground">{itemError?.message || jsonError?.message}</p>
+                <Button asChild variant="outline" className="mt-6">
+                    <Link to="/dashboard?tab=transcription"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Library</Link>
+                </Button>
+            </div>
+        );
+    }
+    
+    return (
+        <div className="space-y-4">
+            <div className="flex justify-between items-center">
+                    <h2
+      className="main-heading-smaller font-bold truncate"
+      title={item.title}
+    >
+      {getTrimmedTitle(item.title)}
+    </h2>
+                <Button asChild variant="outline" size="sm">
+                    <Link to="/dashboard?tab=transcription"><ArrowLeft className="mr-2 h-4 w-4" />Back to Library</Link>
+                </Button>
+            </div>
+            <div className='h-[calc(100vh-15rem)] min-h-[500px]'>
+                 <TranscriptionPlayer item={item} transcriptJson={transcriptJson} />
+            </div>
+        </div>
+    );
+};
+
 
 const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -54,15 +140,12 @@ const Dashboard = () => {
   
   const renderContent = () => {
     switch (activeTab) {
-      case "video": return <VideoGenerator />;
       case "audio": return <AudioGenerator />;
-      case "reels": return <ReelGenerator />;
       case "pricing": return <PricingPage />;
       case "settings": return <SettingsPage />;
       case "history": return <HistoryPage />;
       case "transcription": return <TranscriptionGenerator />;
-      case "translations": return <VideoTranslation />;
-      case "Video Dub": return <VideoTranslation/>
+      case "transcription-player": return <TranscriptionPlayerPage />;
       default: return <DashboardHome setActiveTab={handleSetTab} />;
     }
   };
@@ -111,16 +194,6 @@ const Dashboard = () => {
             <span className="flex-grow">
               {item.label}
             </span>
-            {item.beta && (
-                <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold bg-blue-500/10 text-blue-600 border border-blue-500/20">
-                    Beta
-                </span>
-            )}
-            {item.soon && (
-                <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                    Soon
-                </span>
-            )}
           </button>
         ))}
       </nav>
@@ -189,7 +262,7 @@ const Dashboard = () => {
            <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(true)}>
             <Menu className="h-6 w-6" />
           </Button>
-          <div className="flex-grow text-center text-lg font-semibold capitalize">{activeTab}</div>
+          <div className="flex-grow text-center text-lg font-semibold capitalize">{activeTab.replace('-',' ')}</div>
           <div className="w-10"></div>
         </header>
 

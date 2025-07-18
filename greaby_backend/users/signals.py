@@ -4,7 +4,7 @@ from django.conf import settings
 from greaby_project.email_utils import send_template_email
 
 # Define the starting credit amount in one place
-NEW_USER_CREDIT_GRANT = 10.00
+NEW_USER_CREDIT_GRANT = 5.00
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def grant_credits_to_new_user(sender, instance, created, **kwargs):

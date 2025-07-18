@@ -23,3 +23,13 @@ class SourceMediaStorage(AzureStorage):
 # --- NEW: For the JSON transcription results from Azure ---
 class TranscriptionResultStorage(AzureStorage):
     azure_container = 'greaby-transcription-results'
+    
+# --- NEW: Storage for original uploaded documents ---
+class InputDocumentStorage(AzureStorage):
+    azure_container = 'greaby-documents-input'
+    expiration_secs = 3600
+
+# --- NEW: Storage for translated documents from Azure ---
+class TranslatedDocumentStorage(AzureStorage):
+    azure_container = 'greaby-documents-output'
+    expiration_secs = 3600

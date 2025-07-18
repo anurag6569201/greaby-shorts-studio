@@ -4,7 +4,6 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from .models import VideoCreation
-from billing.models import CreditUsage
 from .serializers import VideoCreationRequestSerializer, VideoCreationResponseSerializer
 from .tasks import generate_video_from_prompt
 from .services import calculate_video_cost

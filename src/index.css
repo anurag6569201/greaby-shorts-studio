@@ -68,3 +68,12 @@
     background-color: #d1d5db;
     border-radius: 4px;
 }
+
+@media (max-width: 450px){
+  .audio-generation-btn{
+    padding: 6px !important;
+  }
+  .main-heading-smaller{
+    font-size: 12px !important;
+  }
+}
