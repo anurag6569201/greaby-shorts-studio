@@ -1,8 +1,10 @@
+// src/components/dashboard/TranscriptionGenerator.js
 import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { MicVocalIcon, UploadCloud, FileAudio, Loader2, CheckCircle2, AlertCircle, Trash2, Sparkles, MoreHorizontal, ChevronRight, Eye, Download, RefreshCw } from "lucide-react";
+import { MicVocalIcon, UploadCloud, FileAudio, Loader2, CheckCircle2, AlertCircle, Trash2, Sparkles, MoreHorizontal, ChevronRight, Eye, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +16,6 @@ import { Progress } from "@/components/ui/progress";
 import { PaginationControls } from "@/components/ui/PaginationControls";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import api from "@/services/api";
-import TranscriptionPlayer from "./components/TranscriptionPlayer";
 
 const formatFileSize = (bytes) => {
     if (bytes === 0) return "0 Bytes";
@@ -89,11 +90,9 @@ const TranscriptionGenerator = () => {
     const [stagedFiles, setStagedFiles] = useState([]);
     const [language, setLanguage] = useState("en-US");
     const [currentPage, setCurrentPage] = useState(1);
-    const [selectedItem, setSelectedItem] = useState(null);
-    const [selectedItemJson, setSelectedItemJson] = useState(null);
     const [deletingItem, setDeletingItem] = useState(null);
     const queryClient = useQueryClient();
-    const [playerKey, setPlayerKey] = useState(0);
+    const navigate = useNavigate();
 
     const { data: transcriptionData, isLoading, isFetching } = useQuery({
         queryKey: ["transcriptions", currentPage],
@@ -178,16 +177,9 @@ const TranscriptionGenerator = () => {
         setStagedFiles([]);
     };
 
-    const handleViewDetails = async (item) => {
-        setPlayerKey(prevKey => prevKey + 1);
-        setSelectedItem(item);
-        setSelectedItemJson(null);
-        try {
-            const response = await api.get(`/transcriptions/${item.id}/download?format=json`);
-            setSelectedItemJson(response.data);
-        } catch (error) {
-            toast.error("Failed to load data for the interactive player.");
-            setSelectedItemJson({ error: "Could not load transcript data." });
+    const handleViewDetails = (item) => {
+        if (item.status === 'completed') {
+            navigate(`/dashboard?tab=transcription-player&id=${item.id}`);
         }
     };
     
@@ -261,18 +253,6 @@ const TranscriptionGenerator = () => {
                      <div className="col-span-full text-center py-16 border-2 border-dashed rounded-xl"><h3 className="text-xl font-semibold">Your library is empty</h3><p className="text-muted-foreground mt-2">Upload files above to begin transcribing.</p></div>
                 )}
             </div>
-
-            <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
-                <DialogContent className="max-w-4xl w-full h-[95vh] flex flex-col p-0 sm:p-6">
-                    <DialogHeader className="p-6 pb-2 sm:p-0">
-                        <DialogTitle className="truncate">{selectedItem?.title}</DialogTitle>
-                        <DialogDescription>Completed on {selectedItem && new Date(selectedItem.created_at).toLocaleString()}</DialogDescription>
-                    </DialogHeader>
-                    <div className="flex-1 min-h-0 px-2 sm:px-0">
-                        <TranscriptionPlayer key={playerKey} item={selectedItem} transcriptJson={selectedItemJson} />
-                    </div>
-                </DialogContent>
-            </Dialog>
             
             <Dialog open={!!deletingItem} onOpenChange={() => setDeletingItem(null)}>
                 <DialogContent>

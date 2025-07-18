@@ -1,3 +1,4 @@
+// src/components/dashboard/TranscriptionPlayer.js
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 import { toast } from 'sonner';
@@ -6,7 +7,7 @@ import {
   ChevronLeft, ChevronRight, FileText, Languages as LanguagesIcon,
   Undo2, Redo2, Replace, Volume2, VolumeX, Maximize2, Minimize2,
   RefreshCw, Baseline, Clock, HelpCircle, Settings2, ChevronsLeft, ChevronsRight,
-  CornerRightDown
+  CornerRightDown, ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,7 +76,7 @@ const ParagraphEditor = React.memo(({ phrase, phraseIndex, onParagraphChange, on
     const handleTimeBlur = (type, value) => { const newTimeInSeconds = parseTime(value); if (isNaN(newTimeInSeconds)) { if (type === 'start') setStartTimeStr(formatTime(phraseStartTime)); else setEndTimeStr(formatTime(phraseEndTime)); return; } const originalTime = type === 'start' ? phraseStartTime : phraseEndTime; if (Math.abs(newTimeInSeconds - originalTime) > 0.001) { onTimestampChange(phraseIndex, type, newTimeInSeconds); } };
     const handleKeyDown = (e) => { e.stopPropagation(); if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'y')) { e.stopPropagation(); } };
     
-    return (<div className="flex flex-col sm:flex-row items-start gap-3 mb-4 group p-2 rounded-md hover:bg-muted/50 transition-colors"><div className="flex-shrink-0 flex sm:flex-col items-center gap-2 w-full sm:w-auto"><TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:text-foreground" onClick={() => handleSeek(phraseStartTime)}><Play className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>Play from here</p></TooltipContent></Tooltip></TooltipProvider><div className="flex items-center gap-1 p-1 rounded-md border bg-muted/30"><Clock className="h-3 w-3 text-muted-foreground" /><Input value={startTimeStr} onChange={(e) => setStartTimeStr(e.target.value)} onBlur={(e) => handleTimeBlur('start', e.target.value)} className="w-24 h-6 text-xs font-mono text-center" /><span className="text-muted-foreground">-</span><Input value={endTimeStr} onChange={(e) => setEndTimeStr(e.target.value)} onBlur={(e) => handleTimeBlur('end', e.target.value)} className="w-24 h-6 text-xs font-mono text-center" /></div></div><Textarea ref={textareaRef} value={text} onChange={(e) => setText(e.target.value)} onBlur={handleTextBlur} onKeyDown={handleKeyDown} className="w-full text-base leading-relaxed p-2 border-blue-200 focus-visible:ring-blue-400 bg-blue-50/50 dark:bg-blue-900/10" rows={1} /></div>);
+    return (<div className="flex flex-col sm:flex-row items-start gap-1 mb-4 group p-2 rounded-md hover:bg-muted/50 transition-colors"><div className="flex-shrink-0 flex items-center gap-2 w-full sm:w-auto" style={{flexDirection:'row-reverse'}}><TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:text-foreground" onClick={() => handleSeek(phraseStartTime)}><Play className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>Play from here</p></TooltipContent></Tooltip></TooltipProvider><div className="flex flex-wrap items-center gap-1 rounded-md bg-muted/30" style={{flexDirection:'column'}}><Input value={startTimeStr} onChange={(e) => setStartTimeStr(e.target.value)} onBlur={(e) => handleTimeBlur('start', e.target.value)} className="w-30 h-9 text-xs font-mono text-center" /><Input value={endTimeStr} onChange={(e) => setEndTimeStr(e.target.value)} onBlur={(e) => handleTimeBlur('end', e.target.value)} className="w-30 h-9 text-xs font-mono text-center" /></div></div><Textarea ref={textareaRef} value={text} onChange={(e) => setText(e.target.value)} onBlur={handleTextBlur} onKeyDown={handleKeyDown} className="w-full text-base leading-relaxed p-2 border-blue-200 focus-visible:ring-blue-400 bg-blue-50/50 dark:bg-blue-900/10" rows={1} /></div>);
 });
 ParagraphEditor.displayName = 'ParagraphEditor';
 
@@ -90,7 +91,7 @@ const TranscriptionPlayer = ({ item, transcriptJson }) => {
     const wavesurferRef = useRef(null);
     const transcriptContainerRef = useRef(null);
     const searchInputRef = useRef(null);
-    const [waveformNode, setWaveformNode] = useState(null);
+    const waveformContainerRef = useRef(null);
     
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
@@ -100,6 +101,7 @@ const TranscriptionPlayer = ({ item, transcriptJson }) => {
     const [isMuted, setIsMuted] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isWaveformReady, setIsWaveformReady] = useState(false);
+    const [isLoadingAudio, setIsLoadingAudio] = useState(false);
     
     const [isEditing, setIsEditing] = useState(false);
     const [isParagraphEditing, setIsParagraphEditing] = useState(false);
@@ -122,31 +124,76 @@ const TranscriptionPlayer = ({ item, transcriptJson }) => {
         return transcript.recognizedPhrases.flatMap(p => p.nBest?.[0]?.words || []);
     }, [transcript]);
     
-    useEffect(() => { setTranscript(transcriptJson); if (transcriptJson) { setHistory([transcriptJson]); setHistoryIndex(0); } }, [transcriptJson]);
-    
     useEffect(() => {
-        if (waveformNode) {
-            const ws = WaveSurfer.create({ container: waveformNode, waveColor: '#A8B5C0', progressColor: '#3B82F6', cursorColor: '#1E40AF', barWidth: 2, barRadius: 3, responsive: true, height: 60, normalize: true });
+        const audioUrl = item?.source_url;
+        const waveformEl = waveformContainerRef.current;
+        if (!waveformEl || !audioUrl || !transcript) {
+            return;
+        }
+        setIsWaveformReady(false);
+        setIsLoadingAudio(true);
+        setCurrentTime(0);
+        setDuration(0);
+        setIsPlaying(false);
+        if (wavesurferRef.current) {
+            wavesurferRef.current.destroy();
+        }
+        try {
+            const ws = WaveSurfer.create({
+                container: waveformEl,
+                waveColor: '#A8B5C0',
+                progressColor: '#3B82F6',
+                cursorColor: '#1E40AF',
+                barWidth: 2,
+                barRadius: 3,
+                responsive: true,
+                height: 60,
+                normalize: true,
+            });
             wavesurferRef.current = ws;
-            ws.on('ready', (d) => { setDuration(d); setIsWaveformReady(true); });
+            ws.on('ready', (d) => {
+                setDuration(d);
+                setIsWaveformReady(true);
+                setIsLoadingAudio(false);
+            });
             ws.on('audioprocess', (time) => setCurrentTime(time));
+            ws.on('seek', (time) => setCurrentTime(time));
             ws.on('play', () => setIsPlaying(true));
             ws.on('pause', () => setIsPlaying(false));
-            ws.on('finish', () => { setIsPlaying(false); ws.seekTo(0); setCurrentTime(0); });
-            ws.on('seeking', (time) => setCurrentTime(time));
-            ws.on('error', (e) => { console.error('WaveSurfer error:', e); setIsWaveformReady(false); toast.error("Error Loading Audio", { description: "The audio file could not be loaded. This might be a network or CORS issue." }); });
-            return () => { ws.destroy(); };
+            ws.on('finish', () => {
+                setIsPlaying(false);
+                ws.seekTo(0);
+                setCurrentTime(0);
+            });
+            ws.on('error', (e) => {
+                setIsWaveformReady(false);
+                setIsLoadingAudio(false);
+                toast.error("Error Loading Audio", { description: "The audio file could not be loaded. Check console for details (e.g., CORS)." });
+            });
+            ws.load(audioUrl);
+        } catch (error) {
+            console.error("Failed to create or load WaveSurfer instance:", error);
+            setIsLoadingAudio(false);
         }
-    }, [waveformNode]);
+ 
+        return () => {
+            if (wavesurferRef.current) {
+                wavesurferRef.current.destroy();
+                wavesurferRef.current = null;
+            }
+        };
+    }, [item?.source_url, transcript]);
 
-    useEffect(() => {
-        if (wavesurferRef.current && item?.source_url) {
-            setIsWaveformReady(false); setCurrentTime(0); setDuration(0); setIsPlaying(false);
-            wavesurferRef.current.load(item.source_url);
-        }
-    }, [item?.source_url, wavesurferRef]);
+
+    useEffect(() => { setTranscript(transcriptJson); if (transcriptJson) { setHistory([transcriptJson]); setHistoryIndex(0); } }, [transcriptJson]);
     
-    useEffect(() => { const ws = wavesurferRef.current; if (ws && isWaveformReady) { ws.setVolume(isMuted ? 0 : volume); ws.setPlaybackRate(playbackRate); } }, [volume, isMuted, playbackRate, isWaveformReady]);
+    useEffect(() => { 
+        const ws = wavesurferRef.current; 
+        if (ws && isWaveformReady) { 
+            ws.setVolume(isMuted ? 0 : volume); 
+            ws.setPlaybackRate(playbackRate); 
+        } 
+    }, [volume, isMuted, playbackRate, isWaveformReady]);
 
     const saveToHistory = useCallback((newTranscript) => { const newHistory = [...history.slice(0, historyIndex + 1), newTranscript]; setHistory(newHistory); setHistoryIndex(newHistory.length - 1); }, [history, historyIndex]);
     const handleUndo = useCallback(() => { if (historyIndex > 0) { const newIndex = historyIndex - 1; setTranscript(history[newIndex]); setHistoryIndex(newIndex); } }, [history, historyIndex]);
@@ -156,9 +203,10 @@ const TranscriptionPlayer = ({ item, transcriptJson }) => {
     useEffect(() => { handleSearch(); }, [handleSearch]);
     
     const scrollToWord = useCallback((wordIndex) => { const wordElement = transcriptContainerRef.current?.querySelector(`[data-word-index="${wordIndex}"]`); if (wordElement) { wordElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); } }, []);
+    
     const handlePlayPause = useCallback(() => { if (isWaveformReady) { wavesurferRef.current?.playPause(); } }, [isWaveformReady]);
     const changePlaybackRate = useCallback((direction) => { if (!isWaveformReady) return; const currentIndex = PLAYBACK_RATES.indexOf(playbackRate); const newIndex = Math.max(0, Math.min(PLAYBACK_RATES.length - 1, currentIndex + direction)); setPlaybackRate(PLAYBACK_RATES[newIndex]); }, [playbackRate, isWaveformReady]);
-    const handleSeek = useCallback((time) => { if (wavesurferRef.current && isWaveformReady && duration > 0) { const newTime = Math.max(0, Math.min(duration, time)); wavesurferRef.current.seekTo(newTime / duration); setCurrentTime(newTime); } }, [isWaveformReady, duration]);
+    const handleSeek = useCallback((time) => { if (wavesurferRef.current && isWaveformReady && duration > 0) { const newTime = Math.max(0, Math.min(duration, time)); wavesurferRef.current.seekTo(newTime / duration); } }, [isWaveformReady, duration]);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -188,6 +236,7 @@ const TranscriptionPlayer = ({ item, transcriptJson }) => {
     const performReplace = (indicesToReplace) => { if (!replaceTerm && replaceTerm !== '') return; let newTranscript = JSON.parse(JSON.stringify(transcript)); let globalWordIndex = 0; const flags = caseSensitive ? 'g' : 'gi'; const pattern = wholeWord ? `\\b${searchTerm}\\b` : searchTerm; const searchRegex = new RegExp(pattern, flags); newTranscript.recognizedPhrases.forEach(phrase => { let phraseDisplayNeedsUpdate = false; phrase.nBest[0].words.forEach(word => { if (indicesToReplace.includes(globalWordIndex)) { word.word = word.word.replace(searchRegex, replaceTerm); phraseDisplayNeedsUpdate = true; } globalWordIndex++; }); if (phraseDisplayNeedsUpdate) { const newDisplayText = phrase.nBest[0].words.map(w => w.word).join(' '); phrase.nBest.forEach(nBestItem => { nBestItem.display = newDisplayText; nBestItem.lexical = newDisplayText.toLowerCase(); }); } }); setTranscript(newTranscript); saveToHistory(newTranscript); handleSearch(); };
     const handleReplace = () => { if (searchResults.length === 0 || currentResultIndex === -1) return; performReplace([searchResults[currentResultIndex]]); };
     const handleReplaceAll = () => { if (searchResults.length === 0) return; performReplace(searchResults); };
+    
     const handleExport = ({ format, options }) => {
         let content, mimeType, extension;
         const to_srt_vtt = (type) => { let output = type === 'vtt' ? 'WEBVTT\n\n' : ''; let count = 1; transcript.recognizedPhrases.forEach(phrase => { if (phrase.nBest[0].words?.length > 0) { const startTime = phrase.offsetInTicks / TICKS_PER_SECOND; const endTime = (phrase.offsetInTicks + phrase.durationInTicks) / TICKS_PER_SECOND; const timeSeparator = type === 'vtt' ? '.' : ','; output += `${count++}\n${formatTime(startTime).replace('.', timeSeparator)} --> ${formatTime(endTime).replace('.', timeSeparator)}\n${phrase.nBest[0].display}\n\n`; } }); return output; };
@@ -196,6 +245,7 @@ const TranscriptionPlayer = ({ item, transcriptJson }) => {
         switch (format) { case 'txt': content = to_plain_text(options); mimeType = 'text/plain'; extension = 'txt'; break; case 'srt': content = to_srt_vtt('srt'); mimeType = 'text/plain'; extension = 'srt'; break; case 'vtt': content = to_srt_vtt('vtt'); mimeType = 'text/vtt'; extension = 'vtt'; break; case 'csv': content = to_csv(); mimeType = 'text/csv'; extension = 'csv'; break; case 'json': content = JSON.stringify(transcript, null, 2); mimeType = 'application/json'; extension = 'json'; break; default: return; }
         const blob = new Blob([content], { type: mimeType }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `${item?.title?.replace(/[^a-z0-9]/gi, '_') || 'transcript'}.${extension}`; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
     };
+
     const toggleFullscreen = () => { const elem = transcriptContainerRef.current?.parentElement?.parentElement; if (!elem) return; if (!document.fullscreenElement) { elem.requestFullscreen().catch(err => alert(`Error: ${err.message}`)); } else { document.exitFullscreen(); } };
     useEffect(() => { const onFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement); document.addEventListener('fullscreenchange', onFullscreenChange); return () => document.removeEventListener('fullscreenchange', onFullscreenChange); }, []);
 
@@ -203,20 +253,20 @@ const TranscriptionPlayer = ({ item, transcriptJson }) => {
     if (transcript.error) return <div className="flex items-center justify-center h-full text-red-500"><AlertCircle className="w-5 h-5 mr-2" />{transcript.error}</div>;
     
     return (
-        <div className={cn("flex flex-col gap-4 h-full bg-background", isFullscreen && "fixed inset-0 z-50 p-4 bg-background")}>
+        <div className={cn("flex flex-col gap-4 h-full", isFullscreen && "fixed inset-0 z-50 p-4 bg-background")}>
             <div className="flex items-center gap-2 border-b pb-2 flex-wrap">
-                <Button variant={isEditing ? 'secondary' : 'outline'} size="sm" onClick={() => setIsEditing(!isEditing)}><Edit className="w-4 h-4 mr-2" />{isEditing ? 'Finish Editing' : 'Edit Transcript'}</Button>
+                <Button variant={isEditing ? 'outline' : 'outline'} size="sm" onClick={() => setIsEditing(!isEditing)}><Edit className="w-4 h-4 mr-2" />{isEditing ? 'Finish Editing' : 'Edit Transcript'}</Button>
                 {isEditing && (<div className="flex gap-1"><TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" onClick={handleUndo} disabled={historyIndex <= 0}><Undo2 className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Undo (Ctrl+Z)</p></TooltipContent></Tooltip></TooltipProvider><TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" onClick={handleRedo} disabled={historyIndex >= history.length - 1}><Redo2 className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Redo (Ctrl+Y)</p></TooltipContent></Tooltip></TooltipProvider><TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant={isParagraphEditing ? 'default' : 'outline'} size="icon" onClick={() => setIsParagraphEditing(!isParagraphEditing)}><Baseline className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>{isParagraphEditing ? 'Word-by-word editing' : 'Paragraph editing'}</p></TooltipContent></Tooltip></TooltipProvider></div>)}
                 <div className="flex-grow"></div>
                 <div className="flex gap-1 items-center"><TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" onClick={() => setShowSearchPanel(!showSearchPanel)}><Search className="w-4 h-4" /></Button></TooltipTrigger><TooltipContent><p>Search / Replace (Ctrl+F)</p></TooltipContent></Tooltip></TooltipProvider><Popover><PopoverTrigger asChild><Button variant="outline" size="icon"><Settings2 className="w-4 h-4" /></Button></PopoverTrigger><PopoverContent className="w-64"><div className="space-y-4"><div className="flex items-center justify-between"><Label htmlFor="low-confidence-switch">Highlight low confidence</Label><Switch id="low-confidence-switch" checked={showLowConfidence} onCheckedChange={setShowLowConfidence} /></div></div></PopoverContent></Popover><KeyboardShortcutsHelp /><Button variant="outline" size="icon" onClick={toggleFullscreen}>{isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</Button></div>
             </div>
-            {showSearchPanel && (<div className="p-3 bg-muted/50 rounded-lg space-y-2"><div className="flex flex-wrap gap-2 items-center"><div className="relative flex-grow min-w-[200px]"><Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" /><Input ref={searchInputRef} placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-8" />{searchResults.length > 0 && (<span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{currentResultIndex + 1}/{searchResults.length}</span>)}</div><div className="flex"><TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigateSearchResults(-1)} disabled={searchResults.length === 0}><ChevronLeft className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Previous</TooltipContent></Tooltip></TooltipProvider><TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigateSearchResults(1)} disabled={searchResults.length === 0}><ChevronRight className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Next</TooltipContent></Tooltip></TooltipProvider></div><Input placeholder="Replace with..." value={replaceTerm} onChange={(e) => setReplaceTerm(e.target.value)} className="h-9 flex-grow min-w-[150px]" /><Button variant="outline" size="sm" onClick={handleReplace} disabled={!searchTerm || searchResults.length === 0}><CornerRightDown className="w-4 h-4 mr-2" />Replace</Button><Button variant="outline" size="sm" onClick={handleReplaceAll} disabled={!searchTerm || searchResults.length === 0}><RefreshCw className="w-4 h-4 mr-2" />Replace All</Button></div><div className="flex flex-wrap gap-x-4 gap-y-2 items-center"><div className="flex items-center space-x-2"><Switch id="case-sensitive" checked={caseSensitive} onCheckedChange={setCaseSensitive} /><Label htmlFor="case-sensitive">Case sensitive</Label></div><div className="flex items-center space-x-2"><Switch id="whole-word" checked={wholeWord} onCheckedChange={setWholeWord} /><Label htmlFor="whole-word">Whole word</Label></div></div></div>)}
+            {showSearchPanel && (<div className="p-3 bg-muted/50 rounded-lg space-y-2" ><div className="flex flex-wrap gap-2 items-center"><div className="relative flex-grow"><Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" /><Input ref={searchInputRef} placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-8" />{searchResults.length > 0 && (<span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{currentResultIndex + 1}/{searchResults.length}</span>)}</div><div className="flex"><TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigateSearchResults(-1)} disabled={searchResults.length === 0}><ChevronLeft className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Previous</TooltipContent></Tooltip></TooltipProvider><TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navigateSearchResults(1)} disabled={searchResults.length === 0}><ChevronRight className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Next</TooltipContent></Tooltip></TooltipProvider></div><Input placeholder="Replace with..." value={replaceTerm} onChange={(e) => setReplaceTerm(e.target.value)} className="h-9 flex-grow" /><Button variant="outline" size="sm" onClick={handleReplace} disabled={!searchTerm || searchResults.length === 0}><CornerRightDown className="w-4 h-4 mr-2" />Replace</Button><Button variant="outline" size="sm" onClick={handleReplaceAll} disabled={!searchTerm || searchResults.length === 0}><RefreshCw className="w-4 h-4 mr-2" />Replace All</Button></div><div className="flex flex-wrap gap-x-4 gap-y-2 items-center"><div className="flex items-center space-x-2"><Switch id="case-sensitive" checked={caseSensitive} onCheckedChange={setCaseSensitive} /><Label htmlFor="case-sensitive">Case sensitive</Label></div><div className="flex items-center space-x-2"><Switch id="whole-word" checked={wholeWord} onCheckedChange={setWholeWord} /><Label htmlFor="whole-word">Whole word</Label></div></div></div>)}
             <div ref={transcriptContainerRef} className="prose prose-sm max-w-none p-4 border rounded-lg overflow-y-auto bg-background flex-grow leading-relaxed min-h-0">
                 {isEditing && isParagraphEditing ? (<div>{transcript.recognizedPhrases.map((phrase, phraseIndex) => (<ParagraphEditor key={`${phrase.offsetInTicks}-${phraseIndex}`} phrase={phrase} phraseIndex={phraseIndex} onParagraphChange={handleParagraphChange} onTimestampChange={handleTimestampChange} handleSeek={handleSeek} />))}</div>) : (<div>{flatWords.map((word, index) => { const currentTicks = currentTime * TICKS_PER_SECOND; const isActive = currentTicks >= word.offsetInTicks && currentTicks < (word.offsetInTicks + word.durationInTicks); const progress = isActive ? Math.min(100, ((currentTicks - word.offsetInTicks) / word.durationInTicks) * 100) : 0; return ( <WordItem key={`${word.offsetInTicks}-${index}`} word={word} index={index} isActive={isActive} isSearchResult={searchResults.includes(index)} isCurrentSearchResult={searchResults[currentResultIndex] === index} progress={progress} handleSeek={handleSeek} showLowConfidence={showLowConfidence} /> ); })}</div>)}
             </div>
             <div className="p-2 sm:p-3 border bg-muted/50 rounded-lg flex flex-col gap-3">
-                <div className="flex w-full items-center gap-2 sm:gap-3"><span className="text-xs font-mono text-muted-foreground w-20 text-center">{formatTime(currentTime)}</span><div className="w-full relative h-[60px]"><div ref={setWaveformNode} className="w-full h-full" />{!isWaveformReady && (<div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm"><Loader2 className="w-6 h-6 animate-spin text-primary" /><span className="ml-2 text-sm text-muted-foreground">Loading audio...</span></div>)}</div><span className="text-xs font-mono text-muted-foreground w-20 text-center">{formatTime(duration)}</span></div>
-                <div className="flex w-full items-center justify-between gap-2">
+                <div className="flex w-full items-center gap-2 sm:gap-3"><span className="text-xs font-mono text-muted-foreground w-16 sm:w-20 text-center">{formatTime(currentTime)}</span><div className="w-full relative h-[60px]"><div ref={waveformContainerRef} className="w-full h-full" />{isLoadingAudio && (<div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm"><Loader2 className="w-6 h-6 animate-spin text-primary" /><span className="ml-2 text-sm text-muted-foreground">Loading audio...</span></div>)}</div><span className="text-xs font-mono text-muted-foreground w-16 sm:w-20 text-center">{formatTime(duration)}</span></div>
+                <div className="flex w-full flex-wrap items-center justify-center gap-y-2 gap-x-4 sm:justify-between">
                     <div className="flex items-center gap-1 sm:gap-2">
                         <TooltipProvider><Tooltip><TooltipTrigger asChild><Button onClick={() => handleSeek(currentTime - 15)} size="icon" variant="ghost" className="w-8 h-8 flex-shrink-0" disabled={!isWaveformReady}><ChevronsLeft className="w-5 h-5" /></Button></TooltipTrigger><TooltipContent>Skip back 15s (Shift+Left)</TooltipContent></Tooltip></TooltipProvider>
                         <Button onClick={handlePlayPause} size="icon" className="w-10 h-10 flex-shrink-0" disabled={!isWaveformReady}>{isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}</Button>
@@ -233,4 +283,4 @@ const TranscriptionPlayer = ({ item, transcriptJson }) => {
     );
 };
 
-export default TranscriptionPlayer; 
+export default TranscriptionPlayer;

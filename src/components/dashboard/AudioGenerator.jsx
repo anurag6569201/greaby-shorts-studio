@@ -242,7 +242,7 @@ const AudioGenerator = () => {
                 </CardContent>
                 <CardFooter className="flex items-center justify-between p-0 pt-6">
                     <div className="text-sm flex items-center gap-2"><span className="text-muted-foreground">Est. Cost: </span><span className="font-bold text-primary">{cost.total} Credits</span><TooltipProvider><Tooltip><TooltipTrigger><Info className="h-4 w-4 text-muted-foreground cursor-pointer" /></TooltipTrigger><TooltipContent className="text-xs"><div className="space-y-1 p-1 font-medium"><p>Breakdown:</p><div className="pl-2 font-normal text-muted-foreground"><div>Platform Fee: {cost.breakdown.platformFee?.toFixed(2)}</div><div>Base Usage: {cost.breakdown.baseCharacterCost?.toFixed(2)}</div>{cost.breakdown.premiumVoiceCost > 0 && <div>Voice Premium: {cost.breakdown.premiumVoiceCost?.toFixed(2)}</div>}{cost.breakdown.formatSurcharge > 0 && <div>Format Fee: {cost.breakdown.formatSurcharge?.toFixed(2)}</div>}</div><hr className="my-1" /><p>Total: {cost.total}</p></div></TooltipContent></Tooltip></TooltipProvider></div>
-                    <Button onClick={handleSubmit} disabled={isGenerating || !formData.text_input.trim()} size="lg">{isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}{" "}Generate Audio</Button>
+                    <Button className="audio-generation-btn" onClick={handleSubmit} disabled={isGenerating || !formData.text_input.trim()} size="lg">{isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}{" "}Generate Audio</Button>
                 </CardFooter>
             </Card>
             <hr />
