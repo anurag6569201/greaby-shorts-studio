@@ -2,27 +2,16 @@ from rest_framework import serializers
 from .models import DocumentTranslation
 
 class DocumentTranslationRequestSerializer(serializers.ModelSerializer):
-    """
-    Serializer for requesting a new document translation.
-    Handles file upload and validates language selections.
-    """
     class Meta:
         model = DocumentTranslation
         fields = ('input_document', 'source_language', 'target_language')
 
     def validate(self, data):
-        """
-        Check that source and target languages are not the same.
-        """
-        if data['source_language'] == data['target_language']:
+        if data.get('source_language') != 'auto' and data.get('source_language') == data.get('target_language'):
             raise serializers.ValidationError("Source and target languages must be different.")
         return data
 
 class DocumentTranslationResponseSerializer(serializers.ModelSerializer):
-    """
-    Serializer for representing a DocumentTranslation job in API responses.
-    Provides secure, expiring URLs to both the input and translated documents.
-    """
     input_document_url = serializers.SerializerMethodField()
     translated_document_url = serializers.SerializerMethodField()
 

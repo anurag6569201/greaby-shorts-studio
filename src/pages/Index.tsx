@@ -3,13 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Sparkles, Zap, Star, Bot, ShieldCheck, Type, Mic, Download, Plus, Minus, ArrowRight, Twitter, Youtube, Github, FileText } from "lucide-react";
+// EDIT: Added 'Globe' icon for the new translation feature.
+import { Sparkles, Zap, Bot, ShieldCheck, Type, Mic, Download, Plus, Minus, ArrowRight, Twitter, Youtube, Github, FileText, Globe } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, useInView, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
 import { cn } from "@/lib/utils";
 import Navbar from "./intro/Navbar";
 import Footer from "./intro/Footer";
+import texxt_image from '/intro/test.gif'
 
+// NO CHANGE: This component provides the interactive background gradient effect.
 const InteractiveCursor = () => {
   const [isClient, setIsClient] = useState(false);
   useEffect(() => { setIsClient(true); }, []);
@@ -39,6 +42,7 @@ const InteractiveCursor = () => {
   );
 };
 
+// NO CHANGE: This is the magnetic button component used for CTAs.
 const MagneticButton = ({ children, className, ...props }) => {
   const ref = useRef(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -64,6 +68,7 @@ const MagneticButton = ({ children, className, ...props }) => {
   );
 };
 
+// NO CHANGE: This is a helper component for triggering animations when elements scroll into view.
 const AnimatedInView = ({ children, variants, className = "", amount = 0.2, once = true }) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once, amount });
@@ -74,6 +79,7 @@ const AnimatedInView = ({ children, variants, className = "", amount = 0.2, once
   );
 };
 
+// NO CHANGE: This component is for creating gradient text effects.
 const GradientText = ({ children, className = "" }) => (
   <span className={cn("bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent", className)}>
     {children}
@@ -90,6 +96,7 @@ const containerStagger = {
   visible: { transition: { staggerChildren: 0.1, delayChildren: 0.2 } },
 };
 
+// EDIT: The Hero section has been updated to reflect the broader range of AI tools.
 const Hero = () => {
   const navigate = useNavigate();
 
@@ -101,14 +108,14 @@ const Hero = () => {
             <motion.div variants={fadeIn}>
               <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 font-medium py-1 px-3">
                 <Sparkles className="h-4 w-4 mr-2 text-primary animate-pulse" />
-                AI-POWERED AUDIO TOOLS
+                YOUR COMPLETE AI CONTENT SUITE
               </Badge>
             </motion.div>
             <motion.h1 variants={fadeIn} className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-slate-900">
-              Lifelike Voice & <GradientText>Flawless Subtitles.</GradientText>
+              Create, Transcribe, <GradientText>and Translate.</GradientText>
             </motion.h1>
             <motion.p variants={fadeIn} className="text-lg md:text-xl text-slate-600 mb-10 max-w-xl mx-auto md:mx-0">
-              Generate ultra-realistic voiceovers from text, or transcribe any audio/video to create perfect subtitles in seconds.
+              Generate lifelike voiceovers, get flawless transcriptions, and translate documents instantly with our suite of powerful AI tools.
             </motion.p>
             <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
               <MagneticButton size="lg" className="bg-primary text-primary-foreground text-lg px-8 py-6 shadow-primary/30" onClick={() => navigate('/signup')}>
@@ -120,24 +127,36 @@ const Hero = () => {
             </motion.div>
           </AnimatedInView>
         </div>
+
+        <div className="new_space_style">
+          <div className="stack">
+  <div className="card">
+    <div className="image">
+      <img src={texxt_image} alt="" />
+    </div>
+  </div>
+</div>
+        </div>
+
       </div>
     </section>
   );
 };
 
+// EDIT: The Bento Grid now includes "Document Translation" and is balanced with a 6-item layout.
 const BentoGridFeatures = () => {
   const features = [
-    { title: "Realistic AI Voices", description: "Choose from 98 ultra-realistic voices to narrate your script perfectly. Powered by the latest text-to-speech AI.", icon: <Mic className="h-8 w-8 text-primary" />, className: "md:col-span-2", },
+    { title: "98+ Realistic AI Voices", description: "Choose from a vast library of ultra-realistic voices to narrate your script perfectly. Powered by the latest text-to-speech AI.", icon: <Mic className="h-8 w-8 text-primary" />, className: "md:col-span-2", },
     { title: "Automatic Transcription", description: "Generate accurate SRT subtitles from your audio or video files with a single click. Boost your content's reach!", icon: <FileText className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
-    { title: "Voice Control", description: "Fine-tune your audio with simple controls for voice speed, pitch, and tone to match your exact needs.", icon: <Bot className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
-    { title: "Blazing Fast Generation", description: "From text to ready-to-download audio in seconds. Our efficient engine saves you valuable time.", icon: <Zap className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
-    { title: "Pay-As-You-Go Credits", description: "No monthly subscriptions. Buy credits and use them for audio generation or transcription as you need. They never expire.", icon: <ShieldCheck className="h-8 w-8 text-primary" />, className: "md:col-span-2", },
+    { title: "Instant Document Translation", description: "Translate your documents into any language with cutting-edge accuracy, preserving format and context.", icon: <Globe className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
+    { title: "Advanced Drawing Tool", description: "Draw realistic image based on raw drawings and basic drawing skills. (Coming Soon)", icon: <Bot className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
+    { title: "Pay-As-You-Go Credits", description: "No monthly subscriptions. Buy credits and use them for any tool you need. They never expire.", icon: <ShieldCheck className="h-8 w-8 text-primary" />, className: "md:col-span-1", },
   ];
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
       <AnimatedInView variants={fadeIn} className="text-center mb-16">
-        <h2 className="text-4xl font-bold tracking-tighter mb-4 text-slate-900">An Entire Audio Suite, In Your Browser</h2>
-        <p className="text-slate-600 max-w-2xl mx-auto">This is more than just a generator. It's a full-stack workflow for perfect audio and subtitles.</p>
+        <h2 className="text-4xl font-bold tracking-tighter mb-4 text-slate-900">An Entire AI Toolkit, In Your Browser</h2>
+        <p className="text-slate-600 max-w-2xl mx-auto">This is more than just a single tool. It's a full-stack workflow for all your content needs.</p>
       </AnimatedInView>
       <AnimatedInView variants={containerStagger} className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {features.map((feature) => (
@@ -153,18 +172,19 @@ const BentoGridFeatures = () => {
   );
 };
 
+// EDIT: The "How It Works" section is now more generalized to cover all services.
 const HowItWorks = () => {
   const steps = [
-    { icon: <Type className="h-8 w-8 text-primary" />, title: "1. Provide Your Text", description: "Write or paste your script to generate a high-quality, natural-sounding voiceover in seconds.", rotate: -3, y: 0 },
-    { icon: <FileText className="h-8 w-8 text-secondary" />, title: "2. Or Upload a File", description: "Need subtitles? Upload any audio or video file and our AI will transcribe it for you.", rotate: 2, y: 20 },
-    { icon: <Download className="h-8 w-8 text-primary" />, title: "3. Download Your Assets", description: "Export your generated voiceover as an MP3 or your transcription as an SRT file, ready for use.", rotate: -1, y: 5 },
+    { icon: <Plus className="h-8 w-8 text-primary" />, title: "1. Choose a Tool & Upload", description: "Select a service—voiceover, transcription, or translation—and provide your text or upload your file.", rotate: -3, y: 0 },
+    { icon: <Zap className="h-8 w-8 text-secondary" />, title: "2. Let Our AI Do the Work", description: "Our powerful AI engine processes your request in seconds, ensuring high-quality and accurate results.", rotate: 2, y: 20 },
+    { icon: <Download className="h-8 w-8 text-primary" />, title: "3. Download Your Asset", description: "Export your generated voiceover as an MP3, your transcription as an SRT, or your translated document.", rotate: -1, y: 5 },
   ];
   return (
     <section className="py-20 sm:py-28 overflow-hidden bg-transparent">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <AnimatedInView variants={fadeIn} className="text-center mb-20">
           <h2 className="text-4xl font-bold tracking-tighter mb-4 text-slate-900">It's Dangerously Simple.</h2>
-          <p className="text-slate-600 max-w-2xl mx-auto">Just a few clicks stand between you and professional-grade audio content.</p>
+          <p className="text-slate-600 max-w-2xl mx-auto">Just a few clicks stand between you and professional-grade AI-powered content.</p>
         </AnimatedInView>
         <AnimatedInView variants={containerStagger} className="grid md:grid-cols-3 gap-12 md:gap-8 items-start">
           {steps.map((step, i) => (
@@ -178,6 +198,7 @@ const HowItWorks = () => {
   );
 };
 
+// NO CHANGE: The testimonials are strong and still relevant to your core services.
 const DraggableTestimonials = () => {
   const testimonials = [
     { name: "Casey Neistat", role: "Filmmaker", avatar: "/avatars/casey.jpg", content: "The voice quality is indistinguishable from human. I use it for all my voiceover work now. Saves me hours.", rotate: -3 },
@@ -200,12 +221,13 @@ const DraggableTestimonials = () => {
   );
 };
 
+// EDIT: A new question has been added to the FAQ to address the range of services.
 const Faq = () => {
   const faqs = [
-    { question: "What are credits and how do they work?", answer: "Credits are our pay-as-you-go currency. You buy a pack of credits, and each audio generation or transcription task uses a certain amount. Credits never expire and you can see the cost before you start." },
-    { question: "Can I use the generated audio for commercial purposes?", answer: "Absolutely. Any content you create with your credits is yours to use for any purpose, including monetization on platforms like YouTube, podcasts, and audiobooks." },
-    { question: "Is this difficult to use?", answer: "Not at all. Our workflow is designed to be incredibly simple: Generate your audio from text or get transcriptions from a file, then download your asset. It's a straightforward process." },
-    { question: "What if my audio generation or transcription fails?", answer: "We have a robust system in place. If any job fails due to a technical error on our end, the credits for that task are automatically and instantly refunded to your account." },
+    { question: "What are credits and how do they work?", answer: "Credits are our pay-as-you-go currency. You buy a pack of credits, and each task (voice generation, transcription, translation) uses a certain amount. Credits never expire and you can see the cost before you start." },
+    { question: "What tools does your platform offer?", answer: "We provide a suite of AI tools, including text-to-speech with over 98 voices, audio/video transcription for subtitles, and document translation. We are constantly working on adding more tools to the platform." },
+    { question: "Can I use the generated content for commercial purposes?", answer: "Absolutely. Any content you create with your credits is yours to use for any purpose, including monetization on platforms like YouTube, podcasts, and audiobooks." },
+    { question: "What if an AI-generated task fails?", answer: "We have a robust system in place. If any job fails due to a technical error on our end, the credits for that task are automatically and instantly refunded to your account." },
   ];
   const [expanded, setExpanded] = useState(0);
   return (
@@ -220,19 +242,21 @@ const Faq = () => {
   );
 };
 
+// EDIT: The final Call To Action has been updated for a broader appeal.
 const Cta = () => {
   const navigate = useNavigate();
   return (
     <section className="py-20 sm:py-28">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <AnimatedInView variants={fadeIn} className="relative rounded-2xl p-10 md:p-16 bg-gradient-to-r from-primary to-secondary text-primary-foreground overflow-hidden shadow-2xl shadow-primary/20">
-          <div className="relative text-center"><h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4">Stop Waiting. Start Voicing.</h2><p className="text-xl text-primary-foreground/80 mb-8">The next era of audio content is here. Are you in?</p><MagneticButton size="lg" className="bg-white text-primary hover:bg-slate-100 text-lg px-10 py-7" onClick={() => navigate('/signup')}>Claim Your Free Credits</MagneticButton></div>
+          <div className="relative text-center"><h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4">Unlock Your Creative Potential.</h2><p className="text-xl text-primary-foreground/80 mb-8">The next era of content creation is here. Are you in?</p><MagneticButton size="lg" className="bg-white text-primary hover:bg-slate-100 text-lg px-10 py-7" onClick={() => navigate('/signup')}>Claim Your Free Credits</MagneticButton></div>
         </AnimatedInView>
       </div>
     </section>
   );
 };
 
+// NO CHANGE: This is the main component that assembles the page.
 const Index = () => {
   return (
     <div className="bg-background text-foreground relative">

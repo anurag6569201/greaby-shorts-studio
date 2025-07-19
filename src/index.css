@@ -69,6 +69,87 @@
     border-radius: 4px;
 }
 
+
+
+
+
+.stack img {
+  display: block;
+}
+
+.stack {
+  width: 55%;
+  max-width: 400px;
+  transition: 0.25s ease;
+}
+
+.stack:hover {
+  transform: rotate(5deg);
+}
+
+.stack:hover .card::before {
+  transform: translateY(-2%) rotate(-4deg);
+}
+
+.stack:hover .card::after {
+  transform: translateY(2%) rotate(4deg);
+}
+
+.stack .card {
+  aspect-ratio: 3 / 2;
+  border: 4px solid;
+  background-color: #fff;
+  position: relative;
+  transition: 0.15s ease;
+  cursor: pointer;
+  padding: 5% 5% 15% 5%;
+}
+
+.stack .card::before,
+.stack .card::after {
+  content: "";
+  display: block;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  border: 4px solid;
+  background-color: #fff;
+  transform-origin: center center;
+  z-index: -1;
+  transition: 0.15s ease;
+  top: 0;
+  left: 0;
+}
+
+.stack .card::before {
+  transform: translateY(-2%) rotate(-6deg);
+}
+
+.stack .card::after {
+  transform: translateY(2%) rotate(6deg);
+}
+
+.stack .image {
+  width: 100%;
+  border: 4px solid;
+  background-color: #eee;
+  aspect-ratio: 1 / 1;
+  position: relative;
+}
+
+.stack .browser-warning {
+  margin-bottom: 4rem;
+}
+.new_space_style{
+  display: flex;
+  justify-content: center;
+}
+@supports (aspect-ratio: 1 / 1) {
+  .browser-warning {
+    display: none;
+  }
+}
+
 @media (max-width: 450px){
   .audio-generation-btn{
     padding: 6px !important;
