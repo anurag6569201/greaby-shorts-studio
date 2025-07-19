@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from decouple import config
 import dj_database_url
+import ssl
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -35,14 +36,6 @@ INSTALLED_APPS = [
 ]
 
 ASGI_APPLICATION = 'greaby_project.asgi.application'
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [config('CELERY_BROKER_URL', default='redis://localhost:6379/1')],
-        },
-    },
-}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -137,6 +130,29 @@ CELERY_TIMEZONE = 'Asia/Kolkata'  # or UTC based on your app
 CELERY_ENABLE_UTC = True
 CELERY_TASK_DEFAULT_RETRY_DELAY = 60  # seconds
 CELERY_TASK_MAX_RETRIES = 3
+# Celery Redis SSL Options (only needed if using rediss://)
+if CELERY_BROKER_URL.startswith("rediss://"):
+    BROKER_USE_SSL = {
+        'ssl_cert_reqs': ssl.CERT_NONE  # or CERT_REQUIRED in production with certs
+    }
+
+if CELERY_RESULT_BACKEND.startswith("rediss://"):
+    REDIS_BACKEND_USE_SSL = {
+        'ssl_cert_reqs': ssl.CERT_NONE
+    }
+else:
+    BROKER_USE_SSL = None
+    REDIS_BACKEND_USE_SSL = None
+    
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [CELERY_BROKER_URL], 
+        },
+    },
+}
+
 
 AZURE_OPENAI_ENDPOINT_URL = config('AZURE_OPENAI_ENDPOINT_URL')
 AZURE_SORA_DEPLOYMENT_NAME = config('AZURE_SORA_DEPLOYMENT_NAME', default='sora')
