@@ -1,14 +1,7 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
+# Allow all search engines to crawl the entire site.
 User-agent: *
 Allow: /
+
+# Provide the location of your sitemap for better indexing.
+# (Make sure to generate a sitemap.xml file later)
+Sitemap: https://greaby.cloud/sitemap.xml
