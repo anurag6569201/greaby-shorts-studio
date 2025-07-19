@@ -18,5 +18,5 @@ urlpatterns = [
     path('api/v1/transcriptions/', include('transcriptions.urls')),
     # path('api/v1/translations/', include('video_translations.urls')), dismental video dubbing generation
     
-    # path('api/v1/doc-translations/', include('translations.urls')),  dismental docs translation generation
+    path('api/v1/doc-translations/', include('translations.urls')),
 ]

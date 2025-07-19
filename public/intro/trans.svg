@@ -17,12 +17,5 @@
     <path fill-rule="evenodd" d="M0 11.5a.5.5 0 0 1 .5-.5H4a.5.5 0 0 1 0 1H.5a.5.5 0 0 1-.5-.5m0-4A.5.5 0 0 1 .5 7H8a.5.5 0 0 1 0 1H.5a.5.5 0 0 1-.5-.5m0-4A.5.5 0 0 1 .5 3H8a.5.5 0 0 1 0 1H.5a.5.5 0 0 1-.5-.5" fill="#1E1E2C"/>
   </g>
 
-  <!-- Added Text -->
-  <text x="8" y="21" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="2.5" font-weight="600" fill="#1E1E2C" text-anchor="middle">
-    Transcription
-  </text>
-    <text x="8" y="25" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="2.5" font-weight="600" fill="#1E1E2C" text-anchor="middle">
-    in seconds
-  </text>
 
 </svg>

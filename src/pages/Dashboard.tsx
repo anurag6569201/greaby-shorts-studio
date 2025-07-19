@@ -8,7 +8,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sparkles, Home, Settings, LogOut, Menu, CreditCard, Coins, History, MicVocalIcon, Loader2, AlertCircle, ArrowLeft, Mic } from "lucide-react";
+import { Sparkles, Home, Settings, LogOut, Menu, CreditCard, Coins, History, MicVocalIcon, Loader2, AlertCircle, ArrowLeft, Mic, LanguagesIcon } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import DashboardHome from "@/components/dashboard/DashboardHome";
 import AudioGenerator from "@/components/dashboard/AudioGenerator";
@@ -16,6 +16,7 @@ import SettingsPage from "@/components/dashboard/SettingsPage";
 import PricingPage from "@/components/dashboard/PricingPage";
 import HistoryPage from "@/components/dashboard/HistoryPage";
 import TranscriptionGenerator from "@/components/dashboard/TranscriptionGenerator";
+import DocumentTranslator from "@/components/dashboard/DocumentTranslator";
 import TranscriptionPlayer from "@/components/dashboard/components/TranscriptionPlayer";
 import api from "@/services/api";
 
@@ -23,6 +24,7 @@ const sidebarItems = [
   { id: "home", label: "Home", icon: Home },
   { id: "audio", label: "Audio", icon: Mic },
   { id: "transcription", label: "Transcription", icon: MicVocalIcon },
+  { id: "translation", label: "Translation", icon: LanguagesIcon },
   { id: "history", label: "Usage History", icon: History },
 ];
 
@@ -145,6 +147,7 @@ const Dashboard = () => {
       case "settings": return <SettingsPage />;
       case "history": return <HistoryPage />;
       case "transcription": return <TranscriptionGenerator />;
+      case "translation": return <DocumentTranslator />;
       case "transcription-player": return <TranscriptionPlayerPage />;
       default: return <DashboardHome setActiveTab={handleSetTab} />;
     }
