@@ -1,7 +1,4 @@
-# Allow all search engines to crawl the entire site.
 User-agent: *
 Allow: /
 
-# Provide the location of your sitemap for better indexing.
-# (Make sure to generate a sitemap.xml file later)
 Sitemap: https://greaby.cloud/sitemap.xml
