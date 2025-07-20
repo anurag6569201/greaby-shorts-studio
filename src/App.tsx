@@ -52,7 +52,7 @@ const App = () => (
 
               {/* Shared/Marketing Routes */}
               <Route path="/pricing" element={<PricingPage />} />
-              <Route path="/demo" element={<Demos />} />
+              {/* <Route path="/demo" element={<Demos />} /> */}
               <Route path="/about" element={<AboutPage />} />
               <Route path="/blog" element={<BlogPage />} />
               <Route path="/contact" element={<ContactPage />} />

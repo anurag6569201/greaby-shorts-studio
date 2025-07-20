@@ -12,6 +12,7 @@ import Navbar from "./intro/Navbar";
 import Footer from "./intro/Footer";
 import texxt_image from '/intro/test.gif'
 
+
 // NO CHANGE: This component provides the interactive background gradient effect.
 const InteractiveCursor = () => {
   const [isClient, setIsClient] = useState(false);
@@ -99,7 +100,6 @@ const containerStagger = {
 // EDIT: The Hero section has been updated to reflect the broader range of AI tools.
 const Hero = () => {
   const navigate = useNavigate();
-
   return (
     <section className="relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20 grid md:grid-cols-2 gap-10 items-center">
@@ -129,14 +129,26 @@ const Hero = () => {
         </div>
 
         <div className="new_space_style">
-          <div className="stack">
-  <div className="card">
-    <div className="image">
-      <img loading="lazy" src={texxt_image} alt="" />
+  <div className="stack">
+    <div className="card">
+      <div className="image">
+        {/* <img loading="lazy" src={texxt_image} alt="" /> */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="none"
+          className="w-full h-full object-cover"
+        >
+          <source src="/intro/test.webm" type="video/webm" />
+          <source src="/intro/test.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+      </div>
     </div>
   </div>
 </div>
-        </div>
 
       </div>
     </section>
@@ -201,10 +213,10 @@ const HowItWorks = () => {
 // NO CHANGE: The testimonials are strong and still relevant to your core services.
 const DraggableTestimonials = () => {
   const testimonials = [
-    { name: "Casey Neistat", role: "Filmmaker", avatar: "/avatars/casey.jpg", content: "The voice quality is indistinguishable from human. I use it for all my voiceover work now. Saves me hours.", rotate: -3 },
-    { name: "Emma Chamberlain", role: "Podcaster", avatar: "/avatars/emma.jpg", content: "Getting my podcast transcribed used to be a huge pain. This tool is fast, 99% accurate, and so easy to use.", rotate: 2 },
-    { name: "Ali Abdaal", role: "YouTuber", avatar: "/avatars/ali.jpg", content: "As a one-person team, this is my audio engineer. Perfect voiceovers and subtitles for all my courses and videos. A game-changer.", rotate: -1 },
-    { name: "Pat Flynn", role: "Entrepreneur", avatar: "/avatars/pat.jpg", content: "My team uses this to create audio versions of our blog posts. The variety of voices is incredible and the quality is top-tier.", rotate: 4 },
+    { name: "Casey Neistat", role: "Filmmaker", avatar: "", content: "The voice quality is indistinguishable from human. I use it for all my voiceover work now. Saves me hours.", rotate: -3 },
+    { name: "Emma Chamberlain", role: "Podcaster", avatar: "", content: "Getting my podcast transcribed used to be a huge pain. This tool is fast, 99% accurate, and so easy to use.", rotate: 2 },
+    { name: "Ali Abdaal", role: "YouTuber", avatar: "", content: "As a one-person team, this is my audio engineer. Perfect voiceovers and subtitles for all my courses and videos. A game-changer.", rotate: -1 },
+    { name: "Pat Flynn", role: "Entrepreneur", avatar: "", content: "My team uses this to create audio versions of our blog posts. The variety of voices is incredible and the quality is top-tier.", rotate: 4 },
   ];
   const containerRef = useRef(null);
   return (
