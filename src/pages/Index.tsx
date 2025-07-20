@@ -132,7 +132,7 @@ const Hero = () => {
           <div className="stack">
   <div className="card">
     <div className="image">
-      <img src={texxt_image} alt="" />
+      <img loading="lazy" src={texxt_image} alt="" />
     </div>
   </div>
 </div>
