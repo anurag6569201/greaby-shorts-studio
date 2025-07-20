@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Sparkles, Twitter, Youtube, Github } from 'lucide-react';
 
 const Footer = () => (
-  <footer className="bg-slate-900 text-slate-400">
+  <footer className="bg-slate-900 text-slate-300">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-16">
         <div className="col-span-2 md:col-span-1">
@@ -29,7 +29,7 @@ const Footer = () => (
         </ul></div>
       </div>
       <div className="mt-8 py-8 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center">
-        <p className="text-sm text-slate-500">© {new Date().getFullYear()} Greaby. All rights reserved.</p>
+        <p className="text-sm text-slate-300">© {new Date().getFullYear()} Greaby. All rights reserved.</p>
         {/* <div className="flex items-center space-x-4 mt-4 sm:mt-0">
           <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-primary transition-colors"><Twitter className="h-5 w-5" /></a>
           <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-primary transition-colors"><Youtube className="h-5 w-5" /></a>

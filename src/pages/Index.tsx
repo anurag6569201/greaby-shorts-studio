@@ -10,7 +10,6 @@ import { motion, useInView, AnimatePresence, useMotionValue, useSpring } from "f
 import { cn } from "@/lib/utils";
 import Navbar from "./intro/Navbar";
 import Footer from "./intro/Footer";
-import texxt_image from '/intro/test.gif'
 
 
 // NO CHANGE: This component provides the interactive background gradient effect.
