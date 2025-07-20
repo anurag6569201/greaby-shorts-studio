@@ -25,12 +25,71 @@ const formatFileSize = (bytes) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
 
+const LANGUAGE_CHOICES = [
+    ['en-US', 'English (United States)'],
+    ['en-GB', 'English (United Kingdom)'],
+    ['en-AU', 'English (Australia)'],
+    ['en-CA', 'English (Canada)'],
+    ['en-IN', 'English (India)'],
+    ['es-ES', 'Spanish (Spain)'],
+    ['es-MX', 'Spanish (Mexico)'],
+    ['es-US', 'Spanish (United States)'],
+    ['fr-FR', 'French (France)'],
+    ['fr-CA', 'French (Canada)'],
+    ['de-DE', 'German (Germany)'],
+    ['it-IT', 'Italian (Italy)'],
+    ['pt-BR', 'Portuguese (Brazil)'],
+    ['pt-PT', 'Portuguese (Portugal)'],
+    ['ru-RU', 'Russian (Russia)'],
+    ['zh-CN', 'Chinese (Mandarin, Simplified)'],
+    ['zh-TW', 'Chinese (Mandarin, Traditional)'],
+    ['zh-HK', 'Chinese (Cantonese – Traditional, Hong Kong)'],
+    ['hi-IN', 'Hindi (India)'],
+    ['bn-IN', 'Bengali (India)'],
+    ['gu-IN', 'Gujarati (India)'],
+    ['kn-IN', 'Kannada (India)'],
+    ['ml-IN', 'Malayalam (India)'],
+    ['mr-IN', 'Marathi (India)'],
+    ['pa-IN', 'Punjabi (India)'],
+    ['ta-IN', 'Tamil (India)'],
+    ['te-IN', 'Telugu (India)'],
+    ['ur-IN', 'Urdu (India)'],
+    ['ja-JP', 'Japanese (Japan)'],
+    ['ko-KR', 'Korean (South Korea)'],
+    ['ar-SA', 'Arabic (Saudi Arabia)'],
+    ['ar-EG', 'Arabic (Egypt)'],
+    ['ar-AE', 'Arabic (United Arab Emirates)'],
+    ['nl-NL', 'Dutch (Netherlands)'],
+    ['da-DK', 'Danish (Denmark)'],
+    ['fi-FI', 'Finnish (Finland)'],
+    ['nb-NO', 'Norwegian (Norway)'],
+    ['pl-PL', 'Polish (Poland)'],
+    ['sv-SE', 'Swedish (Sweden)'],
+    ['tr-TR', 'Turkish (Turkey)'],
+    ['th-TH', 'Thai (Thailand)'],
+    ['cs-CZ', 'Czech (Czech Republic)'],
+    ['el-GR', 'Greek (Greece)'],
+    ['he-IL', 'Hebrew (Israel)'],
+    ['hu-HU', 'Hungarian (Hungary)'],
+    ['id-ID', 'Indonesian (Indonesia)'],
+    ['ms-MY', 'Malay (Malaysia)'],
+    ['ro-RO', 'Romanian (Romania)'],
+    ['sk-SK', 'Slovak (Slovakia)'],
+    ['uk-UA', 'Ukrainian (Ukraine)'],
+    ['vi-VN', 'Vietnamese (Vietnam)'],
+];
+
 const StagedFileCard = ({ file, onRemove }) => (
     <motion.div layout initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20 }} className="border rounded-lg p-4 flex flex-col sm:flex-row items-center gap-4 bg-background relative">
         <div className="flex items-center gap-4 flex-1 w-full">
             <FileAudio className="h-8 w-8 text-primary flex-shrink-0" />
             <div className="flex-1 overflow-hidden">
-                <p className="font-medium truncate" title={file.file.name}>{file.file.name}</p>
+                <p
+                className="font-medium truncate"
+                title={file.file.name}
+                >
+                {file.file.name.length > 15 ? file.file.name.slice(0, 15) + '…' : file.file.name}
+                </p>
                 <p className="text-xs text-muted-foreground">{formatFileSize(file.file.size)}</p>
             </div>
         </div>
@@ -196,7 +255,7 @@ const TranscriptionGenerator = () => {
                         <Label htmlFor="file-upload" className="mt-2 inline-block">
                             <div className="bg-primary text-primary-foreground px-4 py-2 rounded-md cursor-pointer hover:bg-primary/90 text-sm font-medium">Browse Files</div>
                         </Label>
-                        <Input id="file-upload" type="file" multiple className="sr-only" onChange={handleFileSelect} accept="audio/*,video/*" />
+                        <Input id="file-upload" type="file" className="sr-only" onChange={handleFileSelect} accept="audio/*,video/*" />
                     </div>
                     <AnimatePresence>{stagedFiles.length > 0 && <div className="space-y-4"><h3 className="font-semibold text-lg">Your Files</h3>{stagedFiles.map(file => <StagedFileCard key={file.id} file={file} onRemove={handleRemoveStagedFile} />)}</div>}</AnimatePresence>
                 </CardContent>
@@ -209,11 +268,9 @@ const TranscriptionGenerator = () => {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="en-US">English (US)</SelectItem>
-                                    <SelectItem value="hi-IN">Hindi (India)</SelectItem>
-                                    <SelectItem value="es-ES">Spanish</SelectItem>
-                                    <SelectItem value="fr-FR">French</SelectItem>
-                                    <SelectItem value="de-DE">German</SelectItem>
+                                    {LANGUAGE_CHOICES.map(([value, label]) => (
+                                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
