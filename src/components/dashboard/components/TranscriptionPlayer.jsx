@@ -119,9 +119,12 @@ const TranscriptionPlayer = ({ item, transcriptJson }) => {
     const [showLowConfidence, setShowLowConfidence] = useState(false);
     const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
 
+    // FIX: Filter phrases to use only the first audio channel (channel 0) to prevent duplication from stereo audio.
     const flatWords = useMemo(() => {
         if (!transcript?.recognizedPhrases) return [];
-        return transcript.recognizedPhrases.flatMap(p => p.nBest?.[0]?.words || []);
+        return transcript.recognizedPhrases
+            .filter(p => p.channel === 0) // <--- ADD THIS LINE
+            .flatMap(p => p.nBest?.[0]?.words || []);
     }, [transcript]);
     
     useEffect(() => {
@@ -239,9 +242,44 @@ const TranscriptionPlayer = ({ item, transcriptJson }) => {
     
     const handleExport = ({ format, options }) => {
         let content, mimeType, extension;
-        const to_srt_vtt = (type) => { let output = type === 'vtt' ? 'WEBVTT\n\n' : ''; let count = 1; transcript.recognizedPhrases.forEach(phrase => { if (phrase.nBest[0].words?.length > 0) { const startTime = phrase.offsetInTicks / TICKS_PER_SECOND; const endTime = (phrase.offsetInTicks + phrase.durationInTicks) / TICKS_PER_SECOND; const timeSeparator = type === 'vtt' ? '.' : ','; output += `${count++}\n${formatTime(startTime).replace('.', timeSeparator)} --> ${formatTime(endTime).replace('.', timeSeparator)}\n${phrase.nBest[0].display}\n\n`; } }); return output; };
-        const to_plain_text = ({ includeTimestamps }) => { return transcript.recognizedPhrases.map(phrase => { let line = includeTimestamps ? `[${formatTime(phrase.offsetInTicks / TICKS_PER_SECOND, false)}] ` : ''; line += phrase.nBest[0].display; return line; }).join('\n'); };
-        const to_csv = () => { let csv = 'start_time_seconds,end_time_seconds,text\n'; transcript.recognizedPhrases.forEach(phrase => { const startTime = (phrase.offsetInTicks / TICKS_PER_SECOND).toFixed(3); const endTime = ((phrase.offsetInTicks + phrase.durationInTicks) / TICKS_PER_SECOND).toFixed(3); const text = `"${phrase.nBest[0].display.replace(/"/g, '""')}"`; csv += `${startTime},${endTime},${text}\n`; }); return csv; };
+
+        // FIX: All helper functions below are updated to filter by channel 0 to prevent duplication.
+        const to_srt_vtt = (type) => {
+            let output = type === 'vtt' ? 'WEBVTT\n\n' : '';
+            let count = 1;
+            transcript.recognizedPhrases
+                .filter(phrase => phrase.channel === 0) // <--- ADD THIS LINE
+                .forEach(phrase => {
+                    if (phrase.nBest[0].words?.length > 0) {
+                        const startTime = phrase.offsetInTicks / TICKS_PER_SECOND;
+                        const endTime = (phrase.offsetInTicks + phrase.durationInTicks) / TICKS_PER_SECOND;
+                        const timeSeparator = type === 'vtt' ? '.' : ',';
+                        output += `${count++}\n${formatTime(startTime).replace('.', timeSeparator)} --> ${formatTime(endTime).replace('.', timeSeparator)}\n${phrase.nBest[0].display}\n\n`;
+                    }
+                });
+            return output;
+        };
+        const to_plain_text = ({ includeTimestamps }) => {
+            return transcript.recognizedPhrases
+                .filter(phrase => phrase.channel === 0) // <--- ADD THIS LINE
+                .map(phrase => {
+                    let line = includeTimestamps ? `[${formatTime(phrase.offsetInTicks / TICKS_PER_SECOND, false)}] ` : '';
+                    line += phrase.nBest[0].display;
+                    return line;
+                }).join('\n');
+        };
+        const to_csv = () => {
+            let csv = 'start_time_seconds,end_time_seconds,text\n';
+            transcript.recognizedPhrases
+                .filter(phrase => phrase.channel === 0) // <--- ADD THIS LINE
+                .forEach(phrase => {
+                    const startTime = (phrase.offsetInTicks / TICKS_PER_SECOND).toFixed(3);
+                    const endTime = ((phrase.offsetInTicks + phrase.durationInTicks) / TICKS_PER_SECOND).toFixed(3);
+                    const text = `"${phrase.nBest[0].display.replace(/"/g, '""')}"`;
+                    csv += `${startTime},${endTime},${text}\n`;
+                });
+            return csv;
+        };
         switch (format) { case 'txt': content = to_plain_text(options); mimeType = 'text/plain'; extension = 'txt'; break; case 'srt': content = to_srt_vtt('srt'); mimeType = 'text/plain'; extension = 'srt'; break; case 'vtt': content = to_srt_vtt('vtt'); mimeType = 'text/vtt'; extension = 'vtt'; break; case 'csv': content = to_csv(); mimeType = 'text/csv'; extension = 'csv'; break; case 'json': content = JSON.stringify(transcript, null, 2); mimeType = 'application/json'; extension = 'json'; break; default: return; }
         const blob = new Blob([content], { type: mimeType }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `${item?.title?.replace(/[^a-z0-9]/gi, '_') || 'transcript'}.${extension}`; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
     };

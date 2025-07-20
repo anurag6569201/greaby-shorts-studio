@@ -17,28 +17,38 @@ def srt_time_format(seconds: float) -> str:
 def to_plain_text(result_json_content: str) -> str:
     """
     Converts Azure's transcription JSON to a simple plain text string.
-    It uses the 'display' field from the 'combinedRecognizedPhrases' for the best formatting.
+    FIX: It now uses 'recognizedPhrases' from channel 0 to avoid duplication from stereo audio.
     """
     try:
         data = json.loads(result_json_content)
-        combined_phrases = data.get("combinedRecognizedPhrases", [])
-        if not combined_phrases:
-            return "No transcription text found."
-        full_text = " ".join(phrase.get("display", "") for phrase in combined_phrases)
-        return full_text if full_text.strip() else "Transcription result was empty."
-    except (json.JSONDecodeError, KeyError):
+        # FIX: Filter phrases to only use channel 0, which is the primary audio track.
+        phrases = [
+            p for p in data.get("recognizedPhrases", []) if p.get("channel") == 0
+        ]
+        if not phrases:
+            return "No transcription text found for the primary channel."
+        
+        # FIX: Join the display text from the 'nBest' array of each phrase.
+        full_text = " ".join(
+            p.get("nBest", [{}])[0].get("display", "") for p in phrases
+        )
+        return full_text.strip() if full_text.strip() else "Transcription result was empty."
+    except (json.JSONDecodeError, KeyError, IndexError):
         return "Error: Could not parse transcription data."
 
 def to_srt(result_json_content: str) -> str:
     """
     Converts Azure's detailed transcription JSON to an SRT (subtitle) format string.
-    FIXED: Now uses high-precision 'ticks' for timing, making it robust.
+    FIX: Now filters for channel 0 to handle stereo audio correctly and prevent duplicate entries.
     """
     try:
         data = json.loads(result_json_content)
-        phrases = data.get("recognizedPhrases", [])
+        # FIX: Filter phrases to only use channel 0 to avoid duplication.
+        phrases = [
+            p for p in data.get("recognizedPhrases", []) if p.get("channel") == 0
+        ]
         if not phrases:
-            return "1\n00:00:00,000 --> 00:00:05,000\nNo recognized phrases with timing found."
+            return "1\n00:00:00,000 --> 00:00:05,000\nNo recognized phrases with timing found for the primary channel."
 
         srt_content = []
         # A tick is 100 nanoseconds. 10,000,000 ticks in a second.
@@ -53,20 +63,11 @@ def to_srt(result_json_content: str) -> str:
             text = best_choice.get("display", "").strip()
 
             # Use 'offsetInTicks' for accuracy, falling back to 'offset' if needed
-            offset_ticks = phrase.get("offsetInTicks")
-            duration_ticks = phrase.get("durationInTicks")
+            offset_ticks = phrase.get("offsetInTicks", 0)
+            duration_ticks = phrase.get("durationInTicks", 0)
 
-            if offset_ticks is None or duration_ticks is None:
-                # Fallback for older formats, though less reliable
-                offset_str = phrase.get("offset", "PT0S").replace("PT", "").replace("S", "")
-                duration_str = phrase.get("duration", "PT0S").replace("PT", "").replace("S", "")
-                start_seconds = float(offset_str)
-                duration_seconds = float(duration_str)
-            else:
-                start_seconds = offset_ticks / TICKS_PER_SECOND
-                duration_seconds = duration_ticks / TICKS_PER_SECOND
-            
-            end_seconds = start_seconds + duration_seconds
+            start_seconds = offset_ticks / TICKS_PER_SECOND
+            end_seconds = (offset_ticks + duration_ticks) / TICKS_PER_SECOND
             
             start_time = srt_time_format(start_seconds)
             end_time = srt_time_format(end_seconds)
