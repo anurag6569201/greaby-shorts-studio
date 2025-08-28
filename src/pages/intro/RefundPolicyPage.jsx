@@ -35,7 +35,7 @@ const RefundPolicyPage = () => {
     {
       icon: <AlertCircle size={32} className="text-slate-500" />,
       title: "Contact for Refund Discrepancies",
-      content: "Our refund system for failed tasks is automated. If you believe a task failed and your Credits were not correctly refunded, please contact our support team with the 'Creation ID' from your history. We will investigate the issue promptly. Contact us at: anurag@greaby.cloud."
+      content: "Our refund system for failed tasks is automated. If you believe a task failed and your Credits were not correctly refunded, please contact our support team with the 'Creation ID' from your history. We will investigate the issue promptly. Contact us at: anurag6569201@gmail.com."
     }
   ];
 

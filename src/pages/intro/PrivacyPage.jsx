@@ -57,7 +57,7 @@ const PrivacyPage = () => {
     },
     {
       title: "Your Data Rights and Choices",
-      content: "You can access and update your account information through your profile settings. You have the right to delete your Generated Content from your account library at any time. If you wish to delete your entire account and associated personal data, please contact us at anurag@greaby.cloud."
+      content: "You can access and update your account information through your profile settings. You have the right to delete your Generated Content from your account library at any time. If you wish to delete your entire account and associated personal data, please contact us at anurag6569201@gmail.com."
     },
     {
       title: "Children's Privacy",
@@ -69,7 +69,7 @@ const PrivacyPage = () => {
     },
     {
       title: "Contact Us",
-      content: "If you have any questions or concerns about this Privacy Policy, please contact us at: anurag@greaby.cloud."
+      content: "If you have any questions or concerns about this Privacy Policy, please contact us at: anurag6569201@gmail.com."
     }
   ];
 

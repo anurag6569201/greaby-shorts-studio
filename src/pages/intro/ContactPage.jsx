@@ -20,15 +20,15 @@ const ContactPage = () => {
       icon: <Mail size={24} className="text-indigo-500" />,
       title: "Email Support",
       description: "For technical issues, billing questions, or general inquiries.",
-      contactInfo: "anurag@greaby.cloud",
-      href: "mailto:anurag@greaby.cloud"
+      contactInfo: "anurag6569201@gmail.com",
+      href: "mailto:anurag6569201@gmail.com"
     },
     {
       icon: <Briefcase size={24} className="text-green-500" />,
       title: "Business Inquiries",
       description: "For partnerships, press, and other business-related matters.",
-      contactInfo: "anurag@greaby.cloud",
-      href: "mailto:anurag@greaby.cloud?subject=Business Inquiry"
+      contactInfo: "anurag6569201@gmail.com",
+      href: "mailto:anurag6569201@gmail.com?subject=Business Inquiry"
     },
     {
       icon: <MapPin size={24} className="text-red-500" />,
