@@ -16,20 +16,24 @@ class ReelStorage(AzureStorage):
 class SubtitleStorage(AzureStorage):
     azure_container = 'greaby-subtitles'
     
-# --- NEW: For user-uploaded audio/video files to be transcribed ---
+# --- For user-uploaded audio/video files to be transcribed ---
 class SourceMediaStorage(AzureStorage):
     azure_container = 'greaby-source-media'
     
-# --- NEW: For the JSON transcription results from Azure ---
+# --- For the JSON transcription results from Azure ---
 class TranscriptionResultStorage(AzureStorage):
     azure_container = 'greaby-transcription-results'
     
-# --- NEW: Storage for original uploaded documents ---
+# --- Storage for original uploaded documents ---
 class InputDocumentStorage(AzureStorage):
     azure_container = 'greaby-documents-input'
     expiration_secs = 3600
 
-# --- NEW: Storage for translated documents from Azure ---
+# --- Storage for translated documents from Azure ---
 class TranslatedDocumentStorage(AzureStorage):
     azure_container = 'greaby-documents-output'
     expiration_secs = 3600
+    
+# --- Storage for user-uploaded source images for editing ---
+class ImageSourceStorage(AzureStorage):
+    azure_container = 'greaby-source-images'

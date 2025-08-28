@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'transcriptions.apps.TranscriptionsConfig',
     'video_translations.apps.VideoTranslationsConfig',
     'translations.apps.TranslationsConfig',
+    'image_creations.apps.ImageCreationsConfig',
     
     'channels',
     'notifications.apps.NotificationsConfig',

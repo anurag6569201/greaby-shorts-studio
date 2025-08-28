@@ -38,7 +38,6 @@ class Purchase(models.Model):
     def __str__(self):
         return f"Purchase {self.id} by {self.user.email} for {self.credits_purchased} credits"
 
-# --- NEW MODEL: A single source of truth for all expenses ---
 class CreditUsage(models.Model):
     class UsageType(models.TextChoices):
         VIDEO = 'video', 'Video Generation'
@@ -47,12 +46,13 @@ class CreditUsage(models.Model):
         VIDEO_TRANSLATION = 'translation', 'Video Translation'
         TRANSCRIPTION = 'transcription', 'Transcription Generation'
         DOCUMENT_TRANSLATION = 'DOC_TRANS', 'Document Translation'
+        IMAGE = 'image', 'Image Generation'
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='credit_usages')
     usage_type = models.CharField(max_length=20, choices=UsageType.choices)
     credits_spent = models.DecimalField(max_digits=10, decimal_places=2)
-    description = models.CharField(max_length=255) # e.g., prompt snippet or title
+    description = models.CharField(max_length=255) 
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
