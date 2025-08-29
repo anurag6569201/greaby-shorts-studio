@@ -125,7 +125,7 @@ const PricingPage = () => {
             <main className="" style={{width:'100%'}}>
                 <div className="text-left">
                     <h1 className="text-2xl font-bold text-gray-900">Top Up Your Creative Fuel</h1>
-                    <p className="text-lg text-muted-foreground">Buy credits as you go. No subscriptions, no monthly fees. Use them whenever you want.</p>
+                    <p className="text-muted-foreground">Buy credits as you go. No subscriptions, no monthly fees. Use them whenever you want.</p>
                 </div>
                 <br />
                 <hr /><br />

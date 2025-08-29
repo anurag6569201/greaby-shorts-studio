@@ -19,6 +19,10 @@ class ImageCreation(AbstractBaseCreation):
     class Style(models.TextChoices):
         VIVID = 'vivid', 'Vivid'
         NATURAL = 'natural', 'Natural'
+        
+    class Provider(models.TextChoices):
+        KONTEXT_PRO = 'kontext_pro', 'Kontext Pro'
+        NANO_BANANA = 'nano_banana', 'Nano Banana'
 
     prompt = models.TextField()
     operation = models.CharField(max_length=10, choices=Operation.choices)
@@ -26,12 +30,12 @@ class ImageCreation(AbstractBaseCreation):
     size = models.CharField(max_length=10, choices=Size.choices, default=Size.SQUARE)
     quality = models.CharField(max_length=10, choices=Quality.choices, default=Quality.STANDARD)
     style = models.CharField(max_length=10, choices=Style.choices, default=Style.VIVID)
+    provider = models.CharField(max_length=20, choices=Provider.choices, default=Provider.KONTEXT_PRO)
 
     # Used only for the 'edit' operation
     source_image = models.FileField(storage=ImageSourceStorage(), upload_to='', blank=True, null=True)
     result_file = models.FileField(storage=ImageSourceStorage(), upload_to='', blank=True, null=True)
 
-    # NEW: Add properties to easily access URLs in the serializer
     @property
     def result_url(self):
         return self.result_file.url if self.result_file else None
@@ -41,4 +45,4 @@ class ImageCreation(AbstractBaseCreation):
         return self.source_image.url if self.source_image else None
 
     def __str__(self):
-        return f"Image '{self.operation}' for {self.user.email} ({self.status})"
+        return f"Image '{self.operation}' for {self.user.email} using {self.get_provider_display()} ({self.status})"

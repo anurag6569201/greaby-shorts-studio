@@ -131,7 +131,7 @@ const PricingPage = () => {
             <main className="py-16 sm:py-24 px-4" style={{width:'100%'}}>
                 <div className="text-center max-w-3xl mx-auto">
                     <h1 className="text-4xl md:text-5xl font-bold text-gray-900">Top Up Your Creative Fuel</h1>
-                    <p className="mt-4 text-lg text-muted-foreground">Buy credits as you go. No subscriptions, no monthly fees. Use them whenever you want.</p>
+                    <p className="mt-4 text-muted-foreground">Buy credits as you go. No subscriptions, no monthly fees. Use them whenever you want.</p>
                 </div>
                 <br />
                 {isLoadingPacks ? (

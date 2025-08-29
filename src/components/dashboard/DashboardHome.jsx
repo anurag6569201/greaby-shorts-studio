@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useQuery } from "@tanstack/react-query";
-import { Video, Mic, Clapperboard, ArrowRight, Loader2, Coins,FileText,Languages, Dock } from "lucide-react";
+import { Video, Mic, Clapperboard, ArrowRight, Loader2, Coins,FileText,Languages, Dock, Image, ImageIcon } from "lucide-react";
 import api from "@/services/api";
 import { useNavigate } from "react-router-dom";
 
@@ -44,15 +44,17 @@ const DashboardHome = ({ setActiveTab }) => {
   const { data: stats, isLoading: isLoadingStats } = useQuery({
     queryKey: ['dashboardStats'],
     queryFn: async () => {
-      const [ audioRes ,transcriptionsRes,translationRes] = await Promise.all([
+      const [ audioRes ,transcriptionsRes,translationRes,imageRes] = await Promise.all([
         api.get('/audios/'),
         api.get('/transcriptions/'),
         api.get('/doc-translations/'),
+        api.get('/images/'),
       ]);
       return {
         audios: audioRes.data.count,
         transcriptions: transcriptionsRes.data.count,
         translations: translationRes.data.count,
+        image: imageRes.data.count,
       };
     },
     enabled: !!user,
@@ -78,6 +80,7 @@ const DashboardHome = ({ setActiveTab }) => {
         <StatCard label="Audios Generated" value={stats?.audios ?? 0} icon={Mic} isLoading={isLoadingStats} />
         <StatCard label="Transcription" value={stats?.transcriptions ?? 0} icon={FileText} isLoading={isLoadingStats} />
         <StatCard label="Translations" value={stats?.translations ?? 0} icon={Languages} isLoading={isLoadingStats} />
+        <StatCard label="Image Generated" value={stats?.image ?? 0} icon={Image} isLoading={isLoadingStats} />
       </div>
       <br />
       <hr />
@@ -91,6 +94,7 @@ const DashboardHome = ({ setActiveTab }) => {
         <ActionCard title="Generate Audio" description="Create professional voiceovers from text with various voices." icon={Mic} onClick={() => setActiveTab('audio')} />
         <ActionCard title="Transcribe Audio/Video" description="Get a text transcription from an audio or video file." icon={FileText} onClick={() => setActiveTab('transcription')} />
         <ActionCard title="Translate Your Documents" description="Get a Document translation from one language to another language." icon={Languages} onClick={() => setActiveTab('translation')} />
+        <ActionCard title="Create / Edit Your Images" description="Creae and Edit your images and creativity with the Latest Kontext-pro Model" icon={ImageIcon} onClick={() => setActiveTab('image')} />
       </div>
     </div>
   );
