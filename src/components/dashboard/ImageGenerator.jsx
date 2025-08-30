@@ -147,15 +147,17 @@ const ImageCard = ({
                         <img src={creation.result_url} alt={creation.prompt || 'Generated image'} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2 gap-2">
                             <a href={creation.result_url} target="_blank" rel="noopener noreferrer" className="flex-1">
-                                <Button style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: 'white' }} variant="outline" size="icon" className="w-full h-8"><View className="h-4 w-4" /></Button>
+                                <Button style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: 'white',height:'26px',width:'26px',border:'none',borderRadius:'4px' }} variant="outline" size="icon" className="w-full h-8"><View className="h-4 w-4" /></Button>
                             </a>
+                            <a>
                             <Button
                                 onClick={handleDownload}
-                                style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: 'white' }}
+                                style={{ backgroundColor: 'rgba(0,0,0,0.6)', color: 'white',height:'26px',width:'26px',border:'none',borderRadius:'4px' }}
                                 variant="outline"
                                 size="icon"
                                 className="flex-1 h-8"
                             ><Download className="h-4 w-4" /></Button>
+                            </a>
                         </div>
                     </div>
                 );
