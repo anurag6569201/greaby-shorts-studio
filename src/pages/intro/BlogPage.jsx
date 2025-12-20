@@ -3,10 +3,17 @@ import { Link } from 'react-router-dom';
 import { Sparkles, Rss } from 'lucide-react';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import SEOHead from '@/components/SEOHead';
 
 const BlogPage = () => {
   return (
     <>
+    <SEOHead
+      title="Blog - Greaby: AI Content Creation Tips & Tutorials"
+      description="Learn how to get the most out of Greaby with our blog articles, tutorials, and tips for AI voice generation, transcription, and translation."
+      keywords="Greaby blog, AI content creation tips, tutorials, voice generation guide"
+      ogUrl="https://greaby.cloud/blog"
+    />
     <Navbar/>
     <div className="bg-slate-50 flex flex-col items-center justify-center text-center px-4" style={{ minHeight: '60vh' }}>
       <Rss className="h-16 w-16 text-primary mb-4" />

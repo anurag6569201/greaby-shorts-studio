@@ -6,6 +6,7 @@ import { Sparkles, Target, Users, Zap } from 'lucide-react'; // Added more icons
 import { motion } from 'framer-motion';
 import TiltCard from '@/components/ui/TiltCard'; // Import the new component
 import Footer from './Footer';
+import SEOHead from '@/components/SEOHead';
 
 // Animation variants from before
 const containerVariants = {
@@ -31,6 +32,12 @@ const itemVariants = {
 const AboutPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 overflow-hidden">
+      <SEOHead
+        title="About Us - Greaby: Empowering Creators with AI"
+        description="Learn about Greaby's mission to empower creators with superhuman abilities through AI-powered voice generation, transcription, and translation tools."
+        keywords="about Greaby, AI content creation, creator tools, Greaby team, mission"
+        ogUrl="https://greaby.cloud/about"
+      />
       <motion.header
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

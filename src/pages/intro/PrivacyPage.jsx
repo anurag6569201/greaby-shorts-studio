@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Footer from './Footer';
 import Navbar from './Navbar';
+import SEOHead from '@/components/SEOHead';
 
 const PrivacyPage = () => {
   const effectiveDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -75,6 +76,13 @@ const PrivacyPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-indigo-50 relative overflow-hidden">
+      <SEOHead
+        title="Privacy Policy - Greaby"
+        description="Read Greaby's Privacy Policy to understand how we collect, use, and protect your personal information and generated content."
+        keywords="Greaby privacy policy, data protection, privacy, user data, GDPR"
+        ogUrl="https://greaby.cloud/privacy"
+        noindex={false}
+      />
       <Navbar/>
       <div className="fixed top-0 left-0 pointer-events-none z-50">
         <motion.div

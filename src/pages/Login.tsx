@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Sparkles, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import SEOHead from "@/components/SEOHead";
 
 const Login = () => {
   const { loginUser, loginWithGoogle, authLoading } = useAuth();
@@ -59,6 +60,13 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+      <SEOHead
+        title="Login - Greaby"
+        description="Sign in to your Greaby account to access AI voice generation, transcription, and translation tools."
+        keywords="Greaby login, sign in, account access"
+        ogUrl="https://greaby.cloud/login"
+        noindex={true}
+      />
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center space-y-2">
           <Link to="/" className="flex justify-center items-center space-x-2">

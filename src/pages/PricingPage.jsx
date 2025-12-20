@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import api from '@/services/api';
 import { toast } from 'sonner';
 import Footer from './intro/Footer';
+import SEOHead from '@/components/SEOHead';
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
@@ -120,6 +121,29 @@ const PricingPage = () => {
     
     return (
         <>
+        <SEOHead
+            title="Pricing - Greaby: Affordable AI Content Creation"
+            description="Flexible pay-as-you-go pricing for AI voice generation, transcription, and translation. No subscriptions, credits never expire. Start creating today!"
+            keywords="Greaby pricing, AI voice pricing, transcription cost, translation pricing, pay as you go, credit packs"
+            ogUrl="https://greaby.cloud/pricing"
+            structuredData={{
+                "@context": "https://schema.org",
+                "@type": "Product",
+                "name": "Greaby Credit Packs",
+                "description": "Pay-as-you-go credits for AI voice generation, transcription, and translation",
+                "brand": {
+                    "@type": "Brand",
+                    "name": "Greaby"
+                },
+                "offers": {
+                    "@type": "AggregateOffer",
+                    "offerCount": "3",
+                    "lowPrice": "0",
+                    "highPrice": "5000",
+                    "priceCurrency": "INR"
+                }
+            }}
+        />
         <div className="min-h-screen bg-slate-50">
             <header className="py-4 px-8 flex justify-between items-center bg-white/80 backdrop-blur-sm sticky top-0 z-10 border-b">
                  <Link to="/" className="flex items-center space-x-2">

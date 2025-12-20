@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { CloudDownload, Clock, FolderKanban, AlertTriangle, PackageX } from 'lucide-react';
+import SEOHead from '@/components/SEOHead';
 
 const ShippingPage = () => {
   const effectiveDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -46,6 +47,13 @@ const ShippingPage = () => {
 
   return (
     <>
+      <SEOHead
+        title="Shipping & Delivery Policy - Greaby"
+        description="Greaby is a 100% digital service. Learn how we deliver your AI-generated content directly to your account dashboard."
+        keywords="Greaby shipping, digital delivery, content delivery, download policy"
+        ogUrl="https://greaby.cloud/shipping"
+        noindex={false}
+      />
       <Navbar />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 relative overflow-hidden text-slate-800">
         <div className="fixed top-0 left-0 pointer-events-none z-50">

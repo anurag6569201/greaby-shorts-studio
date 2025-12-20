@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { CreditCard, Ban, Undo2, AlertCircle } from 'lucide-react';
+import SEOHead from '@/components/SEOHead';
 
 const RefundPolicyPage = () => {
   const effectiveDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -41,6 +42,13 @@ const RefundPolicyPage = () => {
 
   return (
     <>
+      <SEOHead
+        title="Refund Policy - Greaby"
+        description="Learn about Greaby's refund policy for credit purchases and automatic credit refunds for failed generation tasks."
+        keywords="Greaby refund policy, cancellation, credit refund, return policy"
+        ogUrl="https://greaby.cloud/refund"
+        noindex={false}
+      />
       <Navbar />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 relative overflow-hidden text-slate-800">
         <div className="fixed top-0 left-0 pointer-events-none z-50">

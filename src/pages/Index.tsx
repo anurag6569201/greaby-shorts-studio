@@ -10,6 +10,7 @@ import { motion, useInView, AnimatePresence, useMotionValue, useSpring } from "f
 import { cn } from "@/lib/utils";
 import Navbar from "./intro/Navbar";
 import Footer from "./intro/Footer";
+import SEOHead from "@/components/SEOHead";
 
 
 // NO CHANGE: This component provides the interactive background gradient effect.
@@ -139,6 +140,8 @@ const Hero = () => {
           playsInline
           preload="none"
           className="w-full h-full object-cover"
+          aria-label="Greaby AI content creation demo video"
+          title="Greaby AI Content Creation Demo"
         >
           <source src="/intro/test.webm" type="video/webm" />
           <source src="/intro/test.mp4" type="video/mp4" />
@@ -269,8 +272,91 @@ const Cta = () => {
 
 // NO CHANGE: This is the main component that assembles the page.
 const Index = () => {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "name": "Greaby",
+        "url": "https://greaby.cloud",
+        "logo": "https://greaby.cloud/logo.png",
+        "sameAs": ["https://twitter.com/anurag6569201"],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "email": "anurag6569201@gmail.com",
+          "contactType": "Customer Service"
+        }
+      },
+      {
+        "@type": "WebSite",
+        "url": "https://greaby.cloud",
+        "name": "Greaby",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://greaby.cloud/search?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "Greaby",
+        "operatingSystem": "Web-based",
+        "applicationCategory": "MultimediaApplication",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.8",
+          "reviewCount": "150"
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What are credits and how do they work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Credits are our pay-as-you-go currency. You buy a pack, and each feature (voice, transcription, translation) deducts the required credits."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What tools does Greaby offer?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "We offer text-to-speech, audio/video transcription, SRT generation, and document translation — all powered by AI."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I use the generated content for commercial purposes?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Absolutely. Any content you create with your credits is yours to use for any purpose, including monetization on platforms like YouTube, podcasts, and audiobooks."
+            }
+          }
+        ]
+      }
+    ]
+  };
+
   return (
     <div className="bg-background text-foreground relative">
+      <SEOHead
+        title="Greaby: AI Voice Generator, Transcription & Translation"
+        description="Generate lifelike AI voices with 98+ realistic options, automated SRT transcriptions, and document translations. Start creating for free with Greaby!"
+        keywords="AI voice generator, speech to text, transcription, document translator, text to speech, lifelike voices, Greaby, SRT subtitle, AI transcription, TTS online"
+        ogUrl="https://greaby.cloud"
+        structuredData={structuredData}
+      />
       <InteractiveCursor />
       <div className="relative z-10">
         <Navbar />

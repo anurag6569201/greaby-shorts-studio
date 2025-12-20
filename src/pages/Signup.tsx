@@ -10,6 +10,7 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import SEOHead from "@/components/SEOHead";
 
 const OtpInput = ({ otp, setOtp, disabled }) => {
     const inputRefs = useRef([]);
@@ -148,6 +149,12 @@ const Signup = () => {
 
     return (
         <>
+            <SEOHead
+                title="Sign Up - Create Your Greaby Account"
+                description="Create a free Greaby account and start generating AI voices, transcriptions, and translations. Get started in seconds!"
+                keywords="Greaby signup, create account, free trial, register"
+                ogUrl="https://greaby.cloud/signup"
+            />
             <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-8">
                 <Card className="w-full max-w-md shadow-lg">
                     <CardHeader className="text-center space-y-2">

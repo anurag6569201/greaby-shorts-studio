@@ -1,8 +1,14 @@
 import { Link } from "react-router-dom";
+import SEOHead from "@/components/SEOHead";
 
 const NotFound = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 text-center px-4">
+      <SEOHead
+        title="404 - Page Not Found - Greaby"
+        description="The page you're looking for doesn't exist. Return to Greaby's homepage to continue creating AI content."
+        noindex={true}
+      />
       <div>
         <h1 className="text-6xl font-bold text-primary mb-4">404</h1>
         <h2 className="text-3xl font-semibold text-gray-800 mb-2">Page Not Found</h2>

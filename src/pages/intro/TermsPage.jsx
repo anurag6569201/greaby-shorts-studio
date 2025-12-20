@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import SEOHead from '@/components/SEOHead';
 
 const TermsPage = () => {
   const effectiveDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -68,6 +69,13 @@ const TermsPage = () => {
 
   return (
     <>
+      <SEOHead
+        title="Terms of Service - Greaby"
+        description="Read Greaby's Terms of Service. Learn about user agreements, credit system, content ownership, and service policies."
+        keywords="Greaby terms, terms of service, user agreement, legal, policy"
+        ogUrl="https://greaby.cloud/terms"
+        noindex={false}
+      />
       <Navbar/>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 relative overflow-hidden">
         <div className="fixed top-0 left-0 pointer-events-none z-50">

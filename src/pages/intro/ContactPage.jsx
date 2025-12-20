@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { Mail, Briefcase, MapPin } from 'lucide-react';
+import SEOHead from '@/components/SEOHead';
 
 const ContactPage = () => {
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
@@ -41,6 +42,29 @@ const ContactPage = () => {
   
   return (
     <>
+      <SEOHead
+        title="Contact Us - Greaby Support"
+        description="Get in touch with Greaby for technical support, billing questions, business inquiries, or general feedback. We typically respond within 24-48 hours."
+        keywords="contact Greaby, Greaby support, customer service, help, support email"
+        ogUrl="https://greaby.cloud/contact"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "ContactPage",
+          "name": "Contact Greaby",
+          "description": "Contact information for Greaby support and inquiries",
+          "mainEntity": {
+            "@type": "Organization",
+            "name": "Greaby",
+            "email": "anurag6569201@gmail.com",
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "email": "anurag6569201@gmail.com",
+              "contactType": "Customer Service",
+              "availableLanguage": "English"
+            }
+          }
+        }}
+      />
       <Navbar />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 relative overflow-hidden text-slate-800">
         <div className="fixed top-0 left-0 pointer-events-none z-50">
