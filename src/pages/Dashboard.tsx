@@ -8,7 +8,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sparkles, Home, Settings, LogOut, Menu, CreditCard, Coins, History, MicVocalIcon, Loader2, AlertCircle, ArrowLeft, Mic, LanguagesIcon, Image } from "lucide-react";
+import { Sparkles, Home, Settings, LogOut, Menu, CreditCard, Coins, History, MicVocalIcon, Loader2, AlertCircle, ArrowLeft, Mic, LanguagesIcon, Image, Film } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import DashboardHome from "@/components/dashboard/DashboardHome";
 import AudioGenerator from "@/components/dashboard/AudioGenerator";
@@ -19,6 +19,7 @@ import TranscriptionGenerator from "@/components/dashboard/TranscriptionGenerato
 import DocumentTranslator from "@/components/dashboard/DocumentTranslator";
 import TranscriptionPlayer from "@/components/dashboard/components/TranscriptionPlayer";
 import ImageGenerator from "@/components/dashboard/ImageGenerator";
+import VideoTranslation from "@/components/dashboard/VideoTranslation";
 import api from "@/services/api";
 
 const sidebarItems = [
@@ -26,6 +27,7 @@ const sidebarItems = [
   { id: "audio", label: "Audio", icon: Mic },
   { id: "transcription", label: "Transcription", icon: MicVocalIcon },
   { id: "translation", label: "Translation", icon: LanguagesIcon },
+  { id: "video-translation", label: "Video Translation", icon: Film },
   { id: "image", label: "Image", icon: Image },
   { id: "history", label: "Usage History", icon: History },
 ];
@@ -150,6 +152,7 @@ const Dashboard = () => {
       case "history": return <HistoryPage />;
       case "transcription": return <TranscriptionGenerator />;
       case "translation": return <DocumentTranslator />;
+      case "video-translation": return <VideoTranslation />;
       case "transcription-player": return <TranscriptionPlayerPage />;
       case "image": return <ImageGenerator />;
       default: return <DashboardHome setActiveTab={handleSetTab} />;

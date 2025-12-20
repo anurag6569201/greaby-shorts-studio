@@ -1,6 +1,9 @@
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 def send_template_email(subject, template_name, context, recipient_list):
     """
@@ -17,7 +20,6 @@ def send_template_email(subject, template_name, context, recipient_list):
             html_message=html_message,
             fail_silently=False,
         )
-        print(f"Successfully sent email '{subject}' to {recipient_list}")
+        logger.info(f"Successfully sent email '{subject}' to {recipient_list}")
     except Exception as e:
-        # In production, you would want to log this error more robustly
-        print(f"ERROR: Failed to send email '{subject}' to {recipient_list}. Reason: {e}")
+        logger.error(f"Failed to send email '{subject}' to {recipient_list}. Reason: {e}", exc_info=True)

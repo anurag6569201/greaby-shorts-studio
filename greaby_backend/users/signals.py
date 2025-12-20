@@ -2,6 +2,9 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
 from greaby_project.email_utils import send_template_email
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Define the starting credit amount in one place
 NEW_USER_CREDIT_GRANT = 5.00
@@ -15,7 +18,7 @@ def grant_credits_to_new_user(sender, instance, created, **kwargs):
     if created:
         instance.credit_balance = NEW_USER_CREDIT_GRANT
         instance.save(update_fields=['credit_balance'])
-        print(f"Granted {NEW_USER_CREDIT_GRANT} starting credits to new user: {instance.email}")
+        logger.info(f"Granted {NEW_USER_CREDIT_GRANT} starting credits to new user: {instance.email}")
 
         # Send welcome email
         context = {

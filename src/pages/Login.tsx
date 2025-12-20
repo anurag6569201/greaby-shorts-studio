@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,13 +8,53 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
 const Login = () => {
-  const { loginUser, authLoading } = useAuth();
+  const { loginUser, loginWithGoogle, authLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
     loginUser(email, password);
+  };
+
+  useEffect(() => {
+    // Load Google Identity Services
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      if (window.google && import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          callback: handleCredentialResponse,
+        });
+
+        // Render the Google Sign-In button
+        const buttonContainer = document.getElementById('google-signin-container');
+        if (buttonContainer && window.google.accounts.id) {
+          window.google.accounts.id.renderButton(buttonContainer, {
+            theme: 'outline',
+            size: 'large',
+            width: '100%',
+            text: 'signin_with',
+            shape: 'rectangular',
+          });
+        }
+      }
+    };
+
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []);
+
+  const handleCredentialResponse = (response) => {
+    loginWithGoogle(response.credential);
   };
 
   return (
@@ -42,6 +82,15 @@ const Login = () => {
               {authLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign In
             </Button>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-slate-50 px-2 text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
+            <div id="google-signin-container" className="w-full"></div>
             <p className="text-center text-sm text-muted-foreground">
               Don't have an account?{" "}
               <Link to="/signup" className="font-medium text-primary hover:underline">

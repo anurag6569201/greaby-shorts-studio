@@ -21,10 +21,17 @@ class VideoTranslationRequestSerializer(serializers.ModelSerializer):
         return data
 
 class VideoTranslationResponseSerializer(serializers.ModelSerializer):
+    thumbnail_url = serializers.SerializerMethodField()
+    
     class Meta:
         model = VideoTranslation
         fields = (
             'id', 'title', 'status', 'created_at', 'error_message', 'credit_cost',
-            'source_locale', 'target_locale', 'result_video_url', 'result_subtitle_url'
+            'source_locale', 'target_locale', 'result_video_url', 'result_subtitle_url',
+            'thumbnail_url'
         )
         read_only_fields = fields
+    
+    def get_thumbnail_url(self, obj):
+        # Return None for now - can be extended to generate thumbnails from video
+        return None

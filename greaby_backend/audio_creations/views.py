@@ -14,12 +14,14 @@ from .tasks import generate_audio_from_text
 from .services import calculate_audio_cost
 from .voices import VOICE_CHOICES
 from .costs import VOICE_MULTIPLIERS, DEFAULT_VOICE_MULTIPLIER
+from users.models import User
+import logging
 
 class AudioCreationViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
     
     def get_queryset(self):
-        base_queryset = AudioCreation.objects.filter(user=self.request.user)
+        base_queryset = AudioCreation.objects.filter(user=self.request.user).select_related('user')
         if self.action == 'list':
             return base_queryset.exclude(status=AudioCreation.Status.FAILED).order_by('-created_at')
         return base_queryset
@@ -42,16 +44,17 @@ class AudioCreationViewSet(viewsets.ModelViewSet):
             voice=validated_data['voice']
         )
         
-        user = request.user
-        
-        if user.credit_balance < cost:
-            return Response(
-                {"detail": f"Insufficient credits. This action costs {cost}, but you only have {user.credit_balance}."},
-                status=status.HTTP_402_PAYMENT_REQUIRED
-            )
-            
         try:
             with transaction.atomic():
+                # Lock the user row to prevent race conditions
+                user = User.objects.select_for_update().get(id=request.user.id)
+                
+                if user.credit_balance < cost:
+                    return Response(
+                        {"detail": f"Insufficient credits. This action costs {cost}, but you only have {user.credit_balance}."},
+                        status=status.HTTP_402_PAYMENT_REQUIRED
+                    )
+                
                 user.credit_balance -= cost
                 user.save(update_fields=['credit_balance'])
                 
@@ -62,6 +65,8 @@ class AudioCreationViewSet(viewsets.ModelViewSet):
                 )
 
         except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in audio creation: {e}", exc_info=True)
             return Response({"detail": "An unexpected error occurred. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         generate_audio_from_text.delay(str(creation.id))

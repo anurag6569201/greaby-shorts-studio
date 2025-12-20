@@ -18,4 +18,6 @@ if getattr(settings, 'BROKER_USE_SSL', None):
 if getattr(settings, 'REDIS_BACKEND_USE_SSL', None):
     app.conf.redis_backend_use_ssl = settings.REDIS_BACKEND_USE_SSL
 
+# Autodiscover tasks from all installed apps
+# This will find tasks.py files in each app and register them
 app.autodiscover_tasks()

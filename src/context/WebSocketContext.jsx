@@ -62,7 +62,7 @@ export const WebSocketProvider = ({ children }) => {
                         'transcription': ['transcriptions'],
                         'translation': ['videoTranslations'],
                         'document': ['documentTranslations'],
-                        'image': ['imageCreations'], 
+                        'image': ['imageCreations'],
                     };
 
                     const baseQueryKey = queryKeyMap[creation_type];

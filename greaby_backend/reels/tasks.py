@@ -3,6 +3,7 @@ import subprocess
 import tempfile
 import datetime
 import requests
+import logging
 from celery import shared_task
 from django.db import transaction
 from django.conf import settings
@@ -13,6 +14,8 @@ from .models import Reel
 from billing.models import CreditUsage
 from greaby_project.email_utils import send_template_email
 from .costs import SUBTITLE_GENERATION_COST
+
+logger = logging.getLogger(__name__)
 
 def _refund_subtitle_credits(reel: Reel, reason: str):
     try:
@@ -28,7 +31,7 @@ def _refund_subtitle_credits(reel: Reel, reason: str):
             reel.subtitle_error_message = f"Task failed: {reason}"
             reel.save(update_fields=['subtitle_status', 'subtitle_error_message'])
     except Exception as e:
-        print(f"CRITICAL: Failed to refund subtitle credits for reel {reel.id}. Error: {e}")
+        logger.error(f"CRITICAL: Failed to refund subtitle credits for reel {reel.id}. Error: {e}", exc_info=True)
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=120, acks_late=True)
 def combine_video_and_audio(self, reel_id: str):
@@ -152,7 +155,7 @@ def generate_subtitles_for_reel(self, reel_id: str):
 
     except Exception as e:
         error_message = f"Subtitle generation failed: {e}"
-        print(error_message)
+        logger.error(error_message, exc_info=True)
         if reel:
             _refund_subtitle_credits(reel, str(e))
         self.retry(exc=e)

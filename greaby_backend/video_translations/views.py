@@ -5,6 +5,8 @@ from azure.storage.blob import generate_blob_sas, BlobSasPermissions
 from datetime import datetime, timedelta
 from django.conf import settings
 import uuid
+import os
+import logging
 
 from .models import VideoTranslation
 from .serializers import VideoTranslationResponseSerializer
@@ -12,16 +14,18 @@ from .tasks import process_video_translation
 from .locales import LOCALE_CHOICES
 from .services import calculate_translation_cost
 from greaby_project.storages import SourceMediaStorage
+from greaby_project.pagination import StandardResultsSetPagination
 
 class VideoTranslationViewSet(viewsets.ModelViewSet):
     """
     Manages the lifecycle of video translations, from upload initiation to finalization and retries.
     """
     http_method_names = ['get', 'post', 'delete', 'head', 'options']
+    pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
         """Returns video translations for the currently authenticated user."""
-        return VideoTranslation.objects.filter(user=self.request.user).order_by('-created_at')
+        return VideoTranslation.objects.filter(user=self.request.user).select_related('user').order_by('-created_at')
 
     def get_serializer_class(self):
         """Returns the appropriate serializer for responses."""
@@ -55,7 +59,13 @@ class VideoTranslationViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Title, filename, source_locale, and target_locale are required."}, status=status.HTTP_400_BAD_REQUEST)
         
         original_filename = request.data.get('filename')
-        extension = original_filename.split('.')[-1] if '.' in original_filename else 'mp4'
+        # Sanitize filename to prevent path traversal and other security issues
+        safe_filename = os.path.basename(original_filename)[:255]  # Limit length and remove path components
+        extension = safe_filename.split('.')[-1] if '.' in safe_filename else 'mp4'
+        # Validate extension is safe (only allow common video extensions)
+        allowed_extensions = ['mp4', 'avi', 'mov', 'mkv', 'webm', 'flv', 'wmv']
+        if extension.lower() not in allowed_extensions:
+            extension = 'mp4'  # Default to mp4 if extension is not allowed
         blob_name = f"video_translations/source/{uuid.uuid4()}.{extension}"
 
         def to_bool(value):
@@ -100,8 +110,10 @@ class VideoTranslationViewSet(viewsets.ModelViewSet):
             )
             upload_url = f"https://{settings.AZURE_ACCOUNT_NAME}.blob.core.windows.net/{storage.azure_container}/{blob_name}?{sas_token}"
         except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error generating upload URL for translation: {e}", exc_info=True)
             translation.delete()
-            return Response({"detail": f"Could not generate upload URL: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"detail": "Could not generate upload URL. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response({
             'translationId': translation.id,

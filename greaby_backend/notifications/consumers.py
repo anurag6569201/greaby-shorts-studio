@@ -1,5 +1,8 @@
 import json
+import logging
 from channels.generic.websocket import AsyncWebsocketConsumer
+
+logger = logging.getLogger(__name__)
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -12,12 +15,12 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
-        print(f"WebSocket connected for user: {self.user.email} to channel {self.channel_name}")
+        logger.info(f"WebSocket connected for user: {self.user.email} to channel {self.channel_name}")
 
     async def disconnect(self, close_code):
         if hasattr(self, 'room_group_name'):
             await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-        print(f"WebSocket disconnected for user: {getattr(self.user, 'email', 'anonymous')}")
+        logger.info(f"WebSocket disconnected for user: {getattr(self.user, 'email', 'anonymous')}")
 
     async def send_notification(self, event):
         message = event['message']

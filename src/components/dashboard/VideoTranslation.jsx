@@ -180,7 +180,7 @@ const VideoTranslation = () => {
 
     // Fetch translations for the current page
     const { data: translationsData, isLoading, isFetching } = useQuery({
-        queryKey: ["translations", page],
+        queryKey: ["videoTranslations", page],
         queryFn: () => api.get(`/translations/?page=${page}`).then((res) => res.data),
         keepPreviousData: true,
     });
@@ -197,7 +197,7 @@ const VideoTranslation = () => {
         mutationFn: (translationId) => api.post(`/translations/${translationId}/retry/`),
         onSuccess: () => {
             toast.success("Retrying translation...", { description: "The job has been re-queued for processing." });
-            queryClient.invalidateQueries({ queryKey: ["translations"] });
+            queryClient.invalidateQueries({ queryKey: ["videoTranslations"] });
         },
         onError: (error) => {
             toast.error("Retry Failed", { description: error.response?.data?.detail || "Could not re-queue the job." });
@@ -294,7 +294,7 @@ const VideoTranslation = () => {
             temporaryTranslationId = translationId;
 
             // Optimistically add to the UI
-            queryClient.setQueryData(["translations", 1], (oldData) => {
+            queryClient.setQueryData(["videoTranslations", 1], (oldData) => {
                  if (!oldData) return { results: [translationData], count: 1 };
                  const newResults = [translationData, ...oldData.results];
                  return { ...oldData, count: (oldData.count || 0) + 1, results: newResults };
@@ -318,13 +318,13 @@ const VideoTranslation = () => {
             if (axios.isCancel(error)) {
                 if (temporaryTranslationId) {
                     await api.delete(`/translations/${temporaryTranslationId}/`);
-                    queryClient.invalidateQueries({ queryKey: ["translations"] });
+                    queryClient.invalidateQueries({ queryKey: ["videoTranslations"] });
                 }
             } else {
                 toast.error("Process Failed", { description: error.response?.data?.detail || "An unexpected error occurred during submission." });
                 if (temporaryTranslationId) {
                     await api.delete(`/translations/${temporaryTranslationId}/`);
-                    queryClient.invalidateQueries({ queryKey: ["translations"] });
+                    queryClient.invalidateQueries({ queryKey: ["videoTranslations"] });
                 }
             }
             resetForm();
@@ -341,7 +341,7 @@ const VideoTranslation = () => {
                     try {
                         await api.delete(`/translations/${translation.id}/`);
                         toast.success("Translation deleted.");
-                        queryClient.invalidateQueries({ queryKey: ["translations"] });
+                        queryClient.invalidateQueries({ queryKey: ["videoTranslations"] });
                     } catch { toast.error("Failed to delete translation."); }
                 }
             },
@@ -358,7 +358,7 @@ const VideoTranslation = () => {
             <Card className="shadow-none border-none bg-transparent">
                 <CardHeader className="p-0">
                     <CardTitle className="flex items-center text-2xl"><Languages className="h-6 w-6 mr-3 text-primary" />Video Translation</CardTitle>
-                    <CardDescription>Upload a video to translate its audio into another language with a synthetic voice.</CardDescription>
+                    <CardDescription>Upload a video and get its audio translated with a synthetic voice. Processing takes up to 1 hour, and we’ll notify you by email when it’s ready.</CardDescription>
                 </CardHeader>
                 <hr className="my-4" />
                 <form onSubmit={handleSubmit}>
@@ -425,7 +425,7 @@ const VideoTranslation = () => {
             <div className="space-y-4">
                 <div className="flex justify-between items-center">
                     <h2 className="text-2xl font-bold">Translation Library</h2>
-                    <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ["translations"] })} disabled={isFetching || isLoading}>
+                    <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ["videoTranslations"] })} disabled={isFetching || isLoading}>
                         <RefreshCw className={`h-4 w-4 mr-2 ${(isFetching && !isLoading) ? "animate-spin" : ""}`} />Refresh
                     </Button>
                 </div>

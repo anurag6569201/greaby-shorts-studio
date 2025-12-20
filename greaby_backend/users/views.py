@@ -5,12 +5,19 @@ from rest_framework.response import Response
 from django.utils import timezone
 import random
 import json
+import logging
+from google.auth.transport import requests
+from google.oauth2 import id_token
+from decouple import config
 
 from .serializers import RegisterUserSerializer, UserSerializer
 from .models import User
 from greaby_project.email_utils import send_template_email
 from django.core.cache import cache
 from django.contrib.auth.hashers import make_password
+from rest_framework_simplejwt.tokens import RefreshToken
+
+logger = logging.getLogger(__name__)
 
 class RegisterUserView(generics.CreateAPIView):
     permission_classes = (AllowAny,)
@@ -86,9 +93,96 @@ class VerifyOTPView(views.APIView):
             return Response({"detail": "Account successfully created. You can now log in."}, status=status.HTTP_201_CREATED)
         
         except Exception as e:
-            print(f"Error during user creation after OTP verify: {e}")
+            logger.error(f"Error during user creation after OTP verify: {e}", exc_info=True)
             return Response({"detail": "An error occurred during account creation. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+
+
+class GoogleOAuthView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        id_token_str = request.data.get('id_token')
+        
+        if not id_token_str:
+            return Response(
+                {"detail": "Google ID token is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Verify the Google ID token
+            # For production, you should set GOOGLE_CLIENT_ID in your environment
+            GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default=None)
+            
+            if not GOOGLE_CLIENT_ID:
+                logger.error("GOOGLE_CLIENT_ID not configured")
+                return Response(
+                    {"detail": "Google OAuth not configured on server."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+            # Verify the token
+            idinfo = id_token.verify_oauth2_token(
+                id_token_str,
+                requests.Request(),
+                GOOGLE_CLIENT_ID
+            )
+
+            # Extract user information
+            email = idinfo.get('email')
+            first_name = idinfo.get('given_name', '')
+            last_name = idinfo.get('family_name', '')
+            google_id = idinfo.get('sub')
+
+            if not email:
+                return Response(
+                    {"detail": "Email not provided by Google."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Check if user exists
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'is_active': True,
+                }
+            )
+
+            # If user already exists, update name if needed
+            if not created:
+                if not user.first_name and first_name:
+                    user.first_name = first_name
+                if not user.last_name and last_name:
+                    user.last_name = last_name
+                user.save()
+
+            # Generate JWT tokens
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+            refresh_token = str(refresh)
+
+            return Response({
+                'access': access_token,
+                'refresh': refresh_token,
+                'user': UserSerializer(user).data,
+                'is_new_user': created
+            }, status=status.HTTP_200_OK)
+
+        except ValueError as e:
+            logger.error(f"Invalid Google token: {e}")
+            return Response(
+                {"detail": "Invalid Google token."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Google OAuth error: {e}", exc_info=True)
+            return Response(
+                {"detail": "An error occurred during Google authentication."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class UserProfileView(APIView):

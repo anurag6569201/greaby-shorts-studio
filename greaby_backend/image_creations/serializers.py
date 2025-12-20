@@ -17,6 +17,17 @@ class ImageEditRequestSerializer(serializers.Serializer):
     n = serializers.IntegerField(min_value=1, max_value=4)
     size = serializers.ChoiceField(choices=ImageCreation.Size.choices, default=ImageCreation.Size.SQUARE)
     provider = serializers.ChoiceField(choices=ImageCreation.Provider.choices)
+    
+    def validate(self, data):
+        """Validate that 'n' matches the number of images provided."""
+        n = data.get('n')
+        images = data.get('image', [])
+        
+        if n is not None and len(images) != n:
+            raise serializers.ValidationError(
+                "The 'n' parameter must match the number of images provided."
+            )
+        return data
 
 
 class ImageCreationResponseSerializer(serializers.ModelSerializer):

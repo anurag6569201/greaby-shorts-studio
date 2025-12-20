@@ -8,18 +8,20 @@ from PyPDF2 import PdfReader
 from docx import Document as DocxDocument
 from pptx import Presentation
 import io
+import logging
 
 from .models import DocumentTranslation
 from .serializers import DocumentTranslationRequestSerializer, DocumentTranslationResponseSerializer
 from .tasks import start_document_translation_job
 from .services import calculate_document_page_based_cost, calculate_document_char_based_cost
+from users.models import User
 
 class DocumentTranslationViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'delete', 'head', 'options']
     parser_classes = (parsers.MultiPartParser, parsers.FormParser)
 
     def get_queryset(self):
-        base_queryset = DocumentTranslation.objects.filter(user=self.request.user)
+        base_queryset = DocumentTranslation.objects.filter(user=self.request.user).select_related('user')
         if self.action == 'list':
             return base_queryset.exclude(status=DocumentTranslation.Status.FAILED).order_by('-created_at')
         return base_queryset
@@ -86,16 +88,20 @@ class DocumentTranslationViewSet(viewsets.ModelViewSet):
         else:
             return Response({"detail": "Unsupported file type."}, status=status.HTTP_400_BAD_REQUEST)
 
-
-        if user.credit_balance < cost:
-            return Response({"detail": f"Insufficient credits. This action costs {cost}, but you only have {user.credit_balance}."}, status=status.HTTP_402_PAYMENT_REQUIRED)
-            
         try:
             with transaction.atomic():
+                # Lock the user row to prevent race conditions
+                user = User.objects.select_for_update().get(id=request.user.id)
+                
+                if user.credit_balance < cost:
+                    return Response({"detail": f"Insufficient credits. This action costs {cost}, but you only have {user.credit_balance}."}, status=status.HTTP_402_PAYMENT_REQUIRED)
+                
                 user.credit_balance -= cost
                 user.save(update_fields=['credit_balance'])
                 translation = serializer.save(user=user, credit_cost=cost, status=DocumentTranslation.Status.PENDING, original_filename=uploaded_file.name, content_type=uploaded_file.content_type)
         except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in document translation creation: {e}", exc_info=True)
             return Response({"detail": "An unexpected error occurred during setup. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         start_document_translation_job.delay(str(translation.id))

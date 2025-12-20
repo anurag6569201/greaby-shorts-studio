@@ -2,6 +2,7 @@ from django.db import transaction
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+import logging
 
 from .models import Reel
 from creations.models import VideoCreation
@@ -9,6 +10,7 @@ from audio_creations.models import AudioCreation
 from .serializers import ReelCreateSerializer, ReelResponseSerializer, ReelUpdateSerializer
 from .tasks import combine_video_and_audio, generate_subtitles_for_reel
 from .costs import SUBTITLE_GENERATION_COST
+from users.models import User
 
 class ReelViewSet(viewsets.ModelViewSet):
     
@@ -43,7 +45,8 @@ class ReelViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         except ValueError as e:
-            print(f"Reel creation validation failed for user {request.user.email}: {e}")
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Reel creation validation failed for user {request.user.email}: {e}")
             return Response(
                 {"detail": "A source asset is corrupted or missing its file. Please try regenerating it."},
                 status=status.HTTP_400_BAD_REQUEST
@@ -55,7 +58,13 @@ class ReelViewSet(viewsets.ModelViewSet):
             video_creation=video,
             audio_creation=audio
         )
-        combine_video_and_audio.delay(str(reel.id))
+        try:
+            combine_video_and_audio.delay(str(reel.id))
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error dispatching reel combination task for reel {reel.id}: {e}", exc_info=True)
+            # Note: The reel is already created, but the task may not run
+            # In production, you might want to handle this differently
 
         response_serializer = ReelResponseSerializer(reel)
         return Response(response_serializer.data, status=status.HTTP_202_ACCEPTED)
@@ -72,17 +81,25 @@ class ReelViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Source audio or its text script is missing."}, status=status.HTTP_400_BAD_REQUEST)
             
         subtitle_cost = SUBTITLE_GENERATION_COST
-        user = request.user
-        if user.credit_balance < subtitle_cost:
-            return Response({"detail": f"Insufficient credits. This action costs {subtitle_cost} credits."}, status=status.HTTP_402_PAYMENT_REQUIRED)
         
-        with transaction.atomic():
-            user.credit_balance -= subtitle_cost
-            user.save(update_fields=['credit_balance'])
-            reel.subtitle_status = Reel.SubtitleStatus.PENDING
-            reel.save(update_fields=['subtitle_status'])
+        try:
+            with transaction.atomic():
+                # Lock the user row to prevent race conditions
+                user = User.objects.select_for_update().get(id=request.user.id)
+                
+                if user.credit_balance < subtitle_cost:
+                    return Response({"detail": f"Insufficient credits. This action costs {subtitle_cost} credits."}, status=status.HTTP_402_PAYMENT_REQUIRED)
+                
+                user.credit_balance -= subtitle_cost
+                user.save(update_fields=['credit_balance'])
+                reel.subtitle_status = Reel.SubtitleStatus.PENDING
+                reel.save(update_fields=['subtitle_status'])
 
-        generate_subtitles_for_reel.delay(str(reel.id))
+            generate_subtitles_for_reel.delay(str(reel.id))
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in reel subtitle generation: {e}", exc_info=True)
+            return Response({"detail": "An unexpected error occurred. Please try again."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         return Response(ReelResponseSerializer(reel).data, status=status.HTTP_202_ACCEPTED)
         

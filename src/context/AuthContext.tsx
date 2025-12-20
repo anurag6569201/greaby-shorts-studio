@@ -70,6 +70,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithGoogle = async (idToken) => {
+    setAuthLoading(true);
+    try {
+      const response = await api.post("/auth/google-auth/", { id_token: idToken });
+      localStorage.setItem("accessToken", response.data.access);
+      localStorage.setItem("refreshToken", response.data.refresh);
+      api.defaults.headers.common["Authorization"] = "Bearer " + response.data.access;
+      setTokens({
+        access: response.data.access,
+        refresh: response.data.refresh,
+      });
+      setUser(response.data.user);
+      navigate("/dashboard");
+      toast.success(response.data.is_new_user ? "Account created successfully!" : "Login successful!");
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Google authentication failed.");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const logoutUser = useCallback(() => {
     setUser(null);
     setTokens(null);
@@ -140,6 +161,7 @@ export const AuthProvider = ({ children }) => {
     loginUser,
     registerUser,
     verifyOtpAndLogin,
+    loginWithGoogle,
     logoutUser,
   };
 

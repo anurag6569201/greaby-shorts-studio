@@ -34,8 +34,8 @@ const ContactPage = () => {
       icon: <MapPin size={24} className="text-red-500" />,
       title: "Mailing Address",
       description: "Please note we are a digital-first company and do not offer in-person support.",
-      contactInfo: "Greaby, Maihar 485771, Madhya Pradesh, India",
-      href: "#"
+      contactInfo: "anurag6569201@gmail.com",
+      href: "mailto:anurag6569201@gmail.com?subject=Mailing Address"
     }
   ];
   

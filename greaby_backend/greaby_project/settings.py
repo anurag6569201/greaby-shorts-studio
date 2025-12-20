@@ -99,10 +99,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -132,12 +128,12 @@ CELERY_ENABLE_UTC = True
 CELERY_TASK_DEFAULT_RETRY_DELAY = 60  # seconds
 CELERY_TASK_MAX_RETRIES = 3
 # Celery Redis SSL Options (only needed if using rediss://)
-if CELERY_BROKER_URL.startswith("rediss://"):
+if CELERY_BROKER_URL and CELERY_BROKER_URL.startswith("rediss://"):
     BROKER_USE_SSL = {
         'ssl_cert_reqs': ssl.CERT_NONE  # or CERT_REQUIRED in production with certs
     }
 
-if CELERY_RESULT_BACKEND.startswith("rediss://"):
+if CELERY_RESULT_BACKEND and CELERY_RESULT_BACKEND.startswith("rediss://"):
     REDIS_BACKEND_USE_SSL = {
         'ssl_cert_reqs': ssl.CERT_NONE
     }
@@ -198,8 +194,8 @@ EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='anurag6569201@gmail.com')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='ihasreqxxrrtzmrc')
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Greaby AI <noreply@greaby.cloud>')
 
 

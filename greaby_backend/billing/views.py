@@ -1,5 +1,6 @@
 import razorpay
 import json
+import logging
 from django.conf import settings
 from django.db import transaction
 
@@ -14,6 +15,8 @@ import time
 from greaby_project.email_utils import send_template_email
 from itertools import chain
 from rest_framework.pagination import PageNumberPagination
+
+logger = logging.getLogger(__name__)
 
 # Initialize Razorpay client
 client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
@@ -56,7 +59,7 @@ class CreatePurchaseOrderView(views.APIView):
                 }
             }
             razorpay_order = client.order.create(data=order_data)
-            print(razorpay_order)
+            logger.info(f"Created Razorpay order: {razorpay_order.get('id')}")
             # 2. Create local Purchase record in 'pending' state
             Purchase.objects.create(
                 user=user,
@@ -79,8 +82,8 @@ class CreatePurchaseOrderView(views.APIView):
             return Response(response_data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            print(f"ERROR: Razorpay order creation failed for user {user.email}: {e}")
-            return Response({'error': 'Failed to create payment order.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error(f"Razorpay order creation failed for user {user.email}: {e}", exc_info=True)
+            return Response({'detail': 'Failed to create payment order.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class RazorpayWebhookView(views.APIView):
     """
@@ -99,8 +102,8 @@ class RazorpayWebhookView(views.APIView):
                 settings.RAZORPAY_WEBHOOK_SECRET
             )
         except razorpay.errors.SignatureVerificationError:
-            print("WEBHOOK ERROR: Invalid Razorpay signature.")
-            return Response({'error': 'Invalid signature'}, status=status.HTTP_400_BAD_REQUEST)
+            logger.error("WEBHOOK ERROR: Invalid Razorpay signature.")
+            return Response({'detail': 'Invalid signature'}, status=status.HTTP_400_BAD_REQUEST)
 
         payload = json.loads(request.body)
         event = payload.get('event')
@@ -108,7 +111,7 @@ class RazorpayWebhookView(views.APIView):
         # 2. Handle the 'payment.captured' event
         if event == 'payment.captured':
             payment_entity = payload.get('payload', {}).get('payment', {}).get('entity', {})
-            print(payment_entity)
+            logger.info(f"Payment captured event received: {payment_entity.get('id')}")
             if not payment_entity:
                 return Response(status=status.HTTP_200_OK)
 
@@ -131,11 +134,11 @@ class RazorpayWebhookView(views.APIView):
                     purchase.save()
                     
                     # Grant credits to the user
-                    user = purchase.user
+                    user = User.objects.select_for_update().get(id=purchase.user.id)
                     user.credit_balance += purchase.credits_purchased
                     user.save(update_fields=['credit_balance'])
                     
-                    print(f"SUCCESS: Granted {purchase.credits_purchased} credits to {user.email}.")
+                    logger.info(f"SUCCESS: Granted {purchase.credits_purchased} credits to {user.email}.")
                     
                     # --- SENDING PURCHASE RECEIPT EMAIL ---
                     email_context = {
@@ -156,11 +159,11 @@ class RazorpayWebhookView(views.APIView):
             except Purchase.DoesNotExist:
                 # This can happen if a webhook is for an old/already processed order.
                 # It's safe to ignore.
-                print(f"WEBHOOK INFO: Received webhook for already processed or non-existent order {razorpay_order_id}.")
+                logger.info(f"WEBHOOK INFO: Received webhook for already processed or non-existent order {razorpay_order_id}.")
             except Exception as e:
-                print(f"WEBHOOK CRITICAL ERROR processing order {razorpay_order_id}: {e}")
+                logger.error(f"WEBHOOK CRITICAL ERROR processing order {razorpay_order_id}: {e}", exc_info=True)
                 # Potentially send an alert to admin here
-                return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({'detail': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response(status=status.HTTP_200_OK)
     

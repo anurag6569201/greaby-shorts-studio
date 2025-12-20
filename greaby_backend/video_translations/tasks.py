@@ -116,6 +116,10 @@ def check_azure_translation_status(self, translation_id: str):
         poll_response.raise_for_status()
         status_data = poll_response.json()
         azure_status = status_data.get('status')
+        
+        # Log detailed status for debugging
+        if self.request.retries < 5 or azure_status != 'NotStarted':  # Don't spam logs after many retries
+            logger.info(f"Iteration {iteration_id} status: {azure_status}. Full response: {json.dumps(status_data, indent=2)}")
 
         if azure_status == 'Succeeded':
             logger.info(f"Translation {translation.id} SUCCEEDED on Azure.")
@@ -141,8 +145,20 @@ def check_azure_translation_status(self, translation_id: str):
             _handle_failure_and_refund(translation_id, error_message)
 
         else:
-            logger.info(f"Iteration for translation {translation.id} is still processing (Azure Status: {azure_status}). Re-queuing check.")
-            send_video_translation_update(translation.user.id, str(translation.id), f"Translating... ({azure_status})", 'processing')
+            # Handle "NotStarted" status - might need more time or there could be an issue
+            if azure_status == 'NotStarted':
+                attempt_count = self.request.retries + 1
+                if attempt_count > 10:  # After 10 minutes of NotStarted, log a warning
+                    logger.warning(f"Iteration {iteration_id} has been in 'NotStarted' status for {attempt_count} attempts (~{attempt_count} minutes). This might indicate an issue with Azure processing.")
+                    send_video_translation_update(translation.user.id, str(translation.id), "Waiting for Azure to start processing...", 'processing')
+                else:
+                    logger.info(f"Iteration {iteration_id} is still in 'NotStarted' status (attempt {attempt_count}). Azure may be queuing the job.")
+                    send_video_translation_update(translation.user.id, str(translation.id), "Queued for processing...", 'processing')
+            else:
+                logger.info(f"Iteration for translation {translation.id} is still processing (Azure Status: {azure_status}). Re-queuing check.")
+                send_video_translation_update(translation.user.id, str(translation.id), f"Translating... ({azure_status})", 'processing')
+            
+            # Continue retrying - Azure video translation can take a long time
             self.retry(countdown=60)
     except requests.exceptions.RequestException as e:
         logger.warning(f"Network error polling iteration for {translation.id}: {e}. Retrying task.")
@@ -238,15 +254,38 @@ def process_video_translation(self, translation_id: str):
         iteration_endpoint = f"{translation_endpoint}/iterations/{iteration_id}"
         iteration_payload = {"input": {}, "description": f"First iteration for {translation.title}"}
         headers['Operation-Id'] = f"start-iter1-{azure_translation_id}-{int(time.time())}"
+        
+        logger.info(f"Creating iteration {iteration_id} for translation {azure_translation_id}...")
         iterate_response = requests.put(iteration_endpoint, headers=headers, json=iteration_payload, params=params, timeout=30)
         
-        if iterate_response.status_code not in [200, 201, 202, 409]:
+        if iterate_response.status_code == 409:
+            logger.info(f"Iteration {iteration_id} already exists (409). Checking its current status...")
+            # If iteration already exists, check its status
+            get_iter_response = requests.get(iteration_endpoint, headers={'Ocp-Apim-Subscription-Key': settings.AZURE_VIDEO_TRANSLATION_KEY}, params=params, timeout=30)
+            if get_iter_response.status_code == 200:
+                iter_data = get_iter_response.json()
+                iter_status = iter_data.get('status', 'Unknown')
+                logger.info(f"Existing iteration status: {iter_status}")
+                if iter_status in ['Succeeded', 'Failed', 'Canceled']:
+                    # If already in final state, trigger status check immediately
+                    check_azure_translation_status.apply_async(args=[translation_id], countdown=1)
+                    return
+        elif iterate_response.status_code not in [200, 201, 202]:
             iterate_response.raise_for_status()
+        
+        # Log the iteration creation response for debugging
+        if iterate_response.status_code in [200, 201, 202]:
+            try:
+                iter_response_data = iterate_response.json()
+                logger.info(f"Iteration created successfully. Response: {json.dumps(iter_response_data, indent=2)}")
+            except:
+                logger.info(f"Iteration created with status {iterate_response.status_code}. Response text: {iterate_response.text[:500]}")
         
         send_video_translation_update(user.id, translation_id, "Starting translation...", 'processing')
         
         # --- Step 4: Hand off to the final poller task ---
-        check_azure_translation_status.apply_async(args=[translation_id], countdown=15)
+        # Wait a bit longer (30s) to give Azure time to actually start processing the iteration
+        check_azure_translation_status.apply_async(args=[translation_id], countdown=30)
 
     except Exception as e:
         error_details = str(e)
