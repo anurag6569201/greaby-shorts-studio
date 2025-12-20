@@ -242,6 +242,10 @@ const Faq = () => {
     { question: "What tools does your platform offer?", answer: "We provide a suite of AI tools, including text-to-speech with over 98 voices, audio/video transcription for subtitles, and document translation. We are constantly working on adding more tools to the platform." },
     { question: "Can I use the generated content for commercial purposes?", answer: "Absolutely. Any content you create with your credits is yours to use for any purpose, including monetization on platforms like YouTube, podcasts, and audiobooks." },
     { question: "What if an AI-generated task fails?", answer: "We have a robust system in place. If any job fails due to a technical error on our end, the credits for that task are automatically and instantly refunded to your account." },
+    { question: "How accurate is the transcription service?", answer: "Our AI transcription service provides high accuracy transcriptions with speaker diarization capabilities. The accuracy depends on audio quality, but typically achieves 95%+ accuracy for clear audio." },
+    { question: "What languages are supported for translation?", answer: "Greaby supports document translation into multiple languages with cutting-edge accuracy, preserving format and context. Check our dashboard for the full list of supported languages." },
+    { question: "Do credits expire?", answer: "No, credits never expire. You can purchase credits and use them whenever you want, with no time restrictions." },
+    { question: "Is there a free trial?", answer: "Yes! New users get free credits to start creating. Sign up to claim your free credits and start using our AI tools immediately." },
   ];
   const [expanded, setExpanded] = useState(0);
   return (
@@ -316,35 +320,122 @@ const Index = () => {
           "reviewCount": "150"
         }
       },
-      {
-        "@type": "FAQPage",
-        "mainEntity": [
           {
-            "@type": "Question",
-            "name": "What are credits and how do they work?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Credits are our pay-as-you-go currency. You buy a pack, and each feature (voice, transcription, translation) deducts the required credits."
-            }
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What are credits and how do they work?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Credits are our pay-as-you-go currency. You buy a pack, and each feature (voice, transcription, translation) deducts the required credits. Credits never expire and you can see the cost before you start."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What tools does Greaby offer?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "We offer text-to-speech with 98+ AI voices, audio/video transcription with SRT subtitle generation, and document translation for PDF, PPTX, and TXT files — all powered by advanced AI."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I use the generated content for commercial purposes?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Absolutely. Any content you create with your credits is yours to use for any purpose, including monetization on platforms like YouTube, podcasts, and audiobooks."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How accurate is the transcription service?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Our AI transcription service provides high accuracy transcriptions with speaker diarization capabilities. The accuracy depends on audio quality, but typically achieves 95%+ accuracy for clear audio."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What languages are supported for translation?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Greaby supports document translation into multiple languages with cutting-edge accuracy, preserving format and context. Check our dashboard for the full list of supported languages."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What happens if a generation task fails?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "If any job fails due to a technical error on our end, the credits for that task are automatically and instantly refunded to your account."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Do credits expire?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No, credits never expire. You can purchase credits and use them whenever you want, with no time restrictions."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is there a free trial?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes! New users get free credits to start creating. Sign up to claim your free credits and start using our AI tools immediately."
+                }
+              }
+            ]
           },
           {
-            "@type": "Question",
-            "name": "What tools does Greaby offer?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "We offer text-to-speech, audio/video transcription, SRT generation, and document translation — all powered by AI."
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "Can I use the generated content for commercial purposes?",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "Absolutely. Any content you create with your credits is yours to use for any purpose, including monetization on platforms like YouTube, podcasts, and audiobooks."
+            "@type": "Service",
+            "serviceType": "AI Content Creation",
+            "provider": {
+              "@type": "Organization",
+              "name": "Greaby"
+            },
+            "areaServed": "Worldwide",
+            "hasOfferCatalog": {
+              "@type": "OfferCatalog",
+              "name": "Greaby AI Services",
+              "itemListElement": [
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "AI Voice Generation",
+                    "description": "Generate lifelike AI voices with 98+ realistic options"
+                  }
+                },
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "Audio Transcription",
+                    "description": "Transcribe audio files to text with high accuracy"
+                  }
+                },
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "Video Transcription",
+                    "description": "Transcribe video files and generate SRT subtitles"
+                  }
+                },
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "Document Translation",
+                    "description": "Translate documents while preserving format"
+                  }
+                }
+              ]
             }
           }
-        ]
-      }
     ]
   };
 

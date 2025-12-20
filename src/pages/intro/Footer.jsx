@@ -14,11 +14,13 @@ const Footer = () => (
         <div><h3 className="text-sm font-semibold text-slate-200 tracking-wider uppercase">Product</h3><ul className="mt-4 space-y-3">
           <li><a href="/#features" className="hover:text-primary transition-colors">Features</a></li>
           <li><Link to="/pricing" className="hover:text-primary transition-colors">Pricing</Link></li>
-          <li><Link to="/login" className="hover:text-primary transition-colors">Login</Link></li>
+          <li><Link to="/about" className="hover:text-primary transition-colors">About</Link></li>
+          <li><Link to="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
         </ul></div>
         <div><h3 className="text-sm font-semibold text-slate-200 tracking-wider uppercase">Company</h3><ul className="mt-4 space-y-3">
           <li><Link to="/about" className="hover:text-primary transition-colors">About Us</Link></li>
           <li><Link to="/blog" className="hover:text-primary transition-colors">Blog</Link></li>
+          <li><Link to="/pricing" className="hover:text-primary transition-colors">Pricing Plans</Link></li>
         </ul></div>
         <div><h3 className="text-sm font-semibold text-slate-200 tracking-wider uppercase">Legal</h3><ul className="mt-4 space-y-3">
           <li><Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link></li>
